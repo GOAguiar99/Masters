@@ -1,0 +1,30 @@
+# PDF output (regenerate with ./compile.sh)
+main.pdf
+
+# Local TeX tree from manual package installs (use system packages instead)
+texmf/
+
+# LaTeX build artifacts
+build/
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+
+# Editor / OS
+*.swp
+*~
+.DS_Store
+Thumbs.db
