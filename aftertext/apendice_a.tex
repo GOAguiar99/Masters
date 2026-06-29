@@ -1,0 +1,169 @@
+\chapter{Código Embarcado - main.py}
+
+\begin{lstlisting}[language=Python]
+import sys
+sys.path.append('./widgets')
+from PySide6.QtWidgets import QApplication
+from GUI_LED import MyWindow
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = MyWindow()
+    window.show()
+    sys.exit(app.exec())
+\end{lstlisting}
+
+
+
+
+
+
+
+% ----------------------------------------------------------% ----------------------------------------------------------
+\chapter{Código GUI e Controle LED - Python}
+\begin{lstlisting}[language=Python]
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, 
+        QVBoxLayout, QPushButton, QWidget, 
+        QLabel, QSpinBox, QGroupBox
+from PySide6.QtCore import QTimer
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg 
+        as FigureCanvas
+from matplotlib.offsetbox import AnchoredText
+from matplotlib.figure import Figure
+import pandas as pd
+import numpy as np
+import Adafruit_PCA9685
+import time
+
+class MyWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super(MyWindow, self).__init__(parent)
+        self.setWindowTitle("Sun Simulator Plot")
+        self.resize(500, 400)
+
+        layout = QVBoxLayout()
+
+        spin_box_group_box = self.create_spin_box()
+        layout.addWidget(spin_box_group_box)
+
+        self.button = QPushButton('Open CSV File')
+        self.button.clicked.connect(self.open_file_dialog)
+        layout.addWidget(self.button)
+
+        self.start_stop_button = QPushButton('Start Plotting')
+        self.start_stop_button.clicked.connect(self.toggle_plotting)
+        layout.addWidget(self.start_stop_button)
+
+        self.selected_file_label = QLabel()
+        layout.addWidget(self.selected_file_label)
+
+        self.canvas = FigureCanvas(Figure())
+        layout.addWidget(self.canvas)
+
+        widget = QWidget()
+        widget.setLayout(layout)
+
+        self.setCentralWidget(widget)
+
+        self.df = None
+        self.current_row = 0
+        self.plot_timer = QTimer()
+        self.plot_timer.timeout.connect(self.plot_next_row)
+        self.is_plotting = False
+
+        # Initialize the PCA9685 driver.
+        self.pwm = Adafruit_PCA9685.PCA9685()
+        # Set the PWM frequency to 120 Hz.
+        self.pwm.set_pwm_freq(120)
+
+        # Define the LED channels in the order given in the CSV.
+        self.led_channels = ['X+', 'X-', 'Y+', 'Y-', 'Z+', 'Z-']
+
+    def create_spin_box(self):
+        spin_box_group_box = QGroupBox("Timer Settings")
+        spin_box_layout = QVBoxLayout()
+        spin_box_layout.addWidget(QLabel("Timer Interval (seconds):"))
+        self.timer_spinbox = QSpinBox()
+        self.timer_spinbox.setMinimum(1)
+        self.timer_spinbox.setMaximum(9999)
+        spin_box_layout.addWidget(self.timer_spinbox)
+        spin_box_group_box.setLayout(spin_box_layout)
+        return spin_box_group_box
+
+    def open_file_dialog(self):
+        filename, _ = QFileDialog.getOpenFileName
+                    (self, "Open CSV File", "", "CSV Files (*.csv)")
+        if filename:
+            self.df = pd.read_csv(filename)
+            self.selected_file_label.setText
+                        (f"Selected file: {filename}")
+
+    def toggle_plotting(self):
+        self.is_plotting = not self.is_plotting
+        self.plot_timer.stop() if not self.is_plotting else 
+                            self.plot_graph()
+        self.start_stop_button.setText('Start Plotting') if not 
+                            self.is_plotting else self.start_stop_button.setText('Stop Plotting')
+
+    def plot_graph(self):
+        self.canvas.figure.clear()
+        self.ax = self.canvas.figure.subplots()
+        self.ax.set_xlabel('Time')
+        self.ax.set_ylabel('Radiation')
+        self.ax.legend()
+        self.canvas.draw()
+        self.plot_timer.start(self.timer_spinbox.value() * 1000)
+
+    def set_led_brightness(self, channel, duty_cycle):
+        # Set the brightness of the LED
+        self.pwm.set_pwm(channel, 0, int(4096 * duty_cycle))
+
+    def update_leds(self, time):
+        for i, channel in enumerate(self.led_channels):
+            # Update the brightness of the LED
+            brightness = self.df.loc[time, channel]
+            # Normalize the brightness to a value between 0 and 1, 
+            # Considering brightness values are in the range 0-1425
+            self.set_led_brightness(i, brightness / 1425)
+
+    def plot_next_row(self):
+        if self.current_row >= len(self.df):
+            self.plot_timer.stop()
+            return
+
+        self.ax.cla()  # clear the current plot before drawing
+        for column in self.df.columns[1:]:
+            x = np.arange(self.current_row + 1)
+            y = self.df.iloc[:self.current_row + 1][column]
+            self.ax.plot(x, y)
+
+        # Add a legend based on column headers
+        self.ax.legend(self.df.columns[1:])  
+        self.ax.set_xlabel('Time [s]')
+        self.ax.set_ylabel('Radiation')
+
+        at = AnchoredText(
+            f"x+: {self.df.iloc[self.current_row]['X+']}\n"
+            f"x-: {self.df.iloc[self.current_row]['X-']}\n"
+            f"y+: {self.df.iloc[self.current_row]['Y+']}\n"
+            f"y-: {self.df.iloc[self.current_row]['Y-']}\n"
+            f"z+: {self.df.iloc[self.current_row]['Z+']}\n"
+            f"z-: {self.df.iloc[self.current_row]['Z-']}",
+            loc='upper left', frameon=True
+        )
+        at.patch.set_boxstyle("round,pad=0.3")
+        self.ax.add_artist(at)
+
+        self.canvas.draw()
+
+        # Update the LED brightness after drawing the plot.
+        self.update_leds(self.current_row)
+        self.current_row += 1
+
+\end{lstlisting}
+
+
+
+
+
+

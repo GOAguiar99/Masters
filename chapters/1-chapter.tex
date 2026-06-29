@@ -1,0 +1,143 @@
+\chapter{Background}
+\label{chap:background}
+
+This chapter provides the technical foundation for the development and analysis of deterministic communication mechanisms over IEEE~802.11 networks, especially in Vehicle-to-Everything (V2X) contexts. While traditional Wi-Fi was not designed with timing guarantees in mind, recent evolutions in the standard, along with cross-domain contributions from real-time systems and TSN, have opened paths to bounded-latency wireless communication. 
+
+We begin by surveying key features of modern IEEE~802.11 standards, particularly the PHY and MAC-layer enhancements introduced in 802.11ac/ax, including OFDMA, MU-MIMO, spatial reuse, and power-saving mechanisms such as Target Wake Time (TWT). These features shape the behavior of contention and scheduling in current Wi-Fi networks.
+
+Next, we examine the Quality-of-Service (QoS) toolbox embedded in IEEE~802.11e and later amendments. Mechanisms like Enhanced Distributed Channel Access (EDCA), Hybrid Coordination Function (HCF), and TXOP-based reservations are discussed, highlighting their trade-offs in terms of efficiency, fairness, and latency isolation.
+
+We then step into the domain of real-time scheduling theory, which forms the analytical basis for evaluating latency guarantees. We describe classical server-based models—periodic, sporadic, and aperiodic—as well as fixed-priority and EDF scheduling, focusing on their utilization bounds and schedulability conditions.
+
+Building on these foundations, we present the Time-Sensitive Networking (TSN) framework as defined by the IEEE~802.1 working group. Standards such as 802.1AS (clock synchronization), 802.1Qbv (Time-Aware Shaping), and others are explored, showing how they enable deterministic delivery over Ethernet and, by extension, inspire mechanisms for wireless domains.
+
+We then contextualize these mechanisms in the safety-critical requirements of V2X communications. URLLC targets for latency, reliability, and packet loss are summarized, along with benchmarks from both IEEE~802.11p (DSRC) and 3GPP-based C-V2X. The baseline operation of IEEE~802.11p is also presented as a reference point, emphasizing its low-latency design principles and limitations.
+
+Finally, we describe the simulation environment used in this dissertation, based on the OMNeT++/INET framework, including Wi-Fi models, mobility constraints, and PHY/MAC abstraction layers.
+
+The chapter concludes with a focused analysis of bounded latency in IEEE~802.11 networks.
+
+% % 1 ─────────── Wi-Fi foundations
+% \section{IEEE\,802.11 Fundamentals}
+%   \subsection{From 802.11ac to 802.11ax: OFDMA, MU-MIMO, Spatial Reuse}
+%   \subsection{Target Wake Time (TWT) and Beacon-driven Scheduling}
+
+% % 2 ─────────── Built-in QoS
+% \section{QoS Mechanisms in IEEE\,802.11}
+%   \subsection{Enhanced Distributed Channel Access (EDCA)}
+%   \subsection{Hybrid Coordination Function (HCF) and HCCA legacy}
+%   \subsection{TXOP Reservation and Trigger-based MU-EDCA}
+
+% % 3 ─────────── Real-time theory
+% \section{Real-Time Scheduling Theory}
+%   \subsection{Periodic, Sporadic and Aperiodic Servers (Deferrable, Sporadic, Polling)}
+%   \subsection{Fixed-Priority vs. EDF and Utilisation Bounds}
+
+% % 4 ─────────── TSN toolbox
+% \section{Time-Sensitive Networking (TSN)}
+%   \subsection{IEEE 802.1AS / PTP Clock Synchronisation}
+%   \subsection{IEEE 802.1Qbv Time-Aware Shaper (TAS)}
+%   \subsection{Credit-Based Shaper and Cyclic Queuing \& Forwarding}
+
+% % 6 ─────────── V2X constraints
+% \section{V2X Safety-Service Requirements}
+%   \subsection{Latency, Reliability and Vehicle Density Targets}
+%   \subsection{URLLC Benchmarks and Comparison with C-V2X}
+
+
+% \section{IEEE\,802.11p Foundations for V2X QoS}
+% \label{sec:rel_11p}
+
+% IEEE 802.11p—branded as Dedicated Short-Range Communications (DSRC)—was created to let vehicles broadcast time-critical safety information such as Basic Safety Messages (BSM) and Cooperative Awareness Messages (CAM).  These packets must reach nearby cars and roadside units within a few tens of milliseconds even when no infrastructure exists.  To meet that goal, 802.11p modifies legacy 802.11a in four decisive ways\cite{80211p}:
+
+% \begin{enumerate}[label=\arabic*)]
+% \item \textbf{5.9 GHz band with 10 MHz channels.}  Halving the channel width doubles the OFDM symbol duration, which in turn improves resilience to multipath and Doppler at highway speeds.
+% \item \textbf{Longer guard interval (1.6 µs).}  The extended cyclic prefix handles delay spreads up to \(\approx\!300\) ns, common in roadside reflections.
+% \item \textbf{Outside-the-Context-of-a-BSS (OCB) or “WAVE mode.”}  Frames carry a wildcard BSSID, so stations exchange data without association, authentication, or beacon overhead—crucial when contact time is measured in seconds.
+% \item \textbf{Prioritised EDCA access.}  Safety messages map to the highest access categories, pre-empting infotainment traffic during contention.
+% \end{enumerate}
+
+% Time is slotted into fixed 50 ms Synchronisation Intervals: all nodes first listen on the Control Channel for safety beacons, then hop to a Service Channel for non-safety exchanges.  Combined, these changes keep end-to-end latency under 100 ms and sustain \(\gtrsim\!90\%\) packet-delivery ratios at several-hundred-metre ranges, establishing the baseline against which newer Wi-Fi 6/7 and 5G-V2X QoS schemes are judged.
+
+
+
+% % 8 ─────────── Evaluation platform
+% \section{Simulation Framework}
+%   \subsection{OMNeT++/INET Wi-Fi Models (ac/ax)}
+%   \subsection{Channel, Mobility and PHY/MAC Limitations}
+
+% \section{Bounded Latency in IEEE~802.11}
+% \label{sec:bounded_latency}
+
+% 
+
+
+\section{End-to-End Delay in IEEE 802.11 DCF}
+\label{sec:background_dcf_delay}
+
+To understand the feasibility of bounded-latency communication over IEEE~802.11 networks, we examine the analytical delay framework presented in \emph{On the End-to-End Delay Analysis of the IEEE 802.11 Distributed Coordination Function}~\cite{vardakas2007end}, which builds upon Bianchi's saturation model for the Distributed Coordination Function (DCF). Their work decomposes the total end-to-end delay into one equation that has two distinct components:
+
+\begin{equation}
+D = Q + M
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $Q$: \textit{Queuing delay} - Time spent waiting in the transmission buffer
+    \item $M$: \textit{MAC delay} - Time from head-of-queue to successful transmission
+\end{itemize}
+
+\subsection{Key Components of Delay}
+
+\noindent\textbf{MAC Delay ($M$)} is dominated by:
+\begin{itemize}
+    \item \textit{Backoff process}: Random waiting periods using binary exponential backoff
+    \item \textit{Collision handling}: Retransmissions with increasing contention windows
+    \item \textit{Channel contention}: Frozen backoff counters during others' transmissions
+\end{itemize}
+
+\noindent\textbf{Queuing Delay ($Q$)} follows the M/G/1 model:
+\begin{equation}
+\E[Q] = \frac{\rho \E[M]}{2(1-\rho)} \left(1 + \frac{(\E[M])^2}{\Var[M]}\right)
+\end{equation}
+where:
+\begin{itemize}
+    \item $\rho$: Traffic load intensity (utilization)
+    \item $\E[M]$: Mean MAC delay
+    \item $\Var[M]$: MAC delay variance
+    \item The term $\left(1 + \frac{(\E[M])^2}{\Var[M]}\right)$ is the \textit{form factor of the holding time distribution}.
+\end{itemize}
+
+\subsection{Critical System Parameters}
+
+\begin{itemize}
+    \item \textit{Number of stations ($n$)}: Delay grows super-linearly with $n$ due to increased collisions
+    \item \textit{Access mechanism}:
+    \begin{itemize}
+        \item \textit{Basic access}: Efficient at high data rates
+        \item \textit{RTS/CTS}: Reduces collisions at low rates but adds control overhead
+    \end{itemize}
+    \item \textit{Data rate}: Higher rates reduce transmission time but control frames (ACK/RTS/CTS) remain fixed at base rate
+    \item \textit{Contention parameters}: $CW_{\min}$, $CW_{\max}$, and retry limit $m$
+\end{itemize}
+
+\subsection{Delay Characteristics}
+
+The MAC delay distribution exhibits:
+\begin{itemize}
+    \item Heavy-tailed characteristics due to exponential backoff
+    \item High variance under congestion ($\Var[M]$ increases with collision probability)
+    \item Sensitivity to initial contention window settings
+\end{itemize}
+
+\subsection{Practical Implications}
+\begin{itemize}
+    \item RTS/CTS beneficial only at low data rates (1 Mbps)
+    \item Basic access preferable at higher rates (5.5/11 Mbps)
+    \item Small networks favor smaller $CW_{\min}$ for lower latency
+    \item Large networks require larger $CW_{\min}$ to reduce collisions
+    \item Control frame overhead becomes bottleneck at high data rates
+    \item Minimizing $\Var[M]$ is crucial for predictable latency at high loads
+\end{itemize}
+
+The fundamental tension in DCF latency stems from its distributed nature: While avoiding centralized control, the random access mechanism introduces inherent latency variability that grows with network size and load.

@@ -1,0 +1,82 @@
+\chapter{Work Plan and Schedule}
+
+This chapter outlines the work plan and timeline for completing the Master's thesis titled "Deterministic QoS over Wi-Fi: Bandwidth Reservation and Coordinated Listening for V2X Communication." The research applies established real-time systems concepts, specifically polling servers and temporal partitioning, to the IEEE 802.11 MAC layer. The focus is on the practical implementation, evaluation, and analysis of this adapted approach for V2X scenarios. The proposed schedule spans from the initial research phase to the final thesis submission.
+
+\section{Research Phases and Timeline}
+
+The research plan consists of five main phases. The first three phases (Phase 1: Literature Review and Background Study, Phase 2: System Modeling and Adaptation, and Phase 3: Implementation and Simulation Development) have been successfully completed, resulting in deliverables for Chapters 1-5. 
+
+This section details the remaining phases of the work plan:
+
+\subsection{Phase 4: Extensive Evaluation and Comparative Analysis (Current Phase)}
+\begin{itemize}
+    \item \textbf{Duration:} Months 10-12
+    \item \textbf{Activities:}
+    \begin{itemize}
+        \item Execute simulations across all defined scenarios (Table 3).
+        \item Quantitative analysis of throughput, delay, and jitter for each traffic class.
+        \item Validation of theoretical delay bounds against empirical results.
+        \item Comparative performance analysis against baseline EDCA.
+        \item Parameter sensitivity analysis (e.g., impact of varying \texttt{activePeriod} and \texttt{listenPeriod}).
+    \end{itemize}
+    \item \textbf{Deliverables:} Chapter 6 of the thesis, complete results dataset.
+    \item \textbf{Status:} In progress (preliminary results obtained)
+\end{itemize}
+
+\subsection{Phase 5: Thesis Consolidation, Writing, and Defense}
+\begin{itemize}
+    \item \textbf{Duration:} Months 13-15
+    \item \textbf{Activities:}
+    \begin{itemize}
+        \item Finalize all results and analysis.
+        \item Complete thesis writing, focusing on discussion of findings and limitations.
+        \item Review, refinement, and formatting of the complete manuscript.
+        \item Preparation and rehearsal of the thesis defense presentation.
+        \item Final submission and oral defense.
+    \end{itemize}
+    \item \textbf{Deliverables:} Complete thesis document, defense presentation.
+    \item \textbf{Status:} Pending
+\end{itemize}
+
+\section{Timeline Overview}
+
+\begin{table}[h]
+\centering
+\caption{Research Timeline and Milestones}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Activity} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} \\
+& \textbf{(M1-3)} & \textbf{(M4-6)} & \textbf{(M7-9)} & \textbf{(M10-12)} & \textbf{(M13-15)} \\
+\hline
+Literature Review & \checkmark & & & & \\
+\hline
+System Modeling & & \checkmark & & & \\
+\hline
+Implementation & & & \checkmark & & \\
+\hline
+Evaluation \& Analysis & & & & \checkmark & \\
+\hline
+Thesis Writing \& Defense & & & & & \checkmark \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Achieved and Expected Outcomes}
+
+This section details the outcomes already achieved during the research and the final deliverables expected upon completion of the work plan.
+
+\subsection{Achieved Outcomes}
+To date, the following outcomes have been successfully achieved:
+\begin{itemize}
+    \item A functional implementation of a polling-inspired QoS mechanism for Wi-Fi within the OMNeT++/INET network simulator.
+    \item An accepted conference paper at the 2025 Brazilian Symposium on Computing Systems Engineering (SBESC2025) titled "Exploring Wireless Time-Sensitive Networking and QoS in V2X Scenarios".
+\end{itemize}
+
+\subsection{Expected Outcomes}
+The successful completion of the remaining phases is expected to yield the following:
+\begin{itemize}
+    \item A detailed empirical evaluation of the approach's effectiveness in providing deterministic latency for critical V2X traffic.
+    \item A clear comparative analysis quantifying the performance trade-offs against the standard EDCA mechanism.
+    \item One additional journal or conference paper to be submitted and published from the complete results of this research.
+    \item A comprehensive Master's thesis documenting the adaptation, implementation, and evaluation process and its results.
+\end{itemize}

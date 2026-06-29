@@ -1,0 +1,76 @@
+\chapter{Related Work}
+\label{sec:rel_work}
+
+Delivering deterministic Quality of Service (QoS) over shared wireless media remains a central challenge for industrial control, automotive V2X, and other latency-sensitive domains. The design space spans admission control, traffic regulation, queueing/scheduling disciplines (e.g., strict priority, CBS), time-aware gating (TAS/ATS), frame preemption, cross-domain orchestration, and PHY/MAC enhancements. While these represent diverse QoS approaches, five strands most directly inform our work on \emph{Deterministic QoS over Wi-Fi (DQ-WiFi)}. Crucially, DQ-WiFi distinguishes itself by: (i) \emph{centralizing scheduling at the AP via a lightweight FSM}, (ii) \emph{eliminating per-flow resource reservations}, (iii) \emph{leveraging context-adaptive beacon directives for V2X}, and (iv) \emph{operating without OFDMA/TWT on legacy Wi-Fi}. To position our design, we analyze representative work below, using the delay decomposition:
+\begin{equation}
+  d \;=\; d_{\text{queue}} + d_{\text{cycle}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}} \label{eq:wc-d}
+\end{equation}
+Our scheme minimizes \(d_{\text{cycle}}\) and \(d_{\text{access}}\) through collision-free \textbf{LISTENING} windows and \textbf{BLOCKED} emergency containment (Section~\ref{sec:fsm}), with formal bounds in Section~\ref{sec:analysis}.
+
+\medskip
+\noindent\textbf{Composite shapers on wired Ethernet.}
+Debnath \emph{et al.} demonstrate that combining Time-Aware Shaping (TAS), Credit-Based Shaping (CBS), and Asynchronous Traffic Shaping (ATS) on wired Ethernet materially alters worst-case delays and jitter \cite{modeling,debnath2023mixed}. These hybrid approaches require careful calibration of guard bands, credit integration rules, and preemption points along the entire path. Craciunas \emph{et al.} further reveal analytical brittleness: worst-case bounds are highly sensitive to flow regulation policies, credit accumulation semantics, and the interleaving of Time-Triggered (TT) and Audio Video Bridging (AVB) windows \cite{craciunas2016}. Network Calculus provides formal envelopes but often yields pessimistic bounds that require empirical tuning in real deployments.
+
+\emph{Relationship to DQ-WiFi.}
+Unlike these wired shaper compositions that distribute complexity across switches, DQ-WiFi \emph{collapses the scheduling hierarchy} into a single AP-resident Finite State Machine (Figure~\ref{fig:generic_fsm}). Our beacon-driven \textbf{ACTIVE}/\textbf{LISTENING} cycles (Section~\ref{sec:listening}) eliminate per-hop GCL synthesis, frame preemption hardware, and CBS/ATS configuration. The trade-off is deliberate: we sacrifice fine-grained per-flow shaping for a unified temporal partitioning that reduces Eq.~\eqref{eq:wc-d} to two tunable parameters (\(T_{\text{cycle}}\), \(T_{\text{slot}}\)). Crucially, this approach maintains compatibility with automotive-grade 802.11ac hardware while providing V2X-specific context adaptation (urban/highway/tunnel profiles) absent in generic Ethernet shapers.
+
+\medskip
+\noindent\textbf{TSN--5G convergence.}
+Frameworks like 5GTQ \cite{qosaware} and NeSTiNg \cite{nesting} study end-to-end QoS across Time-Sensitive Networking (TSN) and 5G domains. These require meticulous cross-domain QoS mapping (TSN classes \(\leftrightarrow\) 5G 5QI identifiers), cellular scheduler coordination, and multi-hop admission control. The 5GTQ experiments reveal that the gNB scheduler often dominates end-to-end jitter unless QoS classes are perfectly aligned across domains. NeSTiNg enables centralized GCL control but introduces significant orchestration overhead for mobile nodes.
+
+\emph{Relationship to DQ-WiFi.}
+We explicitly \emph{reject the convergence paradigm} for localized V2X platoons. DQ-WiFi confines deterministic traffic to a single Wi-Fi Basic Service Set (BSS) under one Deterministic QoS Controller (DQC), eliminating cellular dependencies. The AP's beacon-driven FSM provides localized timing control where \(d_{\text{cycle}}\) is bounded by \(T_A\) (active period) rather than 5G scheduling latency. This aligns with safety-critical V2X applications (e.g., collision warnings) that prioritize bounded latency over wide-area coverage. Our context-aware beacon parameters (Section~\ref{sec:topology}) further optimize cycles for vehicular dynamics—a capability impossible in generic TSN-5G frameworks.
+
+\medskip
+\noindent\textbf{Clock-relaxed or decentralized shaping.}
+The Asynchronous Time-Aware Shaper (ATAS) \cite{mate2022asynchronous} represents a radical departure from synchronized TSN by replacing global GCLs with local arrival prediction at each egress port. Using per-port state machines, ATAS predicts high-priority arrivals and closes best-effort gates just-in-time. This avoids IEEE 802.1AS synchronization but requires continuous prediction refinement and Stream Reservation Protocol (SRP) for admission control. The design assumes full-duplex switched Ethernet where prediction accuracy depends on stable traffic patterns.
+
+\emph{Relationship to DQ-WiFi.}
+DQ-WiFi adopts a \emph{middle path} between global synchronization and full decentralization. While we assume clock sync for slot alignment (Table~\ref{tab:assumptions}), our FSM transitions are \emph{reactive to beacon directives} rather than predictive. The AP centrally governs the cycle but requires zero per-flow state: stations autonomously transition based on published \verb|activePeriod| and \verb|listenPeriod| values. This eliminates ATAS's prediction inaccuracies while avoiding GCL dissemination. For V2X, this statelessness is crucial—vehicles join/leave platoons dynamically, making per-port prediction infeasible. Our \textbf{BLOCKED} state further provides emergency containment that ATAS lacks.
+
+\medskip
+\noindent\textbf{Wireless TSN over Wi-Fi.}
+Recent efforts adapt TSN concepts to wireless. Seliem \emph{et al.} combine prioritization, frame preemption, and credit-based shaping on commodity Wi-Fi \cite{seliem2023wirelesstsn}, showing feasibility for industrial IoT but requiring NIC/driver modifications. Satka \emph{et al.} experimentally quantify TSN over Wi-Fi/4G/5G variability \cite{satka2023wireless}, highlighting PHY-layer uncertainties without providing analytical bounds. Schneider \emph{et al.} pioneer Target Wake Time (TWT) alignment with TAS cycles \cite{schneider2022twt}, but depend on endpoint participation in GCL synthesis and Wi-Fi 6/7 features.
+
+\emph{Relationship to DQ-WiFi.}
+We target the scenario where 802.11ac-class hardware dominates and hardware upgrades are impractical—often the case when prototyping is expected to translate directly into physical testbeds. DQ-WiFi's FSM (Figure~\ref{fig:generic_fsm}) enforces determinism through purely behavioral mechanisms: \textbf{LISTENING} windows create contention-free zones by silencing non-critical traffic, while \textbf{BLOCKED} halts collisions during emergencies. This requires no firmware CBS, preemption support, or TWT—just MAC-layer state transitions synchronized via beacons. Our delay analysis (Section~\ref{sec:analysis}) formally bounds \(d_{\text{access}}\) through this dual protection, achieving sub-millisecond determinism on existing hardware. The context-adaptive beacon parameters further optimize cycles for vehicular mobility patterns, a dimension ignored in industrial wireless TSN.
+
+
+\medskip
+\noindent\textbf{OFDMA-based QoS in Wi-Fi 6/6E.}
+Recent advances leverage Orthogonal Frequency-Division Multiple Access (OFDMA) to enhance QoS in Wi-Fi 6/6E networks. Karthik and Palaniswamy map EDCA priorities to Resource Unit (RU) contention patterns, creating implicit prioritization through spectral allocation \cite{karthik2018}. Dovelos and Bellalta employ Lyapunov optimization for RU scheduling, achieving weighted max-min fairness under throughput constraints \cite{dovelos2020}. The most deterministic approaches come from Schneider \emph{et al.}, who combine MU-EDCA parameterization with \emph{scheduled Trigger Frames} to establish worst-case latency bounds \cite{schneider_mu_edca_2023,schneider_trigger_2024}. These designs fundamentally rely on OFDMA's ability to partition channels into RUs assigned to specific stations or traffic classes. Yamakata \emph{et al.} further demonstrate dynamic switching between OFDMA and legacy CSMA/CA to balance latency and throughput \cite{yamakata2024}.
+
+\emph{Relationship to DQ-WiFi.}
+Our design is \textbf{forward-compatible} with OFDMA: the same \textbf{LISTENING} windows could be mapped onto dedicated RUs in future implementations, creating a hybrid approach where:
+
+\begin{itemize}
+  \item The AP uses \emph{beacon directives} to establish temporal boundaries (replacing Trigger Frames)
+  \item Within each \textbf{LISTENING} window, OFDMA RUs are statically assigned to critical stations
+  \item \textbf{BLOCKED} states would suspend all RUs during emergencies
+\end{itemize}
+
+This synergy addresses OFDMA's density limitations—instead of dynamic per-frame scheduling, our cycle structure enables \emph{pre-allocated RU groups} aligned with \verb|listenPeriod|. Our context-aware parameterization (urban/highway/tunnel) would further optimize RU sizing for vehicular environments. Thus, DQ-WiFi provides both an immediate solution for legacy hardware and a migration path to Wi-Fi 6/7 without architectural changes.
+
+
+\begin{table}[ht]
+\centering
+\caption{Comparative Analysis of Related Work on Deterministic QoS}
+\label{tab:related_work_comparison}
+\begin{tabular}{p{2.2cm} p{3.2cm} p{2.8cm} p{2.8cm} p{2.8cm}}
+\hline
+\textbf{Approach} & \textbf{Key Idea} & \textbf{Requirements} & \textbf{Determinism Mechanism} & \textbf{DQ-WiFi Diff} \\
+\hline
+Composite Shapers (Wired Ethernet) & Combine TAS, CBS, ATS for hybrid shaping & Per-hop configuration, frame preemption hardware, CBS/ATS support & Network Calculus with guard bands and credit integration & Single AP FSM, no per-flow reservations, legacy Wi-Fi compatibility \\
+\hline
+TSN-5G Convergence & End-to-end QoS across TSN and 5G domains & Cross-domain QoS mapping, cellular coordination, multi-hop admission & Centralized GCL control with orchestration overhead & Localized V2X only, beacon-driven timing, no cellular dependencies \\
+\hline
+ATAS (Clock-Relaxed) & Local arrival prediction replaces global GCLs & Per-port state machines, prediction refinement, SRP protocol & Asynchronous prediction-based gating & Reactive beacon directives, zero per-flow state, BLOCKED containment \\
+\hline
+Wireless TSN over Wi-Fi & Adapt TSN concepts to commodity Wi-Fi & NIC/driver modifications, CBS/preemption/TWT support & TWT alignment with TAS cycles, GCL synthesis & Behavioral FSM only, no hardware changes, vehicular context adaptation \\
+\hline
+OFDMA-based QoS (Wi-Fi 6/6E) & RU allocation for spectral prioritization & OFDMA hardware (Wi-Fi 6/7), Trigger Frames, RU scheduling & Scheduled Trigger Frames with MU-EDCA parameterization & Forward-compatible mapping of LISTENING windows to RUs, pre-allocated RU groups \\
+\hline
+\textbf{DQ-WiFi (This Work)} & \textbf{Beacon-driven FSM with temporal partitioning} & \textbf{Clock sync, MAC-layer FSM} & \textbf{LISTENING windows + BLOCKED containment} & \textbf{Centralized AP scheduling, no per-flow reservations, V2X context adaptation} \\
+\hline
+\end{tabular}
+\end{table}

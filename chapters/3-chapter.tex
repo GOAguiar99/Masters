@@ -1,0 +1,330 @@
+\chapter{System Model}
+\label{chap:sysmodel}
+
+This chapter formalises \emph{Deterministic QoS over Wi-Fi} (DQ-WiFi),
+a framework for \textbf{bandwidth-guaranteed in
+Vehicle-to-Everything (V2X)} communication without relying on vendor-specific IEEE 802.11 amendments. DQ-WiFi integrates (i) periodic
+\textbf{bandwidth reservation} and (ii) \textbf{coordinated listening windows}
+to provide collision-free airtime for time-critical traffic (e.g. collision), while preserving
+legacy CSMA/CA for all transmissions. Reserved bandwidth may serve critical traffic or, if absent, a selected class with delay guarantees. All mechanisms operate at the MAC layer and
+can be implemented in any Wi-Fi stack.
+The chapter is organised as follows:
+
+\begin{itemize}
+  \item Section \ref{sec:assumptions}: network, traffic, and timing assumptions.
+  \item Section \ref{sec:topology}: reference topology.
+  \item Section \ref{sec:listening}: bandwidth-reservation mechanism.
+  \item Section \ref{sec:fsm}: generic finite-state machine (FSM).
+  \item Section \ref{sec:analysis}: worst-case delay bounds.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-------------------------------------------------------------------------------
+\section{Assumptions}
+\label{sec:assumptions}
+To ensure reproducibility and isolate the effects of the proposed MAC-layer mechanisms, DQ-WiFi operates under a controlled set of conditions. Table~\ref{tab:assumptions} summarizes these operating assumptions.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Operating assumptions of the system model.}
+  \label{tab:assumptions}
+  \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} X}
+    \toprule
+    \textbf{Aspect} & \textbf{Assumption}\\
+    \midrule
+    \textbf{PHY Layer} &
+      Any IEEE\,802.11 physical layer is admissible.
+      The MAC extensions do \emph{not} depend on OFDMA,
+      Trigger Frames, Target Wake Time, or vendor-specific features.
+      Hence the model is portable across 802.11 a/b/g/n/ac/ax/be chipsets.\\\addlinespace
+
+    \textbf{Radio Geometry} &
+      All stations remain within \SI{300}{m} line-of-sight of the AP, with a fixed set of nodes throughout each run. Hidden terminals are not yet modeled.\\\addlinespace
+
+    \textbf{Clock Discipline} &
+      Every node shares a common time base with \mbox{$\le\,$\SI{1}{\micro\second}}
+      error (e.g.\ IEEE 802.1AS, GNSS, or wired reference).
+      This bound guarantees unambiguous slot boundaries.\\\addlinespace
+    \textbf{Loss Model} &
+      Frames are dropped solely by (i) MAC collisions or (ii) queue
+      overflow.  Physical-layer errors caused by fading or shadowing are
+      neglected so that scheduler behaviour can be studied in isolation.\\\addlinespace
+
+
+\textbf{Mobility} &
+  Mobility is not modeled in this stage. Nodes remain static and always associated with the same AP. Handover and dynamic topology are left for final work using Veins and SUMO.\\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reference Topology}
+\label{sec:topology}
+
+The reference topology (Figure \ref{fig:sys_model}) models an infrastructure-based IEEE 802.11 network where a single roadside Access Point (AP) acts as a \textbf{Deterministic QoS Controller (DQC)} for $N$ vehicular stations (STAs). Key characteristics include:
+
+\begin{itemize}
+    \item \textbf{Beacon-Driven Coordination:} The DQC will dynamically schedules temporal phases via beacon frames containing:
+    \begin{itemize}
+        \item \textit{Listening Window Duration}: Periods for emergency broadcasts.
+        \item \textit{Active Mode Timing}: EDCA contention periods
+        \item \textit{Block Mode Duration}: Emergency frame detected; enters listening mode for the block duration.
+    \end{itemize}
+    \item \textbf{Context-Adaptive Scheduling:} Cycle parameters will adapt to environment:
+    \begin{itemize}
+        \item \textit{Urban}: Short cycles + extended BLOCKED periods
+        \item \textit{Highway}: Long cycles + minimal blocking
+        \item \textit{Tunnel}: Custom propagation-aware profiles
+    \end{itemize}
+\end{itemize}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale=.25]{Figs/Topology.png}
+  \caption{V2X simple topology with beacon-driven QoS control. Each vehicles implement state machines synchronized to AP directives.}
+  \label{fig:sys_model}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-------------------------------------------------------------------------------
+\section{Bandwidth-Reservation Mechanism}
+\label{sec:listening}
+
+DQ-WiFi reserves airtime implicitly by cycling nodes through the \textbf{ACTIVE} and \textbf{LISTENING} states of the FSM (Figure \ref{fig:generic_fsm}), avoiding per-flow TDMA. The AP publishes two beacon fields: \verb|activePeriod| (contention phase duration) and \verb|listenPeriod| (protected phase duration). Upon receiving an \texttt{EMERGENCY} frame, the AP forwards it immediately, triggering all STAs to enter the \textbf{BLOCKED} state until the emergency burst completes.
+
+% \todo[inline]{GG: aqui cabe uma figura demonstrando o mecanismo de reserva em uma transmissão por exemplo.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Generic Finite-State Machine}
+\label{sec:fsm}
+
+Medium access in DQ-WiFi follows the three-state FSM in Figure \ref{fig:generic_fsm}, executed identically by all nodes (AP/STAs) for network-wide coherence. Implementation specifics appear in Chapter \ref{chap:implementation}; this description remains technology-neutral.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=.55]{Figs/fsm_simple.pdf}
+\caption{Abstract FSM for all nodes.}
+\label{fig:generic_fsm}
+\end{figure}
+
+\subsection{State Semantics and Transitions}
+\label{subsec:states}
+
+Each node cycles through three fundamental states:
+
+\begin{enumerate}[label=(\alph*)]
+  \item \textbf{ACTIVE}: Standard CSMA/CA operation where all traffic categories contend using nominal contention parameters. Regular Critical Frame traffic is suppressed in this state to prioritize normal traffic queues (e.g., Video or Best Effort).
+  
+\item \textbf{LISTENING}: Activated after the \texttt{activePeriod} expires. In this state, only protected (high-priority) traffic categories are allowed to transmit. Lower-priority traffic may inherit the contention parameters of protected categories if explicitly enabled, enabling rapid clearance during collision-free intervals. Crucially, by temporarily silencing contention from standard traffic and narrowing access to a known set of flows, this mode acts as a bandwidth reservation window. It ensures that critical frames experience minimal contention, effectively bounding their medium access delay. This deterministic scheduling window is a core enabler of latency guarantees and will be analyzed in detail in Section\,\ref{sec:analysis}.
+
+  
+\item \textbf{BLOCKED}: Triggered exclusively by the detection of a collision-induced critical frame. Upon this event, all STAs suspend transmissions for a guard interval $\Delta_{\text{block}}$, typically set to exceed the worst-case burst duration. This reactive pause prevents collision cascades and ensures that retransmissions occur in a clean channel. Once the interval expires, the system transitions back to \textbf{LISTENING} if still within the protected window, or to \textbf{ACTIVE} otherwise.
+
+\end{enumerate}
+
+State alternation between \textbf{ACTIVE} and \textbf{LISTENING} is dynamically configurable through timing parameters, enabling adaptive bandwidth allocation. The \textbf{BLOCKED} transition provides collision containment through preemptive channel suppression.
+
+\medskip
+\noindent
+\textit{Implementation-specific method names, class diagrams, and timing charts will appear in Chapter~\ref{chap:implementation}.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Worst-Case Delay Analysis}
+% \label{sec:analysis}
+
+% End-to-end one-hop latency is decomposed into four deterministic terms:
+% %
+% \[
+% d = d_{\text{cycle}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}},
+% \]
+% %
+% where:
+% \begin{itemize}
+%     \item \(d_{\text{cycle}}\) is the cycle-misalignment waiting time,
+%     \item \(d_{\text{access}}\) is the CSMA/CA back-off inside the protected window,
+%     \item \(\tau_{\text{MAC}}\) is the on-air transmission time, and
+%     \item \(\tau_{\text{bc}}\) is the broadcast propagation delay.
+% \end{itemize}
+
+% \subsection{Emergency Frames}
+% \label{subsec:emergency}
+% High-priority emergency frames bypass the cycle queue and are transmitted immediately from any state:
+% \[
+% d_{\text{emerg}} \leq d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
+% \]
+% \begin{itemize}
+%     \item \textbf{Near-zero delay}: No cycle misalignment penalty
+%     \item \textbf{Triggers \textsc{BLOCKED}}: All STAs suspend transmissions for the guard interval \(\Delta_{\text{block}}\)
+% \end{itemize}
+
+% \subsection{Regular Critical Frames (LISTENING Mode)}
+% \label{subsec:critframes}
+% Critical frames released during \textsc{ACTIVE} may wait one full contention phase \(T_A\) before the next protected window \(T_L\):
+% \[
+% d_{\text{crit}} \leq T_A + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
+% \]
+% \begin{itemize}
+%     \item \textbf{Cycle dominance}: \(T_A\) is the worst-case waiting time
+%     \item \textbf{Contention-free LISTENING}: \(d_{\text{access}} \leq \sigma\)
+%     \item \textbf{\textsc{BLOCKED} impact}: If an emergency occurs while waiting, add \(\Delta_{\text{block}}\):
+%     \[
+%     d_{\text{crit,wc}} \leq T_A + \Delta_{\text{block}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
+%     \]
+% \end{itemize}
+
+% These closed-form bounds can be instantiated with any 802.11 PHY by substituting the appropriate aSlotTime, preamble duration, data rate, and propagation distance.
+
+%===============================================================================
+%===============================================================================
+\section{Worst-Case Delay Analysis in Critical Packets}
+\label{sec:analysis}
+
+% \todo[inline]{GG: essa análise é baseada em alguma? FAlta referência.}
+
+Building on the stochastic MAC-layer characterization from Section~\ref{sec:background_dcf_delay} and the analytical delay from~\cite{vardakas2007end}, we define worst-case delay through five key components:
+
+\begin{equation}
+d \;=\; d_{\text{queue}} + d_{\text{cycle}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}} .
+\end{equation}
+
+\begin{description}[leftmargin=0pt]
+  \item[$d_{\text{queue}}$ (queuing delay).]%
+    Time spent in transmission buffer before MAC processing. For critical traffic:
+    \[
+    d_{\text{queue}} \leq 
+    \begin{cases} 
+      T_Q & \text{(application-specific bound)} \\
+      P_{99.9}(Q) & \text{(from M/G/1 model)}
+    \end{cases}
+    \]
+    \textbf{Definition}: 
+    \begin{itemize}
+      \item $T_Q$: Application-specific maximum queuing time
+      \item $P_{99.9}(Q)$: 99.9th percentile from queuing model (Sec.~\ref{sec:background_dcf_delay})
+    \end{itemize}
+    
+  \item[$d_{\text{cycle}}$ (cycle misalignment).]%
+    Waiting time for next transmission window. Bounded by:
+    \[
+    d_{\text{cycle}} \leq T_A
+    \]
+    \textbf{Definition}: 
+    \begin{itemize}
+      \item $T_A$: Duration of active window
+      \item Represents worst-case alignment (frame arrives just after listening window ends)
+    \end{itemize}
+    
+  \item[$d_{\text{access}}$ (CSMA/CA access).]%
+    Contention delay. Bounded by:
+    \[
+    d_{\text{access}} \leq 
+    \begin{cases} 
+      \sigma \cdot CW_{\max} & \text{(loose bound)} \\
+      P_{99.9}(M) & \text{(tight bound)}
+    \end{cases}
+    \]
+    \textbf{Definitions}: 
+    \begin{itemize}
+      \item $\sigma$: Slot time duration (PHY parameter)
+      \item $CW_{\max}$: Maximum contention window size
+      \item $P_{99.9}(M)$: 99.9th percentile of MAC delay distribution
+    \end{itemize}
+    
+  \item[$\tau_{\text{MAC}}$ (on-air time).]%
+    Deterministic transmission time:
+    \[
+    \tau_{\text{MAC}} = \frac{\text{PHY preamble + header} + \text{payload}}{\text{data rate}}
+    \]
+\item[$\tau_{\text{bc}}$ (broadcast propagation).]%
+    Negligible in our model; set to zero due to sub-\SI{1}{\micro\second} scale.
+
+\end{description}
+
+%---------------------------------------------------------------------------%
+%---------------------------------------------------------------------------%
+\subsection{Emergency Frames}
+\label{subsec:emergency}
+
+Emergency traffic bypasses the transmit queue and ordinary contention yet
+remains synchronized with the cycle structure. Its latency is therefore
+
+\[
+d_{\text{emerg}} \;\le\; d_{\text{queue}} + d_{\text{access}} + \tau_{\text{MAC}} .
+\]
+\textbf{Behaviour.}
+\begin{enumerate}
+  \item \textbf{Generation.} Frame may arise during any network phase.
+  \item \textbf{Phase wait \(\le T_A\).} If it appears mid-\emph{ACTIVE}, it waits for the phase to end; if it appears in \emph{LISTENING}, it proceeds immediately.
+  \item \textbf{Single access request \((d_{\text{access}})\).} The STA issues one priority request. There is no exponential back-off and no competition with lower ACs.
+  \item \textbf{Transmission \((\tau_{\text{MAC}})\).} Bits are sent on-air at PHY rate.
+  \item \textbf{Guard interval \(\Delta_{\text{block}}\).} The coordinator blocks all other STAs, flushing any residual contention and restoring a clean medium.
+  \item \textbf{Queue time.} Negligible in practice, as emergency frames are transmitted immediately upon generation. Once triggered, the transmission is prioritized and the medium is blocked until the entire burst of packets is completed.
+\end{enumerate}
+
+With queuing eliminated and contention reduced to a single bounded handshake,
+the only variability left is the phase-alignment term \(T_A\); hence emergency
+latency remains both low and deterministic.
+
+
+
+
+%---------------------------------------------------------------------------%
+%---------------------------------------------------------------------------%
+\subsection{Regular Critical Frames}
+\label{subsec:critframes}
+
+Regular critical traffic is polled once per \emph{LISTENING} window.  
+Two deterministic latency paths exist, depending on the arrival phase.
+
+\textbf{1) Arrival inside LISTENING (\(T_L\)).}
+\[
+d_{\text{crit}} \;\le\; d_{\text{queue}} + d_{\text{access}} + \tau_{\text{MAC}} .
+\]
+\begin{itemize}
+  \item Packet is dequeued and transmitted within the same \(T_L\).
+\item \textbf{Single access request \((d_{\text{access}})\).} The STA issues a single high-priority request. There is no exponential back-off and no contention with lower ACs. The channel is lost only to emergency frames. The latency in this case will be analyzed next.
+\end{itemize}
+
+\textbf{2) Arrival inside ACTIVE (\(T_A\)).}
+\[
+d_{\text{crit}} \;\le\; d_{\text{queue}} + T_A + d_{\text{access}} + \tau_{\text{MAC}} .
+\]
+\begin{itemize}
+  \item Worst-case wait \(T_A\) until the next \(T_L\).
+  \item One contention episode \(d_{\text{access}}\) during that \(T_L\).
+\end{itemize}
+
+\textbf{3) Emergency pre-emption.}
+
+If \(k\) emergency events occur before service, each guard interval
+\(\Delta_{\text{block}}^{(i)}\) defers transmission:
+\[
+d_{\text{crit,wc}} \;\le\; d_{\text{queue}} + T_A
+          + \sum_{i=1}^{k}\Delta_{\text{block}}^{(i)}
+          + \tau_{\text{MAC}} .
+\]
+\begin{enumerate}
+  \item Packet enqueued; queue bounded by \(T_Q\) or \(P_{99.9}(Q)\).
+  \item Polled at the next \emph{LISTENING} window (or immediately if already in \(T_L\)).
+  \item Each emergency guard \(\Delta_{\text{block}}\) may defer, but does not unbound, latency.
+\end{enumerate}
+
+Appropriate sizing of \(T_L\), \(T_A\), and \(\Delta_{\text{block}}\) preserves determinism while allowing higher-priority emergency traffic to preempt low-priority traffic.
+\newpage
+\subsection{Visual Abstraction}
+
+Figure~\ref{fig:delay_anal} illustrates the phase alignment for regular critical
+and emergency arrivals. The top timeline shows how regular traffic follows the
+cycle structure, while the bottom highlights the insertion of a \emph{BLOCKED}
+interval for emergency preemption. This visual emphasises that emergency
+transmissions interrupt the cycle immediately, whereas regular frames must
+align with existing transmission opportunities.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{Figs/delay.png}
+\caption{Regular Critical and Emergency frame delay bound analysis.}
+\label{fig:delay_anal}
+\end{figure}
