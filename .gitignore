@@ -23,6 +23,9 @@ build/
 *.synctex.gz
 *.toc
 
+# Private reference PDF library (local context only)
+ref_papers/
+
 # Editor / OS
 *.swp
 *~
