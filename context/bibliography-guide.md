@@ -6,7 +6,9 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 
 | Key | Chapter / use |
 |-----|----------------|
-| `IEEE_80211p_Survey` | Intro, Background — vehicular Wi-Fi motivation |
+| `IEEE_80211p_Survey` | Intro, Background — vehicular Wi-Fi motivation (**deprecated for new text**; prefer `jiang2008ieee80211p` / `etsi_en_302663`) |
+| `jiang2008ieee80211p` | Background — reliable 802.11p / OCB reference |
+| `etsi_en_302663` | Background — ITS-G5 access layer |
 | `IEEE80211`, `IEEE80211e_2005` | Background — DCF/EDCA standards |
 | `bianchi2000DCF`, `kong2004EDCA`, `mangold2003QoS` | Background — DCF/EDCA analysis |
 | `ni2004Qiang`, `kosekszott2012What`, `Evolution_QoS_Mechanisms` | Background, Related Work — QoS surveys |
