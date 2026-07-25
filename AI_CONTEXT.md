@@ -15,13 +15,20 @@ When working here, assume:
 - `context/` holds AI-readable knowledge (summaries, glossary, bib guide)
 - `ref_papers/` contains local reference PDFs for author context only (gitignored)
 
-## Scope of current work (context pass)
+## Scope of current work
 
 This repository currently has:
-- **Ready:** AI context, bibliography merge, ref-papers pipeline, ETFA/code summaries, ETFA figures in `Figs/`
+- **Ready:** AI context, bibliography merge, ref-papers pipeline, SBESC/ETFA/code summaries, paper figures in `Figs/`, persistent `build/` workflow, Overleaf-ready sources
+- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026)
 - **Not yet rewritten:** `chapters/*.tex`, `beforetext/beforetext.tex` (still DQ-WiFi draft)
 
 When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` over editing chapter prose unless the user explicitly asks for a chapter rewrite.
+
+## Build workflow
+
+- `./compile.sh` builds into `build/main.pdf` (persistent, gitignored; do not commit artifacts)
+- `./compile.sh clean` removes `build/` and stray root artifacts
+- `.latexmkrc` is intentionally minimal so the repo compiles unchanged on Overleaf (git sync or zip upload of the tracked tree)
 
 ## Canonical sources
 
@@ -29,9 +36,12 @@ When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` 
 |------|------|
 | Simulation code | `../veins-inet-qos/veins_qos/` |
 | Code AI context | `../veins-inet-qos/veins_qos/AI_CONTEXT.md` |
-| ETFA 2026 paper (short form) | `../ETFA-2026---Paper/text.tex` |
+| SBESC 2026 paper (latest short form, **primary**) | `../SBESC-2026-Paper/text.tex` |
+| ETFA 2026 paper (secondary short form) | `../ETFA-2026---Paper/text.tex` |
 | ETFA AI context | `../ETFA-2026---Paper/AI_CONTEXT.md` |
-| Research critique | `../veins-inet-qos/review.md` |
+| DSD 2026 reviewer feedback | `../SBESC-2026-Paper/DSD2026_REVIEW.md` |
+
+The SBESC paper is the latest, post-review version of the study (same experiments and numbers as ETFA, tighter prose, expanded discussion: DoS risk, 3GPP 25 ms budget framing, sampling caveats, spatial fairness). Port from it first; read `DSD2026_REVIEW.md` before any chapter rewrite so reviewer concerns are addressed in the dissertation.
 
 Before making non-trivial technical claims, check the code and `veins_qos/AI_CONTEXT.md`.
 If LaTeX text and code disagree, prefer the active `veins_qos/` implementation.

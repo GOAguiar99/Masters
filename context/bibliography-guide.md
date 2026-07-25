@@ -18,6 +18,8 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 | `romdhani2003AdaptiveEDCF`, `SkipCCH_Garrido` | Related Work — adaptive MAC contrast |
 | `TSNCtl_Feraudo`, `PRP_MAC_Li`, `CFC_MAC_Linn`, `CV2X_Sidelink_Allocation` | Related Work — stronger alternatives |
 | `11288825` | Related Work — prior SBESC2025 work (wireless TSN precursor) |
+| `etsi_dcc_2018` | Related Work — DCC positioning (complementary, not modeled; SBESC §II-B) |
+| `ts22186` | Evaluation/Discussion — 3GPP TS 22.186 25 ms platooning latency budget (SBESC discussion) |
 | `aguiar2026_veins_qos` | Implementation, Evaluation — software artifact |
 
 ## Tier 2 — Tools (Implementation / Methodology)
@@ -26,7 +28,8 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 |-----|-----|
 | `varga2008omnetpp`, `varga2010omnetpp` | OMNeT++ simulator |
 | `inet_framework` | INET Framework |
-| `sommer2015veins` | Veins V2X coupling |
+| `veins_sommer2011` | Veins V2X coupling (canonical Sommer et al. 2011 TMC paper, cited by SBESC) |
+| `sommer2015veins` | Veins V2X coupling (later variant; prefer `veins_sommer2011`) |
 | `lopez2018sumo` | SUMO mobility |
 | `bengtsson1995uppaal` | UPPAAL verification (optional section) |
 | `inet_ideal_obstacle_loss` | Propagation model documentation |
@@ -55,6 +58,20 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 | ETFA key | Dissertation key |
 |----------|------------------|
 | `veins_inet_qos_2026` | `aguiar2026_veins_qos` |
+| (all others) | same key |
+
+## SBESC → dissertation key mapping
+
+SBESC (`../SBESC-2026-Paper/references.bib`) uses some different key names for entries the dissertation already has; do not duplicate them.
+
+| SBESC key | Dissertation key |
+|-----------|------------------|
+| `omnet1` | `varga2008omnetpp` (identical entry) |
+| `sumo_lopez2018` | `lopez2018sumo` (same paper/DOI) |
+| `veins_inet_qos_2026` | `aguiar2026_veins_qos` |
+| `veins_sommer2011` | same key (added) |
+| `etsi_dcc_2018` | same key (added; 2018 revision of TS 102 687 — `etsi_dcc_102687` is the older 2011 V1.1.1) |
+| `ts22186` | same key (added) |
 | (all others) | same key |
 
 ## Adding new references
