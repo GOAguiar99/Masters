@@ -19,8 +19,8 @@ When working here, assume:
 
 This repository currently has:
 - **Ready:** AI context, bibliography merge, ref-papers pipeline, SBESC/ETFA/code summaries, paper figures in `Figs/`, persistent `build/` workflow, Overleaf-ready sources
-- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract in `beforetext/beforetext.tex`; Introduction in `chapters/0-Intro.tex`; Background in `chapters/1-chapter.tex`
-- **Not yet rewritten:** `chapters/2-chapter.tex` through `5-chapter.tex` (still DQ-WiFi draft)
+- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`)
+- **Not yet rewritten:** `chapters/3-chapter.tex` through `5-chapter.tex` (still DQ-WiFi draft)
 
 When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` over editing chapter prose unless the user explicitly asks for a chapter rewrite.
 

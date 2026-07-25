@@ -4,7 +4,7 @@
 **Secondary short-paper source:** `../ETFA-2026---Paper/text.tex`
 **Technical source of truth:** `../veins-inet-qos/veins_qos/`
 **Reviewer feedback:** `../SBESC-2026-Paper/DSD2026_REVIEW.md` (DSD 2026 reviews — address these in the dissertation)
-**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted so far:** Resumo/Abstract (`beforetext/beforetext.tex`), Introduction (`chapters/0-Intro.tex`), and Background (`chapters/1-chapter.tex`). **Still legacy DQ-WiFi draft:** `chapters/2-chapter.tex` through `5-chapter.tex`.
+**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted so far:** Resumo/Abstract, Introduction, Background, and Related Work (`chapters/2-chapter.tex`). **Still legacy DQ-WiFi draft:** `chapters/3-chapter.tex` through `5-chapter.tex`.
 
 > Do not rewrite the remaining legacy chapters until explicitly requested. Use this roadmap and `context/` when planning future edits.
 
@@ -24,7 +24,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 |---------|------|----------------|-----------|--------------------------|
 | Intro | `chapters/0-Intro.tex` | **Done** — crash-aware QoS question, objectives, five MAC policies, contributions | SBESC §I | (removed) |
 | Background | `chapters/1-chapter.tex` | **Done** — 802.11p, DCF, EDCA, DSCP/EF path, multicast limits, DCC contrast, simulation toolchain (plan: `context/background-chapter-plan.md`) | SBESC §II-A + ETFA §Background + `context/reference-notes.md` | (removed) |
-| Related Work | `chapters/2-chapter.tex` | TSNCtl/PRP-MAC/CFC-MAC/NR-V2X contrast, backoff freezing, SkipCCH, adaptive EDCA + DCC positioning; short TSN/OFDMA subsection | SBESC §II-B | TSN-primary narrative |
+| Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | Highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller | SBESC §III | Reserva, TAS gates, analytical TSN delay |
 | Implementation | `chapters/4-chapter.tex` (part 1) | OMNeT++ 6.1 / INET 4.5.2 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table | SBESC §III-C | UdpCritApp, EdcaFsmController, classifier PNGs |
 | Evaluation | `chapters/4-chapter.tex` (part 2) or split | Light sweep + heavy stress tables, fig_06 CDF, full discussion (see below) | SBESC §IV | Legacy noqos/edca/reserva plots |
@@ -83,7 +83,7 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 1. ~~Abstract + Resumo (beforetext)~~ — done (leads with ~49% VO P95 reduction and protection-versus-cost frontier)
 2. ~~Introduction (Ch0)~~ — done (SBESC §I + research question, scope, objectives)
 3. ~~Background (Ch1)~~ — done (full rewrite; figure placeholders pending artwork)
-4. Related Work (Ch2) — port SBESC §II-B (includes adaptive EDCA + DCC positioning) + shorten TSN contrast
+4. ~~Related Work (Ch2)~~ — done (stronger MACs, dynamics, adaptive EDCA/DCC, short TSN/OFDMA)
 5. System Model (Ch3) — port SBESC §III-A/B
 6. Implementation + Evaluation (Ch4) — port SBESC §III-C + §IV including all discussion paragraphs
 7. Work plan + conclusion (Ch5)
