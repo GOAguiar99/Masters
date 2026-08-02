@@ -79,9 +79,15 @@ Default behavior:
 ## UFSC / abnTeX2 constraints
 
 - Document class: `abntex2` with `\addbibresource{aftertext/references.bib}`
-- Portuguese **Resumo** + English **Abstract** in `beforetext/beforetext.tex`
+- **Format:** ABNT float layout (caption above, `\fonte` below) with **English** structural labels via `\selectlanguage{english}` (Figure, Table, Source, List of Figures/Tables, References, Contents)
+- Cover metadata in English (`Master's Thesis`, Supervisor, English preâmbulo); title in English
+- Portuguese **Resumo** (wrapped in `otherlanguage*{brazil}`) + English **Abstract**
 - Main chapters in English
 - Citation commands: `\cite{}`, `\textcite{}`, `\parencite{}` (biblatex/abnt)
+- Cross-refs: prefer `\autoref{...}` / `\Autoref{a,b}`
+- **Figures/tables:** caption **above**; mandatory `\fonte{...}` **below** (prints **Source:** in English); `\caption{\label{...}...}`; placement `[htb]`; tables use `\ABNTEXfontereduzida`. Author-made: `\fonte{Prepared by the author.}`; adapted: `\fonte{Adapted from \textcite{...}.}`
+- Pre-textual: capa → folha de rosto → ficha → folha de aprovação → resumos → lists (figures/tables/abbreviations/symbols) → contents (dedication/acknowledgements/epigraph optional)
+- Acronyms/symbols: declare in `main.tex` with `\newacronym[user1=\emph{PT}]{key}{SHORT}{English long}`; use `\gls{key}` / `\glspl{key}` in chapters (first use expands in English; Portuguese appears only in the list). Symbols via `\simbololista` + `\gls`.
 
 ## Reference-paper workflow
 

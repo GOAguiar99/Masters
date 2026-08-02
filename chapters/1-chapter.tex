@@ -2,17 +2,17 @@
 \label{chap:background}
 
 This chapter develops the technical foundation required to understand crash-aware traffic prioritization over decentralized vehicular Wi-Fi.
-The study evaluated later in this dissertation compares five Medium Access Control (MAC) policies on a shared IEEE~802.11p channel: a non-differentiated Distributed Coordination Function (DCF) baseline, Enhanced Distributed Channel Access (EDCA) with an explicit Differentiated Services Code Point (DSCP) to Voice mapping, and three adaptive extensions that temporarily suppress competing Best Effort (BE) traffic while crash alerts are active.
-Those policies sit on top of a long standards path that runs from application criticality, through IP-layer marking, through 802.11 user priorities and EDCA queues, down to a contention-based radio that offers neither reserved slots nor link-layer acknowledgements for group-addressed frames.
+The study evaluated later in this dissertation compares five \gls{mac} policies on a shared IEEE~802.11p channel: a non-differentiated \gls{dcf} baseline, \gls{edca} with an explicit \gls{dscp} to Voice mapping, and three adaptive extensions that temporarily suppress competing \gls{be} traffic while crash alerts are active.
+Those policies sit on top of a long standards path that runs from application criticality, through \gls{ip}-layer marking, through 802.11 user priorities and EDCA queues, down to a contention-based radio that offers neither reserved slots nor link-layer acknowledgements for group-addressed frames.
 The remainder of the dissertation presupposes that this path---and its failure modes under load---is understood in detail.
 
 The chapter is organized as follows.
 Section~\ref{sec:bg:v2x} introduces vehicular safety communication and the latency budgets that motivate the work.
 Section~\ref{sec:bg:dcf} presents IEEE~802.11 DCF as the non-differentiated baseline.
 Section~\ref{sec:bg:edca} develops EDCA, its statistical nature, and the later QoS amendments that still leave group-addressed traffic poorly served.
-Section~\ref{sec:bg:11p} specializes these mechanisms to IEEE~802.11p Outside the Context of a BSS (OCB) operation and contrasts Decentralized Congestion Control (DCC) with event-triggered suppression.
+Section~\ref{sec:bg:11p} specializes these mechanisms to IEEE~802.11p \gls{ocb} operation and contrasts \gls{dcc} with event-triggered suppression.
 Section~\ref{sec:bg:dscp} traces the full DSCP-to-air-interface path that the study's classifier implements.
-Section~\ref{sec:bg:sim} reviews the OMNeT++/Veins/INET and SUMO toolchain.
+Section~\ref{sec:bg:sim} reviews the \gls{omnet}/Veins/\gls{inet} and SUMO toolchain.
 Section~\ref{sec:bg:summary} summarizes the three background pillars that frame the research problem.
 
 Throughout, the chapter attributes normative force only to Standards-Track documents (notably RFCs~2474, 3246, and 8325) and treats Informational RFCs (2475, 4594, 9119) as architecture, guidelines, or operational analysis.
@@ -23,10 +23,10 @@ No deterministic or worst-case latency claims are made for contention-based IEEE
 \label{sec:bg:v2x}
 % ----------------------------------------------------------------------
 
-Cooperative Intelligent Transportation Systems (ITS) rely on wireless dissemination of safety-relevant information among nearby vehicles, roadside equipment, and, in some architectures, network backends.
-Vehicle-to-Everything (V2X) denotes this family of exchanges and subsumes vehicle-to-vehicle (V2V), vehicle-to-infrastructure (V2I), vehicle-to-pedestrian (V2P), and vehicle-to-network (V2N) patterns.
+Cooperative \gls{its} rely on wireless dissemination of safety-relevant information among nearby vehicles, roadside equipment, and, in some architectures, network backends.
+\gls{v2x} denotes this family of exchanges and subsumes \gls{v2v}, vehicle-to-infrastructure (V2I), vehicle-to-pedestrian (V2P), and vehicle-to-network (V2N) patterns.
 Among the messages that circulate in such systems, two operational classes dominate the design of the lower layers.
-\emph{Periodic awareness} traffic---for example Cooperative Awareness Messages (CAMs) in European ITS-G5 or Basic Safety Messages (BSMs) in Dedicated Short-Range Communications (DSRC)---is emitted continuously by every equipped station so that neighbors can maintain a local dynamic map.
+\emph{Periodic awareness} traffic---for example Cooperative Awareness Messages (CAMs) in \gls{etsi} ITS-G5 or \glspl{bsm} in Dedicated Short-Range Communications (DSRC)---is emitted continuously by every equipped station so that neighbors can maintain a local dynamic map.
 \emph{Event-driven safety} traffic---crash notifications, hard-braking warnings, and related Decentralized Environmental Notification Messages (DENMs)---is rare, short-lived, and high-impact: its usefulness collapses if delivery is postponed until after the surrounding vehicles have already reacted, or failed to react, on the basis of their own sensors.
 
 These two classes compete for the same wireless medium.
@@ -37,75 +37,76 @@ As discussed in Section~\ref{sec:bg:multicast}, however, group-addressed IEEE~80
 \subsection{Quantified latency and reliability budgets}
 \label{sec:bg:budgets}
 
-Service requirements for V2X scenarios are stated quantitatively in 3GPP TS~22.186~\cite{ts22186}.
+Service requirements for V2X scenarios are stated quantitatively by \textcite{ts22186} in TS~22.186.
 Table~5.2-1 of that specification lists performance targets for vehicle platooning as a function of the degree of automation.
 Requirement~[R.5.2-004] specifies, for the lowest degree of automation, an end-to-end latency of \SI{25}{\milli\second}, a reliability of 90\%, a message size of 300--400~bytes, and a rate of 30~messages per second.
 Harsher rows in the same table raise reliability and tighten latency as automation increases; the \SI{25}{\milli\second} figure is therefore a conservative, widely cited reference bound rather than the most stringent requirement in the document.
-The broader 5G service-requirements specification TS~22.261~\cite{3gpp_ts_22_261_r18} defines Ultra-Reliable Low-Latency Communication (URLLC) classes in general terms but defers the concrete V2X Key Performance Indicators (KPIs) to TS~22.186; citing the latter for platooning and related scenarios is therefore the accurate practice.
+The broader 5G service-requirements specification of \textcite{3gpp_ts_22_261_r18} (TS~22.261) defines \gls{urllc} classes in general terms but defers the concrete V2X \glspl{kpi} to TS~22.186; citing the latter for platooning and related scenarios is therefore the accurate practice.
 
 These budgets are application-layer end-to-end targets.
 They do not imply that a MAC-layer study must meet them, nor that a sub-millisecond MAC delay constitutes a safety outcome.
-They do, however, establish the order of magnitude against which MAC-level tail shaping is later interpreted: when absolute Voice (VO) delays remain far below \SI{25}{\milli\second}, the evaluation claims headroom under synthetic saturation rather than a proven crash-mitigation benefit.
+They do, however, establish the order of magnitude against which MAC-level tail shaping is later interpreted: when absolute \gls{vo} delays remain far below \SI{25}{\milli\second}, the evaluation claims headroom under synthetic saturation rather than a proven crash-mitigation benefit.
 That framing is returned to in the evaluation discussion; the present chapter needs only the budget itself.
 
 \subsection{IEEE~802.11p as the target access technology}
 \label{sec:bg:11p-position}
 
-IEEE~802.11p adapts IEEE~802.11 for vehicular operation in the \SI{5.9}{\giga\hertz} band with \SI{10}{\mega\hertz} channelization and introduces OCB mode, in which stations exchange frames without association, authentication, or a Basic Service Set (BSS) context~\cite{jiang2008ieee80211p,IEEE80211}.
+IEEE~802.11p adapts IEEE~802.11 for vehicular operation in the \SI{5.9}{\giga\hertz} band with \SI{10}{\mega\hertz} channelization and introduces \gls{ocb} mode, in which stations exchange frames without association, authentication, or a \gls{bss} context~\cite{jiang2008ieee80211p,IEEE80211}.
 The European ITS-G5 access layer builds on the same physical and MAC foundations for operation in the \SI{5}{\giga\hertz} ITS band~\cite{etsi_en_302663}.
 The decisive property for this dissertation is \emph{decentralized access}: there is no access point, roadside unit, or cellular scheduler that can reserve transmission opportunities for urgent traffic.
 Every station contends for a shared channel under the rules of DCF or EDCA, and any prioritization of crash alerts must therefore be realized locally, from mechanisms that a node can apply without clock synchronization or infrastructure support.
-Chapter~\ref{sec:rel_work} surveys stronger alternatives---Time-Sensitive Networking (TSN)-inspired slotting, cooperative Time Division Multiple Access (TDMA), preemptive MAC designs, and cellular sidelink allocation---that relax this constraint; the background that follows explains why, within the constraint, EDCA alone is necessary but not sufficient.
+\autoref{sec:rel_work} surveys stronger alternatives---\gls{tsn}-inspired slotting, cooperative \gls{tdma}, preemptive MAC designs, and cellular sidelink allocation---that relax this constraint; the background that follows explains why, within the constraint, EDCA alone is necessary but not sufficient.
 
 % ----------------------------------------------------------------------
 \section{IEEE~802.11 Distributed Channel Access}
 \label{sec:bg:dcf}
 % ----------------------------------------------------------------------
 
-The Distributed Coordination Function is the fundamental contention-based access method of IEEE~802.11~\cite{IEEE80211}.
+The \gls{dcf} is the fundamental contention-based access method of IEEE~802.11~\cite{IEEE80211}.
 It is also the non-differentiated baseline of this study: the \texttt{plain} policy runs a single pending queue with no DSCP-to-access-category classifier and no EDCA parameter differentiation.
 Understanding DCF in detail is therefore prerequisite both to reading the evaluation baselines and to appreciating what EDCA adds---and what it still fails to guarantee.
 
 \subsection{Carrier Sense Multiple Access with Collision Avoidance}
 \label{sec:bg:csma}
 
-DCF implements Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA) with a binary slotted exponential backoff~\cite{bianchi2000DCF,IEEE80211}.
+DCF implements \gls{csma} with a \gls{beb}~\cite{bianchi2000DCF,IEEE80211}.
 A station that has a frame to transmit first senses the medium.
-If the channel has been idle for a Distributed Interframe Space (DIFS), the station may transmit immediately.
-If the channel is busy, or becomes busy during the DIFS, the station defers: it draws a random backoff counter uniformly from the integer interval $[0, W-1]$, where $W$ is the current Contention Window (CW), and begins counting down only while the medium is sensed idle.
+If the channel has been idle for a \gls{difs}, the station may transmit immediately.
+If the channel is busy, or becomes busy during the DIFS, the station defers: it draws a random backoff counter uniformly from the integer interval $[0, \gls{W}-1]$, where $W$ is the current \gls{cw}, and begins counting down only while the medium is sensed idle.
 The countdown is \emph{frozen} whenever a transmission is detected on the channel and is resumed only after the channel has again been idle for a DIFS~\cite{bianchi2000DCF}.
 When the counter reaches zero, the station transmits.
-For unicast frames, a positive acknowledgement (ACK) confirms success; the absence of an ACK within an ACK Timeout triggers a retransmission after a new backoff drawn from a doubled contention window, up to a configured maximum.
-The contention window starts at $\mathrm{CW}_{\min}$ and doubles after each unsuccessful transmission until it reaches $\mathrm{CW}_{\max}$; after a successful transmission, or after the retry limit is exhausted, it is reset.
-Figure~\ref{fig:bg:dcf-backoff} illustrates a two-station contention episode, including a freeze interval caused by an overlapping transmission.
+For unicast frames, a positive \gls{ack} confirms success; the absence of an ACK within an ACK Timeout triggers a retransmission after a new backoff drawn from a doubled contention window, up to a configured maximum.
+The contention window starts at $\gls{cwmin}$ and doubles after each unsuccessful transmission until it reaches $\gls{cwmax}$; after a successful transmission, or after the retry limit is exhausted, it is reset.
+\autoref{fig:bg:dcf-backoff} illustrates a two-station contention episode, including a freeze interval caused by an overlapping transmission.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: DCF CSMA/CA backoff timeline]}\\[0.4em]
-  \textit{Two stations contend after a busy medium. Show DIFS, random backoff countdown, freeze during an overlapping transmission, resume after a further DIFS, and successful transmission with ACK. Annotate $\mathrm{CW}_{\min}$, backoff slots, and the freeze interval.}
-  \vspace{1.8cm}}}
-  \caption{Timeline of the IEEE~802.11 DCF backoff process, including carrier sensing, DIFS deferral, slotted countdown, and backoff freezing while the medium is busy.}
-  \label{fig:bg:dcf-backoff}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:dcf-backoff}Timeline of the IEEE~802.11 DCF backoff process, including carrier sensing, DIFS deferral, slotted countdown, and backoff freezing while the medium is busy.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: DCF CSMA/CA backoff timeline]}\\[0.4em]
+		  \textit{Two stations contend after a busy medium. Show DIFS, random backoff countdown, freeze during an overlapping transmission, resume after a further DIFS, and successful transmission with ACK. Annotate $\mathrm{CW}_{\min}$, backoff slots, and the freeze interval.}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 Two properties of this process are central to the later argument.
 First, \emph{backoff freezing is not an anomaly}: it is part of baseline DCF and becomes the dominant contribution to access delay when the channel is repeatedly busy~\cite{bianchi2000DCF,Continuous_Backoff_Freezing_Li}.
 Second, every station that runs a single DCF queue with the same $\mathrm{CW}_{\min}$ and $\mathrm{CW}_{\max}$ has the same medium-access priority, regardless of the criticality of its traffic~\cite{mangold2003QoS,RFC8325_WiFi_QoS}.
-DCF therefore provides no Quality-of-Service (QoS) differentiation whatsoever.
+DCF therefore provides no \gls{qos} differentiation whatsoever.
 
 \subsection{Saturation throughput and the cost of contention}
 \label{sec:bg:saturation}
 
-Bianchi's classical analysis models the per-station backoff process under saturation---every station always has a packet ready to send---as a two-dimensional discrete-time Markov chain whose state is the pair $(\text{backoff stage}, \text{backoff counter})$~\cite{bianchi2000DCF}.
-Under the approximation that each transmission attempt collides with a constant conditional probability $p$ independent of retransmission history, the chain yields a nonlinear system in $p$ and in the per-slot transmission probability $\tau$, with a unique solution.
+Bianchi's classical analysis models the per-station backoff process under saturation---every station always has a packet ready to send---as a two-dimensional discrete-time Markov chain whose state is the pair $(\text{backoff stage}, \text{backoff counter})$, as developed by~\textcite{bianchi2000DCF}.
+Under the approximation that each transmission attempt collides with a constant conditional probability \gls{pcol} independent of retransmission history, the chain yields a nonlinear system in $p$ and in the per-slot transmission probability \gls{tau}, with a unique solution.
 From $\tau$ and $p$ one obtains the saturation throughput of the Basic Access and Request-to-Send/Clear-to-Send (RTS/CTS) modes.
 
 The qualitative consequences for this dissertation do not require reproducing the full derivation.
 Three results matter.
 First, saturation throughput is the maximum load the system can carry in stable conditions; beyond that point queues grow and delay becomes unbounded in the offered-load sense~\cite{bianchi2000DCF}.
 Second, under Basic Access---the mode relevant to short safety frames and to group-addressed traffic that cannot use RTS/CTS---throughput degrades as the number of contending stations grows, because collisions waste large channel intervals on full-length frames~\cite{bianchi2000DCF}.
-Third, the contention-window parameters that maximize throughput depend on the network size, yet $\mathrm{CW}_{\min}$ and the maximum backoff stage $m$ are fixed by the standard; in some regimes the resulting throughput is therefore ``significantly lower than the maximum achievable,'' and adaptive tuning of $W$ and $m$ is a natural response~\cite{bianchi2000DCF}.
+Third, the contention-window parameters that maximize throughput depend on the network size, yet $\mathrm{CW}_{\min}$ and the maximum backoff stage \gls{mback} are fixed by the standard; in some regimes the resulting throughput is therefore ``significantly lower than the maximum achievable,'' and adaptive tuning of $W$ and $m$ is a natural response~\cite{bianchi2000DCF}.
 That observation is the earliest conceptual hook for the adaptive MAC profiles evaluated later: when fixed contention parameters cannot track the operating point, local, load- or event-driven adaptation becomes an engineering alternative.
 
 \subsection{Implications for the \texttt{plain} baseline}
@@ -121,51 +122,54 @@ That sampling caveat is stated explicitly in the evaluation discussion; the back
 \label{sec:bg:edca}
 % ----------------------------------------------------------------------
 
-IEEE~802.11e introduced the Hybrid Coordination Function (HCF) as the QoS-aware MAC coordination function, combining contention-based Enhanced Distributed Channel Access with the polling-based HCF Controlled Channel Access (HCCA)~\cite{IEEE80211e_2005,mangold2003QoS,IEEE80211}.
-HCCA can bound delay under a single Hybrid Coordinator by granting Transmission Opportunities (TXOPs) according to a schedule, but it requires a coordinator, does not solve inter-cell interference without additional coordination, and is not available in fully decentralized OCB operation~\cite{mangold2003QoS,kosekszott2012What}.
+IEEE~802.11e introduced the \gls{hcf} as the QoS-aware MAC coordination function, combining contention-based \gls{edca} with the polling-based \gls{hcca}~\cite{IEEE80211e_2005,mangold2003QoS,IEEE80211}.
+HCCA can bound delay under a single Hybrid Coordinator by granting \gls{txop} according to a schedule, but it requires a coordinator, does not solve inter-cell interference without additional coordination, and is not available in fully decentralized OCB operation~\cite{mangold2003QoS,kosekszott2012What}.
 This dissertation therefore focuses exclusively on EDCA, which is the mechanism underlying the \texttt{edca\_only} policy and the three adaptive extensions.
 
 \subsection{EDCA access categories and contention parameters}
 \label{sec:bg:edca-mech}
 
-EDCA maintains four access categories---Voice (\texttt{AC\_VO}), Video (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and Background (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.
-Each category has its own transmit queue and its own set of contention parameters: an Arbitration Interframe Space Number (AIFSN), a minimum and maximum contention window ($\mathrm{CW}_{\min}[\mathrm{AC}]$, $\mathrm{CW}_{\max}[\mathrm{AC}]$), and an optional TXOP limit.
+EDCA maintains four \glspl{ac}---Voice (\texttt{AC\_VO}), \gls{vi} (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and Background (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.
+Each category has its own transmit queue and its own set of contention parameters: an \gls{aifsn}, a minimum and maximum contention window ($\mathrm{CW}_{\min}[\mathrm{AC}]$, $\mathrm{CW}_{\max}[\mathrm{AC}]$), and an optional TXOP limit.
 The Arbitration Interframe Space of category $i$ is
 \begin{equation}
-  \mathrm{AIFS}[i] = \mathrm{SIFS} + \mathrm{AIFSN}[i]\cdot a\mathrm{SlotTime},
+  \gls{aifs_i} = \gls{sifs_sym} + \gls{aifsn_i}\cdot \gls{slot},
 \end{equation}
 with $\mathrm{AIFSN}[i] \ge 2$ in the standardized parameter sets~\cite{mangold2003QoS,RFC8325_WiFi_QoS}.
 A smaller AIFSN, a smaller $\mathrm{CW}_{\min}$, and a smaller $\mathrm{CW}_{\max}$ all raise the probability that the corresponding category wins a contention episode.
 When two local categories expire their backoff counters in the same slot, an \emph{internal} (virtual) collision is resolved in favor of the higher-priority category; the lower-priority category behaves as if an external collision had occurred and doubles its contention window~\cite{kong2004EDCA,mangold2003QoS}.
-Figure~\ref{fig:bg:edca-queues} summarizes the four-queue architecture and the mapping from IEEE~802.1D user priorities into access categories.
+\autoref{fig:bg:edca-queues} summarizes the four-queue architecture and the mapping from IEEE~802.1D user priorities into access categories.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: EDCA four-queue architecture]}\\[0.4em]
-  \textit{Show MSDUs entering four AC queues (VO, VI, BE, BK), each with its own AIFSN/CW/TXOP backoff entity, a virtual-collision resolver favoring higher ACs, and a single transmission onto the shared medium. Annotate the UP$\rightarrow$AC mapping (UP~6/7$\rightarrow$VO, UP~4/5$\rightarrow$VI, UP~0/3$\rightarrow$BE, UP~1/2$\rightarrow$BK).}
-  \vspace{1.8cm}}}
-  \caption{EDCA architecture: four parallel access-category queues with independent backoff entities, virtual-collision resolution, and the canonical user-priority to access-category mapping.}
-  \label{fig:bg:edca-queues}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:edca-queues}EDCA architecture: four parallel access-category queues with independent backoff entities, virtual-collision resolution, and the canonical user-priority to access-category mapping.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: EDCA four-queue architecture]}\\[0.4em]
+		  \textit{Show \glspl{msdu} entering four AC queues (VO, VI, BE, BK), each with its own AIFSN/CW/TXOP backoff entity, a virtual-collision resolver favoring higher ACs, and a single transmission onto the shared medium. Annotate the \gls{up}$\rightarrow$AC mapping (UP~6/7$\rightarrow$VO, UP~4/5$\rightarrow$VI, UP~0/3$\rightarrow$BE, UP~1/2$\rightarrow$BK).}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
-Table~\ref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by RFC~8325 for infrastructure WLANs; the numerical defaults used in the present study's INET configuration are stated in the System Model chapter and need not coincide with every published draft-era table~\cite{RFC8325_WiFi_QoS}.
+\autoref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by \gls{rfc}~8325 for infrastructure WLANs; the numerical defaults used in the present study's INET configuration are stated in the System Model chapter and need not coincide with every published draft-era table~\cite{RFC8325_WiFi_QoS}.
 The essential ordering is stable across revisions: \texttt{AC\_VO} is the most aggressive category, followed by \texttt{AC\_VI}, \texttt{AC\_BE}, and \texttt{AC\_BK}.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in the System Model.}
-  \label{tab:bg:edca-params}
-  \begin{tabular}{@{}llccc@{}}
-    \toprule
-    Access category & Typical UP & Relative AIFSN & Relative $\mathrm{CW}_{\min}$ & Relative $\mathrm{CW}_{\max}$ \\
-    \midrule
-    \texttt{AC\_VO} & 6, 7 & shortest & smallest & smallest \\
-    \texttt{AC\_VI} & 4, 5 & short    & small    & small \\
-    \texttt{AC\_BE} & 0, 3 & medium   & large    & large \\
-    \texttt{AC\_BK} & 1, 2 & longest  & large    & large \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:edca-params}Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in the System Model.}
+	\begin{center}
+		\begin{tabular}{@{}llccc@{}}
+		    \toprule
+		    Access category & Typical UP & Relative AIFSN & Relative $\mathrm{CW}_{\min}$ & Relative $\mathrm{CW}_{\max}$ \\
+		    \midrule
+		    \texttt{AC\_VO} & 6, 7 & shortest & smallest & smallest \\
+		    \texttt{AC\_VI} & 4, 5 & short    & small    & small \\
+		    \texttt{AC\_BE} & 0, 3 & medium   & large    & large \\
+		    \texttt{AC\_BK} & 1, 2 & longest  & large    & large \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC8325_WiFi_QoS}.}
 \end{table}
 
 Kong et al.\ provide an analytical model of EDCA that accounts for virtual collisions, heterogeneous AIFS values, and heterogeneous contention windows, and that yields throughput and mean access delay per category~\cite{kong2004EDCA}.
@@ -203,7 +207,7 @@ Related Work develops the contrast with adaptive EDCA, with DCC, and with synchr
 \label{sec:bg:80211aa}
 
 IEEE~802.11aa and IEEE~802.11ae later extended the QoS toolkit for infrastructure WLANs~\cite{kosekszott2012What}.
-802.11aa introduced the Group Addressed Transmission Service (GATS), including GroupCast with Retries (GCR) Unsolicited Retry and GCR Block Ack, to raise the delivery probability of group-addressed frames that the base standard transmits without retries.
+802.11aa introduced the Group Addressed Transmission Service (GATS), including GroupCast with Retries (\gls{gcr}) Unsolicited Retry and GCR Block Ack, to raise the delivery probability of group-addressed frames that the base standard transmits without retries.
 It also added intra-AC queue splitting for Voice and Video and a Stream Classification Service (SCS) that can map streams to queues independently of the 802.1D user-priority table.
 802.11ae introduced the QoS Management Frame (QMF) policy so that management frames need not always consume the highest access category.
 
@@ -217,25 +221,26 @@ The crash-alert multicast of this dissertation therefore inherits the unresolved
 \label{sec:bg:11p}
 % ----------------------------------------------------------------------
 
-The mechanisms of Sections~\ref{sec:bg:dcf}--\ref{sec:bg:edca} are realized, in this work, on an IEEE~802.11p-like radio operating in OCB mode.
-This section specializes the background to that environment and introduces Decentralized Congestion Control as the standardized, always-on counterpart to the study's event-triggered suppression.
+The mechanisms of Sections~\ref{sec:bg:dcf}--\ref{sec:bg:edca} are realized, in this work, on an IEEE~802.11p-like radio operating in \gls{ocb} mode.
+This section specializes the background to that environment and introduces \gls{dcc} as the standardized, always-on counterpart to the study's event-triggered suppression.
 
 \subsection{OCB mode, channelization, and multi-channel context}
 \label{sec:bg:ocb}
 
 IEEE~802.11p was designed so that vehicles can exchange frames during brief contact intervals without the overhead of joining a BSS~\cite{jiang2008ieee80211p}.
-In OCB mode, frames carry a wildcard BSSID; stations neither associate nor authenticate with an access point; and management procedures that assume a BSS are omitted~\cite{IEEE80211}.
+in \gls{ocb} mode, frames carry a wildcard BSSID; stations neither associate nor authenticate with an access point; and management procedures that assume a BSS are omitted~\cite{IEEE80211}.
 The physical layer typically uses \SI{10}{\mega\hertz} OFDM channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
-Figure~\ref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
+\autoref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: BSS infrastructure Wi-Fi vs.\ 802.11p OCB]}\\[0.4em]
-  \textit{Left: stations associated to an AP inside a BSS, with uplink/downlink and AP-coordinated services. Right: vehicles in OCB mode exchanging direct V2V frames on a shared 5.9~GHz / 10~MHz channel with no association, no AP, and no central scheduler. Annotate ``wildcard BSSID'' and ``distributed contention only.''}
-  \vspace{1.8cm}}}
-  \caption{Comparison of infrastructure BSS operation and IEEE~802.11p Outside the Context of a BSS (OCB) vehicular operation. Prioritization in OCB must be realized locally; AP-centric QoS mechanisms do not apply.}
-  \label{fig:bg:ocb}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:ocb}Comparison of infrastructure BSS operation and IEEE~802.11p Outside the Context of a BSS (OCB) vehicular operation. Prioritization in OCB must be realized locally; AP-centric QoS mechanisms do not apply.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: BSS infrastructure Wi-Fi vs.\ 802.11p OCB]}\\[0.4em]
+		  \textit{Left: stations associated to an AP inside a BSS, with uplink/downlink and AP-coordinated services. Right: vehicles in \gls{ocb} mode exchanging direct V2V frames on a shared 5.9~GHz / 10~MHz channel with no association, no AP, and no central scheduler. Annotate ``wildcard BSSID'' and ``distributed contention only.''}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 Above the 802.11p MAC, the IEEE~1609.4 multi-channel specification organizes time into synchronization intervals that alternate a Control Channel interval with a Service Channel interval, so that safety and non-safety traffic can be separated in frequency and time~\cite{ieee1609_4}.
@@ -258,8 +263,8 @@ Their absolute numerical delays correspond to a lightly loaded configuration and
 \subsection{Decentralized Congestion Control}
 \label{sec:bg:dcc}
 
-European ITS-G5 deployments complement EDCA with Decentralized Congestion Control at the access layer~\cite{etsi_dcc_2018}.
-DCC measures the Channel Busy Ratio (CBR)---the fraction of time the medium is sensed busy---and applies transmit power control (TPC), transmit rate control (TRC), and DCC access control so that each station's contribution to channel load remains within a target operating region.
+European ITS-G5 deployments complement EDCA with \gls{dcc} at the access layer~\cite{etsi_dcc_2018}.
+DCC measures the \gls{cbr}---the fraction of time the medium is sensed busy---and applies \gls{tpc}, \gls{trc}, and DCC access control so that each station's contribution to channel load remains within a target operating region.
 Both reactive and adaptive algorithm variants are defined; in all cases the control loop acts \emph{continuously} on a station's \emph{aggregate} offered load, across traffic classes, as a function of local (and optionally shared) CBR~\cite{etsi_dcc_2018}.
 
 DCC and the adaptive profiles of this dissertation therefore address related but distinct problems.
@@ -274,23 +279,24 @@ The evaluation deliberately does not enable DCC, so that the protection-versus-c
 % ----------------------------------------------------------------------
 
 Application criticality reaches the wireless MAC only through an explicit cross-layer mapping when IP-layer marking is used.
-This section traces that mapping from the Differentiated Services architecture, through the Expedited Forwarding per-hop behavior and DSCP~46, through the DSCP-to-user-priority-to-access-category path standardized for Wi-Fi, to the multicast limitations that still apply after a correct mapping.
+This section traces that mapping from the \gls{diffserv}, through the \gls{ef} per-hop behavior and DSCP~46, through the DSCP-to-user-priority-to-access-category path standardized for Wi-Fi, to the multicast limitations that still apply after a correct mapping.
 The path is exactly what the study's \texttt{QosClassifier} implements for crash alerts and is the reason the dissertation carefully distinguishes DSCP~46, the EF per-hop behavior, user priority~6, and \texttt{AC\_VO}: they are related objects on a chain, not synonyms.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: DSCP$\rightarrow$UP$\rightarrow$AC cross-layer path]}\\[0.4em]
-  \textit{Horizontal flow: Application marks DSCP~0 (BE) or DSCP~46 (EF) $\rightarrow$ IP DiffServ field $\rightarrow$ host DSCP-to-UP classifier $\rightarrow$ 802.11 user priority $\rightarrow$ EDCA AC queue $\rightarrow$ contention on the shared medium. Annotate the RFC~8325 default pitfall (EF$\rightarrow$UP~5$\rightarrow$AC\_VI) versus the study's explicit mapping (EF$\rightarrow$UP~6$\rightarrow$AC\_VO).}
-  \vspace{1.8cm}}}
-  \caption{Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
-  \label{fig:bg:dscp-path}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: DSCP$\rightarrow$UP$\rightarrow$AC cross-layer path]}\\[0.4em]
+		  \textit{Horizontal flow: Application marks DSCP~0 (BE) or DSCP~46 (EF) $\rightarrow$ IP DiffServ field $\rightarrow$ host DSCP-to-UP classifier $\rightarrow$ 802.11 user priority $\rightarrow$ EDCA AC queue $\rightarrow$ contention on the shared medium. Annotate the RFC~8325 default pitfall (EF$\rightarrow$UP~5$\rightarrow$AC\_VI) versus the study's explicit mapping (EF$\rightarrow$UP~6$\rightarrow$AC\_VO).}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 \subsection{Differentiated Services architecture}
 \label{sec:bg:diffserv}
 
-RFC~2474 defines the Differentiated Services (DS) field in IPv4 and IPv6 headers: six bits form the DSCP used to select a Per-Hop Behavior (PHB) at each node, and DS-compliant nodes must select PHBs by matching the entire six-bit field against a configurable mapping~\cite{RFC2474_DSField}.
+RFC~2474 defines the Differentiated Services (DS) field in \gls{ipv4} and \gls{ipv6} headers: six bits form the DSCP used to select a \gls{phb} at each node, and DS-compliant nodes must select PHBs by matching the entire six-bit field against a configurable mapping~\cite{RFC2474_DSField}.
 Packets received with an unrecognized codepoint should be forwarded as if marked for the Default behavior; the Default PHB is ordinary best-effort forwarding, and its recommended codepoint is \texttt{000000} (DSCP~0)~\cite{RFC2474_DSField}.
 RFC~2475, an Informational architecture document, situates these codepoints in a scalable edge-core model: complex classification and conditioning occur at network boundaries or hosts, while interior nodes apply PHBs to behavior aggregates~\cite{RFC2475_DiffServ_Architecture}.
 A Behavior Aggregate (BA) classifier selects packets on the DSCP alone; Multi-Field (MF) classifiers may additionally inspect addresses, ports, or other header fields.
@@ -304,7 +310,7 @@ Second, host pre-marking is a first-class part of the architecture: the crash ve
 \subsection{Expedited Forwarding and DSCP~46}
 \label{sec:bg:ef}
 
-RFC~3246 defines the Expedited Forwarding PHB as a building block for low-delay, low-jitter, and low-loss services, obtained by ensuring that the EF aggregate is served at a configured rate independently of the non-EF load~\cite{RFC3246_EF_PHB}.
+RFC~3246 defines the \gls{ef} PHB as a building block for low-delay, low-jitter, and low-loss services, obtained by ensuring that the EF aggregate is served at a configured rate independently of the non-EF load~\cite{RFC3246_EF_PHB}.
 Codepoint \texttt{101110}---decimal~46---is recommended for the EF PHB~\cite{RFC3246_EF_PHB}.
 The PHB specification is per-node; constructing an end-to-end service from EF hops is out of scope of the RFC and, on a single shared wireless hop, is not the claim this dissertation makes.
 
@@ -325,20 +331,22 @@ Under that heuristic, EF (\texttt{101110}) maps to user priority~5 and is theref
 RFC~8325 consequently recommends a non-default mapping in which EF is mapped to user priority~6 and thence to \texttt{AC\_VO}.
 
 User-priority markings alone do not affect over-the-air treatment; only the subsequent mapping of user priorities into access categories, and the contention parameters of those categories, produce differentiation~\cite{RFC8325_WiFi_QoS}.
-Table~\ref{tab:bg:dscp-map} summarizes the default pitfall and the recommended Voice mapping for the two codepoints used in this study.
+\autoref{tab:bg:dscp-map} summarizes the default pitfall and the recommended Voice mapping for the two codepoints used in this study.
 
-\begin{table}[htbp]
-  \centering
-  \caption{DSCP to user-priority to access-category mapping for the study's two traffic classes, contrasting the common three-MSB default with the RFC~8325 recommendation for Expedited Forwarding.}
-  \label{tab:bg:dscp-map}
-  \begin{tabular}{@{}lllll@{}}
-    \toprule
-    Traffic & DSCP & Default 3-MSB UP & Recommended UP & Resulting AC \\
-    \midrule
-    Background (BE) & 0 (\texttt{000000}) & 0 & 0 & \texttt{AC\_BE} \\
-    Crash alert (EF) & 46 (\texttt{101110}) & 5 $\rightarrow$ \texttt{AC\_VI} & 6 & \texttt{AC\_VO} \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:dscp-map}DSCP to user-priority to access-category mapping for the study's two traffic classes, contrasting the common three-MSB default with the RFC~8325 recommendation for Expedited Forwarding.}
+	\begin{center}
+		\begin{tabular}{@{}lllll@{}}
+		    \toprule
+		    Traffic & DSCP & Default 3-MSB UP & Recommended UP & Resulting AC \\
+		    \midrule
+		    Background (BE) & 0 (\texttt{000000}) & 0 & 0 & \texttt{AC\_BE} \\
+		    Crash alert (EF) & 46 (\texttt{101110}) & 5 $\rightarrow$ \texttt{AC\_VI} & 6 & \texttt{AC\_VO} \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC8325_WiFi_QoS}.}
 \end{table}
 
 RFC~8325 also states an honesty clause that this dissertation adopts verbatim in spirit: IEEE~802.11 ``does not support an EF PHB service, as it is not possible to assure that a given access category will be serviced with strict priority over another (due to the random element within the contention process)''~\cite{RFC8325_WiFi_QoS}.
@@ -362,26 +370,28 @@ First, because there are no ACKs for multicast packets, the transmitter cannot k
 Second, multicast and broadcast traffic is generally transmitted at the slowest rate among connected devices---the basic rate---so that every intended receiver can decode the frame; spectral-efficiency techniques such as multi-user MIMO spatial multiplexing are unavailable with more than one intended receiver~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Third, low-rate transmissions occupy the medium longer, consuming airtime that would otherwise be available to other stations and degrading overall capacity~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 
-Table~\ref{tab:bg:multicast-tools} summarizes which reliability tools are available in infrastructure BSS operation versus in the OCB setting of this study.
+\autoref{tab:bg:multicast-tools} summarizes which reliability tools are available in infrastructure BSS operation versus in the OCB setting of this study.
 Directed Multicast Service, GCR, and related AP-based mitigations can raise delivery probability in a BSS but ``still [do] not guarantee success'' and may introduce unacceptable latency~\cite{RFC9119_Multicast_IEEE802_Wireless,kosekszott2012What}; more importantly, they are unavailable without an AP.
 The study therefore keeps one-hop multicast---the natural safety primitive---and concentrates engineering effort on contention shaping rather than on link-layer retransmission.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Link-layer reliability mechanisms for group-addressed frames: availability in infrastructure BSS Wi-Fi versus in IEEE~802.11p OCB operation as used in this study.}
-  \label{tab:bg:multicast-tools}
-  \begin{tabular}{@{}p{0.42\linewidth}cc@{}}
-    \toprule
-    Mechanism & Infrastructure BSS & OCB (this study) \\
-    \midrule
-    Link-layer ACK / retransmission for group-addressed frames & No (base standard) & No \\
-    GCR Unsolicited Retry / Block Ack (802.11aa) & Yes (if implemented) & No \\
-    Directed Multicast / multicast-to-unicast conversion & Yes (AP) & No \\
-    EDCA priority via UP$\rightarrow$AC mapping & Yes & Yes \\
-    DCC aggregate load control (ITS-G5) & N/A & Possible (not enabled here) \\
-    Event-triggered BE suppression (this work) & N/A & Evaluated \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:multicast-tools}Link-layer reliability mechanisms for group-addressed frames: availability in infrastructure BSS Wi-Fi versus in IEEE~802.11p OCB operation as used in this study.}
+	\begin{center}
+		\begin{tabular}{@{}p{0.42\linewidth}cc@{}}
+		    \toprule
+		    Mechanism & Infrastructure BSS & OCB (this study) \\
+		    \midrule
+		    Link-layer ACK / retransmission for group-addressed frames & No (base standard) & No \\
+		    GCR Unsolicited Retry / Block Ack (802.11aa) & Yes (if implemented) & No \\
+		    Directed Multicast / multicast-to-unicast conversion & Yes (AP) & No \\
+		    EDCA priority via UP$\rightarrow$AC mapping & Yes & Yes \\
+		    DCC aggregate load control (ITS-G5) & N/A & Possible (not enabled here) \\
+		    Event-triggered BE suppression (this work) & N/A & Evaluated \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC9119_Multicast_IEEE802_Wireless}.}
 \end{table}
 
 As with RFC~8325, RFC~9119 is written around AP/BSS terminology.
@@ -393,34 +403,35 @@ The Layer~2 facts required here---no ACK, no retransmission, basic-rate transmis
 % ----------------------------------------------------------------------
 
 Empirical measurement of dense, instrumented highway fleets under controlled multi-policy MAC configurations is rarely feasible at research scale.
-Discrete-event simulation is therefore the dominant methodology for Inter-Vehicle Communication (IVC) protocol evaluation, provided that both the network stack and the mobility process are represented at adequate fidelity~\cite{veins_sommer2011}.
+Discrete-event simulation is therefore the dominant methodology for \gls{ivc} protocol evaluation, provided that both the network stack and the mobility process are represented at adequate fidelity~\cite{veins_sommer2011}.
 
 \subsection{OMNeT++ and INET}
 \label{sec:bg:omnet}
 
 OMNeT++ is a modular, component-based C++ simulation framework and discrete-event engine widely used for communication-network research~\cite{varga2008omnetpp}.
 The INET Framework supplies Internet protocol stacks, link-layer models including IEEE~802.11, radio propagation abstractions, and mobility bases on top of OMNeT++~\cite{inet_framework}.
-In this dissertation, INET provides the IEEE~802.11p-capable MAC and PHY baseline, IP forwarding, and the hooks into which the study's traffic generators, DSCP classifier, and adaptive MAC controller are inserted.
+In this dissertation, INET provides the IEEE~802.11p-capable MAC and \gls{phy} baseline, IP forwarding, and the hooks into which the study's traffic generators, DSCP classifier, and adaptive MAC controller are inserted.
 The Implementation chapter details those modules; the background point is that the policies under test replace or configure narrow parts of an otherwise standard stack, so that cross-policy comparisons share the same PHY, mobility, and load matrix.
 
 \subsection{Bidirectional coupling with SUMO via Veins}
 \label{sec:bg:veins}
 
 Road-traffic mobility and network protocol behavior are not independent: a crash that stops a vehicle changes both the wireless contention neighborhood and the macroscopic traffic pattern, and a protocol that disseminates warnings can in principle alter routing decisions.
-Sommer, German, and Dressler argue that faithful IVC evaluation therefore requires \emph{bidirectional} coupling of a network simulator and a road-traffic microsimulator, and introduce Veins (Vehicles in Network Simulation) as a hybrid framework that joins OMNeT++ to the Simulation of Urban MObility (SUMO) package through the Traffic Control Interface (TraCI)~\cite{veins_sommer2011}.
+Sommer, German, and Dressler argue that faithful IVC evaluation therefore requires \emph{bidirectional} coupling of a network simulator and a road-traffic microsimulator, and introduce Veins (Vehicles in Network Simulation) as a hybrid framework that joins OMNeT++ to the \gls{sumo} package through the \gls{traci}~\cite{veins_sommer2011}.
 Veins allows the network model to control vehicle entities (for example, stopping a designated crash node) while SUMO continuously updates positions, headings, and neighborhood relations that feed the radio model.
 
 SUMO itself is an open-source microscopic traffic simulator supporting multi-modal traffic, lane-changing and car-following models, and external coupling interfaces; Alvarez Lopez et al.\ provide the reference publication describing its architecture and validation role in the ITS research ecosystem~\cite{lopez2018sumo}.
-Figure~\ref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; Veins/INET execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
+\autoref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; Veins/\gls{inet} execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: Veins--SUMO--INET closed-loop architecture]}\\[0.4em]
-  \textit{Show SUMO (mobility) $\leftrightarrow$ TraCI $\leftrightarrow$ Veins/OMNeT++ (network), with INET 802.11p PHY/MAC, the study's CritPacketSender / CrashBurstApp / QosClassifier / V2xHcf modules, and KPI logging sinks. Annotate the crash-node stop command flowing from the network model into SUMO.}
-  \vspace{1.8cm}}}
-  \caption{Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
-  \label{fig:bg:veins}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:veins}Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: Veins--SUMO--INET closed-loop architecture]}\\[0.4em]
+		  \textit{Show SUMO (mobility) $\leftrightarrow$ TraCI $\leftrightarrow$ Veins/OMNeT++ (network), with INET 802.11p PHY/MAC, the study's CritPacketSender / CrashBurstApp / QosClassifier / V2xHcf modules, and KPI logging sinks. Annotate the crash-node stop command flowing from the network model into SUMO.}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 The present experiments use this toolchain on a highway corridor with light (10~vehicles) and heavy (100~vehicles) density packages.
@@ -436,8 +447,8 @@ Three pillars emerge from the preceding sections and frame the research problem 
 
 \begin{enumerate}
   \item \textbf{Safety alerts have millisecond-scale budgets but ride on contention-based access.}
-  Cooperative V2X warnings are useful only if delivered promptly to nearby vehicles; 3GPP TS~22.186 places a representative platooning bound at \SI{25}{\milli\second} end-to-end~\cite{ts22186}.
-  On IEEE~802.11p in OCB mode, those warnings share a decentralized channel with no central scheduler~\cite{jiang2008ieee80211p,IEEE80211}.
+  Cooperative V2X warnings are useful only if delivered promptly to nearby vehicles; \gls{threegpp} TS~22.186 places a representative platooning bound at \SI{25}{\milli\second} end-to-end~\cite{ts22186}.
+  On IEEE~802.11p in \gls{ocb} mode, those warnings share a decentralized channel with no central scheduler~\cite{jiang2008ieee80211p,IEEE80211}.
   DCF treats every frame alike; under load, binary exponential backoff and repeated freezing postpone transmissions independently of criticality~\cite{bianchi2000DCF,Continuous_Backoff_Freezing_Li}.
 
   \item \textbf{EDCA provides statistical priority, and correct DSCP-to-AC mapping is not automatic.}
@@ -451,5 +462,5 @@ Three pillars emerge from the preceding sections and frame the research problem 
   A local, event-triggered, per-class intervention that leaves EDCA parameters unchanged therefore occupies a distinct and still underexplored point in the design space.
 \end{enumerate}
 
-Chapter~\ref{sec:rel_work} surveys stronger contention-control proposals---synchronized slotting, cooperative TDMA, preemptive and UAV-assisted MACs, and cellular sidelink allocation---and positions the present event-driven approach against them.
-Chapter~\ref{chap:sysmodel} then formalizes the two-class traffic model, the crash timeline, and the five MAC policies that instantiate the background developed here.
+\autoref{sec:rel_work} surveys stronger contention-control proposals---synchronized slotting, cooperative TDMA, preemptive and UAV-assisted MACs, and cellular sidelink allocation---and positions the present event-driven approach against them.
+\autoref{chap:sysmodel} then formalizes the two-class traffic model, the crash timeline, and the five MAC policies that instantiate the background developed here.
