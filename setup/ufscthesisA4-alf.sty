@@ -81,7 +81,8 @@
 	andothers    = {\mkbibemph{et\addabbrvspace al\adddot}},%
 	involumes    = {\mkbibemph{In}},%
 	in           = {\mkbibemph{In}},%
-	inseries     = {\mkbibemph{In}}
+	inseries     = {\mkbibemph{In}},%
+	pages        = {\lowercase{p}\adddot}
 }
 
 % Ajusta citação do mesmo autor e ano (repete ano junto com etiqueta, ao contratio de somente apresentar etiqueta)
@@ -131,6 +132,16 @@
 
 % Retira o espaço do pacote glossaries
 \renewcommand{\glossarypreamble}{\vspace{-0.2cm}} 
+
+% Adiciona tradução de termos estrangeiros
+\renewcommand{\glsxtrpostdescacronym}{%
+	\ifglshasfield{\glsxtruserfield}{\glscurrententrylabel}%
+	{ (\glscurrentfieldvalue)}%
+	{}%
+}
+
+% long-short: first use = English long (SHORT); user1 Portuguese appears only in the list via glsxtrpostdescacronym
+\setabbreviationstyle[acronym]{long-short}
 
 % Criação de estilo
 \newglossarystyle{mylong1}{% modificado de https://tex.stackexchange.com/a/166209/151962
@@ -219,7 +230,7 @@
 }
 \makeatother
 
-% Corrige justificação
+% Corrige justificação (also set in main.tex; keep sty default available)
 %\emergencystretch 3em
 
 % Cria comandos
@@ -262,8 +273,8 @@
 	%% ajusta nomes padroes do babel
 	\renewcommand{\bibname}{Referências}
 	\renewcommand{\indexname}{Índice}
-	\renewcommand{\listfigurename}{List of Figures}
-	\renewcommand{\listtablename}{List of Tables}
+	\renewcommand{\listfigurename}{Lista de figuras}
+	\renewcommand{\listtablename}{Lista de tabelas}
 	\renewcommand{\orientadorname}{Orientador}
 	\renewcommand{\coorientadorname}{Coorientador}
 	%% ajusta nomes usados com a macro \autoref
@@ -272,6 +283,25 @@
 	\renewcommand{\subsectionautorefname}{Seção}
 	\renewcommand{\paragraphautorefname}{Seção}
 	\renewcommand{\subsubsectionautorefname}{Seção}
+}
+
+\addto\captionsenglish{
+	\renewcommand{\bibname}{References}
+	\renewcommand{\listfigurename}{List of Figures}
+	\renewcommand{\listtablename}{List of Tables}
+	\renewcommand{\contentsname}{Contents}
+	\renewcommand{\fontename}{Source}
+	\renewcommand{\figurename}{Figure}
+	\renewcommand{\tablename}{Table}
+	\renewcommand{\chaptername}{Chapter}
+	\renewcommand{\pageautorefname}{page}
+	\renewcommand{\sectionautorefname}{Section}
+	\renewcommand{\subsectionautorefname}{Section}
+	\renewcommand{\subsubsectionautorefname}{Section}
+	\renewcommand{\paragraphautorefname}{Section}
+	\renewcommand{\figureautorefname}{Figure}
+	\renewcommand{\tableautorefname}{Table}
+	\renewcommand{\chapterautorefname}{Chapter}
 }
 
 % ---

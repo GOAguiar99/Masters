@@ -1,11 +1,11 @@
 \chapter{Implementation}
 \label{chap:implementation}
 
-This chapter details the practical realization of the \textit{Deterministic QoS over Wi-Fi} system model within the OMNeT++ 6.0.3 and INET 4.5.4 simulation frameworks. All implementation was carried out entirely in OMNeT++ with INET, ensuring modular integration with existing networking components. The implementation focuses on translating the abstract concepts of bandwidth reservation, coordinated listening windows, and emergency handling into functional modules at the application and MAC layers. The core components developed include custom traffic generators, a QoS-aware packet classifier, and a finite-state machine (FSM) integrated into the MAC layer for enforcing the prescribed channel access states.
+This chapter details the practical realization of the \textit{Deterministic QoS over Wi-Fi} system model within the OMNeT++ 6.0.3 and INET 4.5.4 simulation frameworks. All implementation was carried out entirely in OMNeT++ with INET, ensuring modular integration with existing networking components. The implementation focuses on translating the abstract concepts of bandwidth reservation, coordinated listening windows, and emergency handling into functional modules at the application and MAC layers. The core components developed include custom traffic generators, a QoS-aware packet classifier, and a \gls{fsm} integrated into the MAC layer for enforcing the prescribed channel access states.
 
 \section{Application Layer: Traffic Generation}
 
-To evaluate the proposed QoS mechanisms under various traffic conditions, two custom application modules were implemented. Both utilize Differentiated Services Code Point (DSCP) markings to signify packet priority, influencing their treatment further down the network stack.
+To evaluate the proposed QoS mechanisms under various traffic conditions, two custom application modules were implemented. Both utilize \gls{dscp} markings to signify packet priority, influencing their treatment further down the network stack.
 
 \subsection{UdpCritApp: Configurable Priority Traffic}
 
@@ -35,7 +35,7 @@ The \texttt{UdpCollisionApp} module is tailored to simulate the bursty, high-pri
 \textbf{Implementation Details:}
 This module inherits directly from \texttt{ApplicationBase} and implements the \texttt{UdpSocket::Callback} interface for fine-grained control over its lifecycle. It uses self-messages to manage its state: a timer for the randomized start (\texttt{START}), a periodic message for sending packets during the active burst (\texttt{SEND}), and a timer to stop transmission after the burst duration elapses (\texttt{STOP}). The DSCP value of 46 is hard-coded within its \texttt{setSocketOptions()} method.
 
-Table~\ref{tab:app_comparison} provides a concise comparison of these two traffic generation modules, highlighting their distinct roles in the evaluation framework.
+\autoref{tab:app_comparison} provides a concise comparison of these two traffic generation modules, highlighting their distinct roles in the evaluation framework.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
@@ -64,7 +64,7 @@ Table~\ref{tab:app_comparison} provides a concise comparison of these two traffi
 \label{sec:qosclassifier}
 A crucial supporting component is a packet classifier. This classifier inspects the DSCP field of incoming IP packets and maps them to the appropriate IEEE 802.11e Access Category (AC) queue within the MAC layer. This ensures that high-priority packets (e.g., DSCP 46) are placed into the high-priority \texttt{AC\_VO} queue, directly influencing their scheduling and transmission order according to the rules of the current FSM state. 
 
-Figure~\ref{fig:classifier_flow} illustrates the packet classification flow. When a packet arrives, the classifier first checks whether it is IPv4 or IPv6. In the case of IPv4, the DSCP field is extracted directly, while for IPv6 the Traffic Class field is shifted to obtain the DSCP value. Each DSCP value is then mapped to the corresponding User Priority (UP). Non-IP packets are mapped by default to the best-effort class (\texttt{UP\_BE}). Finally, the packet is tagged with its computed User Priority and forwarded through the output gate. 
+\autoref{fig:classifier_flow} illustrates the packet classification flow. When a packet arrives, the classifier first checks whether it is IPv4 or IPv6. In the case of IPv4, the DSCP field is extracted directly, while for IPv6 the Traffic Class field is shifted to obtain the DSCP value. Each DSCP value is then mapped to the corresponding User Priority (UP). Non-IP packets are mapped by default to the best-effort class (\texttt{UP\_BE}). Finally, the packet is tagged with its computed User Priority and forwarded through the output gate. 
 
 This mechanism guarantees consistent QoS-aware mapping across both IPv4 and IPv6 traffic, allowing differentiated handling of flows based on application requirements.
 
@@ -79,12 +79,12 @@ This mechanism guarantees consistent QoS-aware mapping across both IPv4 and IPv6
 
 \subsection{Finite-State Machine Controller}
 
-The core of the DQ-WiFi implementation is the \texttt{EdcaFsmController}, a novel submodule integrated into the Hybrid Coordination Function (HCF) of INET's \texttt{Ieee80211Mac} model. This controller acts as a central gatekeeper, intercepting events from both the upper layers (applications) and the lower layers (PHY) to enforce the state machine defined in the system model. It encapsulates all timing logic and state variables---\texttt{activePeriod}, \texttt{listenPeriod}, and \texttt{blockingEndTime}---and provides helper methods (\texttt{switchState()}, \texttt{isListening()}, \texttt{isBlocked()}) to the MAC layer for coordinated decision-making.
+The core of the DQ-WiFi implementation is the \texttt{EdcaFsmController}, a novel submodule integrated into the \gls{hcf} of INET's \texttt{Ieee80211Mac} model. This controller acts as a central gatekeeper, intercepting events from both the upper layers (applications) and the lower layers (PHY) to enforce the state machine defined in the system model. It encapsulates all timing logic and state variables---\texttt{activePeriod}, \texttt{listenPeriod}, and \texttt{blockingEndTime}---and provides helper methods (\texttt{switchState()}, \texttt{isListening()}, \texttt{isBlocked()}) to the MAC layer for coordinated decision-making.
 
 The integration was achieved by modifying key methods in the HCF/EDCA architecture to consult the FSM controller before proceeding with standard operations. The following figures and explanations detail this integration point-by-point.
 
 \subsubsection{Integration with Upper-Layer Packet Processing}
-The ingress path from the network layer is the first point of control. Figure~\ref{fig:upper_fsm} illustrates the modified \texttt{processUpperFrame()} method, where FSM logic now gates channel access requests.
+The ingress path from the network layer is the first point of control. \autoref{fig:upper_fsm} illustrates the modified \texttt{processUpperFrame()} method, where FSM logic now gates channel access requests.
 
 \begin{figure}[htb]
 	\caption{\label{fig:upper_fsm}FSM logic integrated into \texttt{processUpperFrame()}.}
@@ -111,7 +111,8 @@ The alternation between ACTIVE and LISTENING is governed by the configurable pai
 
 
 \subsubsection{Integration with Lower-Layer Frame Processing}
-The egress path for outgoing and incoming frames is handled by \texttt{processLowerFrame()}, which now incorporates FSM checks as shown in Figure~\ref{fig:lower_fsm}.
+The egress path for outgoing and incoming frames is handled by the
+\texttt{processLowerFrame()} method, which now incorporates FSM checks as shown in \autoref{fig:lower_fsm}.
 
 \begin{figure}[htb]
 	\caption{\label{fig:lower_fsm}FSM logic integrated into \texttt{processLowerFrame()}.}
@@ -140,7 +141,7 @@ This design ensures a deterministic, reactive suppression mechanism: emergency e
 \newpage
 
 \subsubsection{Architectural Integration within the HCF Module}
-The integration of the \texttt{EdcaFsmController} into the HCF/EDCA architecture is shown in Figure~\ref{fig:model_fsm}. The diagram synthesises the revised class structure and exposes the controller’s role in orchestrating channel access.
+The integration of the \texttt{EdcaFsmController} into the HCF/EDCA architecture is shown in \autoref{fig:model_fsm}. The diagram synthesises the revised class structure and exposes the controller’s role in orchestrating channel access.
 
 \begin{figure}[htb]
 	\caption{\label{fig:model_fsm}Integration of the FSM controller into the HCF/EDCA architecture.}
@@ -154,10 +155,12 @@ The integration of the \texttt{EdcaFsmController} into the HCF/EDCA architecture
 \begin{enumerate}
     \item \textbf{Controller as Submodule:} The \texttt{EdcaFsmController} is instantiated as a direct subcomponent of the \texttt{Hcf} class. It encapsulates the three-state machine (\texttt{ACTIVE}, \texttt{LISTENING}, \texttt{BLOCKED}), together with timers and state variables (\texttt{EdcaFsmState}) that regulate transitions.
     \item \textbf{Feature Switches:} The boolean flags \texttt{BEAperiodic} and \texttt{carCrash} are implemented at the controller level. These switches alter contention behaviour by silencing AC\_BE during critical windows or invoking BLOCKED preemption in response to emergency events.
-    \item \textbf{Control Flow Hooks:} The original \texttt{processUpperFrame()} and \texttt{processLowerFrame()} methods are extended to trigger FSM events. Their interaction with the controller drives the finite-state transitions detailed in Figures~\ref{fig:upper_fsm} and~\ref{fig:lower_fsm}.
+    \item \textbf{Control Flow Hooks:} The original upper- and lower-frame handlers
+    (\texttt{processUpperFrame()}, \texttt{processLowerFrame()})
+    are extended to trigger FSM events. Their interaction with the controller drives the finite-state transitions detailed in \Autoref{fig:upper_fsm,fig:lower_fsm}.
 \end{enumerate}
 
-This architecture enforces deterministic QoS at the MAC layer through behavioural gating rather than intrusive rewrites. Together with the upper- and lower-frame FSMs (Figures~\ref{fig:upper_fsm} and~\ref{fig:lower_fsm}), the integration establishes the timing semantics, bandwidth-reservation strategy, and fail-safe collision handling that underpin the DQ-WiFi enhancement.
+This architecture enforces deterministic QoS at the MAC layer through behavioural gating rather than intrusive rewrites. Together with the upper- and lower-frame FSMs (\Autoref{fig:upper_fsm,fig:lower_fsm}), the integration establishes the timing semantics, bandwidth-reservation strategy, and fail-safe collision handling that underpin the DQ-WiFi enhancement.
 
 
 
@@ -229,7 +232,7 @@ End-to-End Delay Analysis (\ref{results:end}) quantifies the latency and jitter 
 	\fonte{Prepared by the author.}
 \end{figure}
 
-Figure \ref{fig:no_qos} is the baseline with no MAC-level QoS. All packets share a single FIFO, so best-effort traffic (blue, AC\_BE), video-grade traffic (orange, AC\_VI) and voice-critical traffic (green, AC\_VO) contend indiscriminately. The orange AC\_VI curve rises and falls erratically, while the blue AC\_BE curve is repeatedly starved whenever the green AC\_VO burst appears. The mixed pattern confirms that, without QoS, the radio cannot sustain deterministic behaviour.
+\autoref{fig:no_qos} is the baseline with no MAC-level QoS. All packets share a single \gls{fifo}, so best-effort traffic (blue, AC\_BE), video-grade traffic (orange, AC\_VI) and voice-critical traffic (green, AC\_VO) contend indiscriminately. The orange AC\_VI curve rises and falls erratically, while the blue AC\_BE curve is repeatedly starved whenever the green AC\_VO burst appears. The mixed pattern confirms that, without QoS, the radio cannot sustain deterministic behaviour.
 
 \begin{figure}[htb]
 	\caption{\label{fig:edca_only}EDCA Only - Four queues are enabled, proving standard correctly ranks traffic.}
@@ -239,7 +242,7 @@ Figure \ref{fig:no_qos} is the baseline with no MAC-level QoS. All packets share
 	\fonte{Prepared by the author.}
 \end{figure}
 
-With plain EDCA (Figure \ref{fig:edca_only}) four queues are enabled (Even-though we are using only three). The orange AC\_VI plateau now sits clearly above the blue AC\_BE floor, and the intermittent green AC\_VO packets punch through with higher priority, proving that the standard correctly ranks traffic. Yet best-effort packets still share the same contention window, so they occasionally intrude on VI slots and prolong queueing. The next configurations target these two shortcomings.
+With plain EDCA (\autoref{fig:edca_only}) four queues are enabled (Even-though we are using only three). The orange AC\_VI plateau now sits clearly above the blue AC\_BE floor, and the intermittent green AC\_VO packets punch through with higher priority, proving that the standard correctly ranks traffic. Yet best-effort packets still share the same contention window, so they occasionally intrude on VI slots and prolong queueing. The next configurations target these two shortcomings.
 
 \begin{figure}[htb]
 	\caption{\label{fig:crash_qos1}CRASH\_QOS1 – car-crash sentinel only. Collision triggers a 3s blackout (BLOCKED state).}
@@ -249,7 +252,7 @@ With plain EDCA (Figure \ref{fig:edca_only}) four queues are enabled (Even-thoug
 	\fonte{Prepared by the author.}
 \end{figure}
 
-Figure \ref{fig:crash_qos1} activates the collision sentinel (\texttt{carCrash = true}) while leaving \\ \texttt{BEAperiodic} disabled. When the hidden-terminal burst triggers the sentinel, the controller enters BLOCKED, all colours vanish for the programmed 3s blackout and then resume exactly where they left off. The isolation window is evident: the green AC\_VO packets that caused the collision are quarantined, leaving the orange AC\_VI service curve smooth once the blackout ends. The reduction in mean end-to-end delay for these collision packets is quantified later in \ref{results:end}.
+\autoref{fig:crash_qos1} activates the collision sentinel (\texttt{carCrash = true}) while leaving \\ \texttt{BEAperiodic} disabled. When the hidden-terminal burst triggers the sentinel, the controller enters BLOCKED, all colours vanish for the programmed 3s blackout and then resume exactly where they left off. The isolation window is evident: the green AC\_VO packets that caused the collision are quarantined, leaving the orange AC\_VI service curve smooth once the blackout ends. The reduction in mean end-to-end delay for these collision packets is quantified later in \ref{results:end}.
 
 \begin{figure}[htb]
 	\caption{\label{fig:crash_qos2}CRASH\_QOS2—bandwidth reservation only. Deterministic hand-over between AC\_VI (ACTIVE period) and AC\_BE (LISTENING period).}
@@ -259,7 +262,7 @@ Figure \ref{fig:crash_qos1} activates the collision sentinel (\texttt{carCrash =
 	\fonte{Prepared by the author.}
 \end{figure}
 
-In Figure \ref{fig:crash_qos2} the collision sentinel is disabled and only the bandwidth-reservation mechanism is active (\texttt{BEAperiodic = true}, 3 s ACTIVE / 1 s LISTENING). Two queues are present—orange AC\_VI (video) and blue AC\_BE (best-effort). During each ACTIVE period AC\_VI enjoys the channel exclusively while AC\_BE remains muted. When the controller switches to LISTENING, AC\_VI pauses and AC\_BE drains its backlog in a brief high-rate burst before the cycle repeats. The clean hand-over between orange and blue traces visualises the tighter CW and AFS that AC\_BE inherits during LISTENING. Because every BE packet is transmitted inside its dedicated one-second window, the best-effort latency becomes deterministically bounded—results quantified in the next section.
+In \autoref{fig:crash_qos2} the collision sentinel is disabled and only the bandwidth-reservation mechanism is active (\texttt{BEAperiodic = true}, 3 s ACTIVE / 1 s LISTENING). Two queues are present—orange AC\_VI (video) and blue AC\_BE (best-effort). During each ACTIVE period AC\_VI enjoys the channel exclusively while AC\_BE remains muted. When the controller switches to LISTENING, AC\_VI pauses and AC\_BE drains its backlog in a brief high-rate burst before the cycle repeats. The clean hand-over between orange and blue traces visualises the tighter CW and AFS that AC\_BE inherits during LISTENING. Because every BE packet is transmitted inside its dedicated one-second window, the best-effort latency becomes deterministically bounded—results quantified in the next section.
 
 \begin{figure}[htb]
 	\caption{\label{fig:crash_qos3}CRASH\_QOS3—bandwidth reservation + car-crash sentinel. The two mechanisms coexist.}
@@ -269,9 +272,9 @@ In Figure \ref{fig:crash_qos2} the collision sentinel is disabled and only the b
 	\fonte{Prepared by the author.}
 \end{figure}
 
-Figure \ref{fig:crash_qos3} combines collision blocking and bandwidth reservation. The periodic blue AC\_BE bursts characteristic of Figure \ref{fig:crash_qos2} persist, but when a collision is detected the BLOCKED state pre-empts all traffic throughput drops to zero, and then the orange AC\_VI and blue AC\_BE streams resume their duty-cycle pattern while the green AC\_VO burst is confined to the isolated window. The graph shows that the two mechanisms coexist without wasting airtime: throughput returns to the reservation cycle immediately after unblocking, while collision frames remain strictly isolated.
+\autoref{fig:crash_qos3} combines collision blocking and bandwidth reservation. The periodic blue AC\_BE bursts characteristic of \autoref{fig:crash_qos2} persist, but when a collision is detected the BLOCKED state pre-empts all traffic throughput drops to zero, and then the orange AC\_VI and blue AC\_BE streams resume their duty-cycle pattern while the green AC\_VO burst is confined to the isolated window. The graph shows that the two mechanisms coexist without wasting airtime: throughput returns to the reservation cycle immediately after unblocking, while collision frames remain strictly isolated.
 
-In summary, the NO\_QOS profile offers no protection. EDCA improves data separation but still mixes queues, the collision sentinel cleanly isolates faulty intervals (Figure \ref{fig:crash_qos1}), and the reservation window reallocates bandwidth with deterministic hand-over between VI and BE (Figures \ref{fig:crash_qos2}–\ref{fig:crash_qos3}). The hybrid profile (Figure \ref{fig:crash_qos3}) retains both benefits—collision isolation for AC\_VO and bounded latency for AC\_BE—without sacrificing channel utilisation. Detailed delay and jitter metrics are presented in the following subsection.
+In summary, the NO\_QOS profile offers no protection. EDCA improves data separation but still mixes queues, the collision sentinel cleanly isolates faulty intervals (\autoref{fig:crash_qos1}), and the reservation window reallocates bandwidth with deterministic hand-over between VI and BE (\autoref{fig:crash_qos2}--\ref{fig:crash_qos3}). The hybrid profile (\autoref{fig:crash_qos3}) retains both benefits—collision isolation for AC\_VO and bounded latency for AC\_BE—without sacrificing channel utilisation. Detailed delay and jitter metrics are presented in the following subsection.
 
 \section{End-To-End Delay Analysis}
 In the next table Legacy EDCA is optimal for raw delay but fails to guarantee worst-case bounds. Collision blocking guarantees sub-millisecond delivery for alert traffic, and bandwidth reservation delivers a provable upper bound for best-effort packets. The hybrid scheme (CRASH\_QOS3) combines both advantages, trading higher CONTROL/SENSOR delay for deterministic BE latency and collision-immunity for alert traffic—precisely the priority mix required in safety-critical V2X scenarios.
