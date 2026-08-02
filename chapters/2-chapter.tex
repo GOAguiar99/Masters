@@ -11,14 +11,15 @@ A third family regulates offered load \emph{continuously} through adaptive EDCA 
 A fourth transplants Time-Sensitive Networking (TSN) and Orthogonal Frequency-Division Multiple Access (OFDMA) ideas from wired or infrastructure Wi-Fi into wireless settings.
 Figure~\ref{fig:rw:taxonomy} situates these families in a design space whose axes are synchronization or infrastructure dependency and always-on versus event-triggered intervention.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: design-space taxonomy of related MAC approaches]}\\[0.4em]
-  \textit{Two-dimensional scatter or quadrant diagram. Horizontal axis: local / infrastructure-free $\leftrightarrow$ requires synchronization, infrastructure, or cellular machinery. Vertical axis: event-triggered / short-lived $\leftrightarrow$ always-on / permanent. Place TSNCtl, CFC-MAC, PRP-MAC, NR-V2X Mode~2, adaptive EDCA, DCC, SkipCCH, wireless TSN/OFDMA, and ``this work'' (local, event-triggered BE suppression) in distinct regions. Annotate the lower-left quadrant as the dissertation's operating point.}
-  \vspace{1.8cm}}}
-  \caption{Design-space taxonomy of related Medium Access Control approaches according to synchronization or infrastructure dependency and always-on versus event-triggered intervention. This dissertation occupies the local, event-triggered region.}
-  \label{fig:rw:taxonomy}
+\begin{figure}[htb]
+	\caption{\label{fig:rw:taxonomy}Design-space taxonomy of related Medium Access Control approaches according to synchronization or infrastructure dependency and always-on versus event-triggered intervention. This dissertation occupies the local, event-triggered region.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: design-space taxonomy of related MAC approaches]}\\[0.4em]
+		  \textit{Two-dimensional scatter or quadrant diagram. Horizontal axis: local / infrastructure-free $\leftrightarrow$ requires synchronization, infrastructure, or cellular machinery. Vertical axis: event-triggered / short-lived $\leftrightarrow$ always-on / permanent. Place TSNCtl, CFC-MAC, PRP-MAC, NR-V2X Mode~2, adaptive EDCA, DCC, SkipCCH, wireless TSN/OFDMA, and ``this work'' (local, event-triggered BE suppression) in distinct regions. Annotate the lower-left quadrant as the dissertation's operating point.}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 This dissertation occupies a deliberately narrow point in that space: explicit DSCP~46-to-Voice mapping plus local, event-triggered Best Effort (BE) suppression on IEEE~802.11p Outside the Context of a BSS (OCB) operation, without reservations, clock synchronization, or protocol changes~\cite{jiang2008ieee80211p,IEEE80211}.
@@ -91,27 +92,31 @@ Collectively, TSNCtl, PRP-MAC, CFC-MAC, and NR-V2X Mode~2 demonstrate that tight
 None isolates the narrow question of whether a local, standard-compliant EDCA stack---augmented only by explicit DSCP-to-Voice mapping and short-lived BE suppression---can protect a crash-triggered multicast burst and at what cost to ordinary traffic.
 That narrower question is the gap this dissertation fills.
 
-\begin{table}[htbp]
-  \centering
-  \small
-  \caption{Comparative summary of related approaches and this dissertation. Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study.}
-  \label{tab:rw:comparison}
-  \setlength{\tabcolsep}{3pt}
-  \begin{tabular}{@{}p{2.1cm}p{2.4cm}p{2.3cm}p{2.0cm}p{2.4cm}p{2.3cm}@{}}
-    \toprule
-    Approach & Key mechanism & Requirements & Target traffic & Advantages (claimed) & Relation to this work \\
-    \midrule
-    TSNCtl~\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
-    PRP-MAC~\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
-    CFC-MAC~\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
-    NR-V2X Mode~2~\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy SPS & Different RAT \\
-    SkipCCH~\cite{SkipCCH_Garrido} & Avoid CCH-induced SCH bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
-    Adaptive EDCF~\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
-    DCC~\cite{etsi_dcc_2018} & CBR-driven TPC/TRC/access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
-    Wireless TSN / OFDMA~\cite{seliem2023wirelesstsn,schneider_trigger_2024} & TAS/TWT/RU scheduling & Wi-Fi~6/NIC mods or sync & Industrial / scheduled & Tighter latency control & Out of OCB scope \\
-    \textbf{This work} & \textbf{DSCP$\rightarrow$VO + event-triggered BE suppress} & \textbf{Local OCB EDCA only} & \textbf{Crash VO vs BE multicast} & \textbf{Protection--cost frontier} & \textbf{No sync/infra} \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:rw:comparison}Comparative summary of related approaches and this dissertation. Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study.}
+	\begin{center}
+		\small
+  
+  
+		  \setlength{\tabcolsep}{3pt}
+		  \begin{tabular}{@{}p{2.1cm}p{2.4cm}p{2.3cm}p{2.0cm}p{2.4cm}p{2.3cm}@{}}
+		    \toprule
+		    Approach & Key mechanism & Requirements & Target traffic & Advantages (claimed) & Relation to this work \\
+		    \midrule
+		    TSNCtl~\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
+		    PRP-MAC~\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
+		    CFC-MAC~\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
+		    NR-V2X Mode~2~\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy SPS & Different RAT \\
+		    SkipCCH~\cite{SkipCCH_Garrido} & Avoid CCH-induced SCH bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
+		    Adaptive EDCF~\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
+		    DCC~\cite{etsi_dcc_2018} & CBR-driven TPC/TRC/access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
+		    Wireless TSN / OFDMA~\cite{seliem2023wirelesstsn,schneider_trigger_2024} & TAS/TWT/RU scheduling & Wi-Fi~6/NIC mods or sync & Industrial / scheduled & Tighter latency control & Out of OCB scope \\
+		    \textbf{This work} & \textbf{DSCP$\rightarrow$VO + event-triggered BE suppress} & \textbf{Local OCB EDCA only} & \textbf{Crash VO vs BE multicast} & \textbf{Protection--cost frontier} & \textbf{No sync/infra} \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Prepared by the author from the cited works.}
 \end{table}
 
 % ----------------------------------------------------------------------
@@ -145,14 +150,15 @@ Its conceptual contribution to this dissertation is the demonstration that \emph
 Event-triggered BE suppression is a different reshaping: instead of shifting packet release across channel intervals, it withholds BE channel-access requests while Voice activity associated with a crash is detected.
 Figure~\ref{fig:rw:always-vs-event} contrasts that event-triggered philosophy with always-on congestion loops discussed in Section~\ref{sec:rw:alwayson}.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: always-on load regulation vs event-triggered BE suppression]}\\[0.4em]
-  \textit{Two timelines over a 70~s run with a crash window at $t\in[30,60]$~s. Top: DCC/adaptive EDCA acting continuously on aggregate load (CBR or collision-driven parameter updates). Bottom: BE suppression armed only during the crash/alert window, with finite block windows and guard intervals; BE resumes afterward. Annotate ``aggregate, permanent'' vs ``per-class, event-triggered.''}
-  \vspace{1.8cm}}}
-  \caption{Conceptual contrast between always-on aggregate load regulation (adaptive EDCA / DCC) and event-triggered, per-class Best Effort suppression during a crash-alert window.}
-  \label{fig:rw:always-vs-event}
+\begin{figure}[htb]
+	\caption{\label{fig:rw:always-vs-event}Conceptual contrast between always-on aggregate load regulation (adaptive EDCA / DCC) and event-triggered, per-class Best Effort suppression during a crash-alert window.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: always-on load regulation vs event-triggered BE suppression]}\\[0.4em]
+		  \textit{Two timelines over a 70~s run with a crash window at $t\in[30,60]$~s. Top: DCC/adaptive EDCA acting continuously on aggregate load (CBR or collision-driven parameter updates). Bottom: BE suppression armed only during the crash/alert window, with finite block windows and guard intervals; BE resumes afterward. Annotate ``aggregate, permanent'' vs ``per-class, event-triggered.''}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 \subsection{Protection versus cost as a first-class metric}

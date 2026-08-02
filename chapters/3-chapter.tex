@@ -24,37 +24,38 @@ The chapter is organised as follows:
 \label{sec:assumptions}
 To ensure reproducibility and isolate the effects of the proposed MAC-layer mechanisms, DQ-WiFi operates under a controlled set of conditions. Table~\ref{tab:assumptions} summarizes these operating assumptions.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Operating assumptions of the system model.}
-  \label{tab:assumptions}
-  \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} X}
-    \toprule
-    \textbf{Aspect} & \textbf{Assumption}\\
-    \midrule
-    \textbf{PHY Layer} &
-      Any IEEE\,802.11 physical layer is admissible.
-      The MAC extensions do \emph{not} depend on OFDMA,
-      Trigger Frames, Target Wake Time, or vendor-specific features.
-      Hence the model is portable across 802.11 a/b/g/n/ac/ax/be chipsets.\\\addlinespace
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:assumptions}Operating assumptions of the system model.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} X}
+		    \toprule
+		    \textbf{Aspect} & \textbf{Assumption}\\
+		    \midrule
+		    \textbf{PHY Layer} &
+		      Any IEEE\,802.11 physical layer is admissible.
+		      The MAC extensions do \emph{not} depend on OFDMA,
+		      Trigger Frames, Target Wake Time, or vendor-specific features.
+		      Hence the model is portable across 802.11 a/b/g/n/ac/ax/be chipsets.\\\addlinespace
 
-    \textbf{Radio Geometry} &
-      All stations remain within \SI{300}{m} line-of-sight of the AP, with a fixed set of nodes throughout each run. Hidden terminals are not yet modeled.\\\addlinespace
+		    \textbf{Radio Geometry} &
+		      All stations remain within \SI{300}{m} line-of-sight of the AP, with a fixed set of nodes throughout each run. Hidden terminals are not yet modeled.\\\addlinespace
 
-    \textbf{Clock Discipline} &
-      Every node shares a common time base with \mbox{$\le\,$\SI{1}{\micro\second}}
-      error (e.g.\ IEEE 802.1AS, GNSS, or wired reference).
-      This bound guarantees unambiguous slot boundaries.\\\addlinespace
-    \textbf{Loss Model} &
-      Frames are dropped solely by (i) MAC collisions or (ii) queue
-      overflow.  Physical-layer errors caused by fading or shadowing are
-      neglected so that scheduler behaviour can be studied in isolation.\\\addlinespace
+		    \textbf{Clock Discipline} &
+		      Every node shares a common time base with \mbox{$\le\,$\SI{1}{\micro\second}}
+		      error (e.g.\ IEEE 802.1AS, GNSS, or wired reference).
+		      This bound guarantees unambiguous slot boundaries.\\\addlinespace
+		    \textbf{Loss Model} &
+		      Frames are dropped solely by (i) MAC collisions or (ii) queue
+		      overflow.  Physical-layer errors caused by fading or shadowing are
+		      neglected so that scheduler behaviour can be studied in isolation.\\\addlinespace
 
-
-\textbf{Mobility} &
-  Mobility is not modeled in this stage. Nodes remain static and always associated with the same AP. Handover and dynamic topology are left for final work using Veins and SUMO.\\
-    \bottomrule
-  \end{tabularx}
+		\textbf{Mobility} &
+		  Mobility is not modeled in this stage. Nodes remain static and always associated with the same AP. Handover and dynamic topology are left for final work using Veins and SUMO.\\
+		    \bottomrule
+		  \end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{table}
 
 \newpage
@@ -79,11 +80,12 @@ The reference topology (Figure \ref{fig:sys_model}) models an infrastructure-bas
     \end{itemize}
 \end{itemize}
 
-\begin{figure}[h!]
-  \centering
-  \includegraphics[scale=.25]{Figs/Topology.png}
-  \caption{V2X simple topology with beacon-driven QoS control. Each vehicles implement state machines synchronized to AP directives.}
-  \label{fig:sys_model}
+\begin{figure}[htb]
+	\caption{\label{fig:sys_model}V2X simple topology with beacon-driven QoS control. Each vehicles implement state machines synchronized to AP directives.}
+	\begin{center}
+		\includegraphics[scale=.25]{Figs/Topology.png}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,11 +103,12 @@ DQ-WiFi reserves airtime implicitly by cycling nodes through the \textbf{ACTIVE}
 
 Medium access in DQ-WiFi follows the three-state FSM in Figure \ref{fig:generic_fsm}, executed identically by all nodes (AP/STAs) for network-wide coherence. Implementation specifics appear in Chapter \ref{chap:implementation}; this description remains technology-neutral.
 
-\begin{figure}[h]
-\centering
-\includegraphics[scale=.55]{Figs/fsm_simple.pdf}
-\caption{Abstract FSM for all nodes.}
-\label{fig:generic_fsm}
+\begin{figure}[htb]
+	\caption{\label{fig:generic_fsm}Abstract FSM for all nodes.}
+	\begin{center}
+		\includegraphics[scale=.55]{Figs/fsm_simple.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 \subsection{State Semantics and Transitions}
@@ -322,9 +325,10 @@ interval for emergency preemption. This visual emphasises that emergency
 transmissions interrupt the cycle immediately, whereas regular frames must
 align with existing transmission opportunities.
 
-\begin{figure}[h]
-\centering
-\includegraphics[scale=0.5]{Figs/delay.png}
-\caption{Regular Critical and Emergency frame delay bound analysis.}
-\label{fig:delay_anal}
+\begin{figure}[htb]
+	\caption{\label{fig:delay_anal}Regular Critical and Emergency frame delay bound analysis.}
+	\begin{center}
+		\includegraphics[scale=0.5]{Figs/delay.png}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}

@@ -34,6 +34,10 @@
 	]{abntex2}
 
 \usepackage{setup/ufscthesisA4-alf}
+\usepackage{float}
+\usepackage{array,multirow,booktabs,ragged2e,tabularx}
+\usepackage{subcaption}
+
 \addbibresource{aftertext/references.bib} % Seus arquivos de referências
 
 % ajusta espaçamento das listas itemize e enumerate
@@ -222,7 +226,6 @@
 \usepackage{siunitx}
 \usepackage{amsmath}
 \usepackage{adjustbox}
-\usepackage{booktabs}
 
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Var}{\operatorname{Var}}
@@ -312,7 +315,7 @@
 % Referências bibliográficas
 % ----------------------------------------------------------
 \begingroup
-    \printbibliography[title=REFERENCES]
+    \SingleSpacing\printbibliography[title=REFERENCES]
 \endgroup
 
 % ----------------------------------------------------------

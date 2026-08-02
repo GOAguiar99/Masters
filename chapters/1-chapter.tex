@@ -79,14 +79,15 @@ For unicast frames, a positive acknowledgement (ACK) confirms success; the absen
 The contention window starts at $\mathrm{CW}_{\min}$ and doubles after each unsuccessful transmission until it reaches $\mathrm{CW}_{\max}$; after a successful transmission, or after the retry limit is exhausted, it is reset.
 Figure~\ref{fig:bg:dcf-backoff} illustrates a two-station contention episode, including a freeze interval caused by an overlapping transmission.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: DCF CSMA/CA backoff timeline]}\\[0.4em]
-  \textit{Two stations contend after a busy medium. Show DIFS, random backoff countdown, freeze during an overlapping transmission, resume after a further DIFS, and successful transmission with ACK. Annotate $\mathrm{CW}_{\min}$, backoff slots, and the freeze interval.}
-  \vspace{1.8cm}}}
-  \caption{Timeline of the IEEE~802.11 DCF backoff process, including carrier sensing, DIFS deferral, slotted countdown, and backoff freezing while the medium is busy.}
-  \label{fig:bg:dcf-backoff}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:dcf-backoff}Timeline of the IEEE~802.11 DCF backoff process, including carrier sensing, DIFS deferral, slotted countdown, and backoff freezing while the medium is busy.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: DCF CSMA/CA backoff timeline]}\\[0.4em]
+		  \textit{Two stations contend after a busy medium. Show DIFS, random backoff countdown, freeze during an overlapping transmission, resume after a further DIFS, and successful transmission with ACK. Annotate $\mathrm{CW}_{\min}$, backoff slots, and the freeze interval.}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 Two properties of this process are central to the later argument.
@@ -139,33 +140,36 @@ A smaller AIFSN, a smaller $\mathrm{CW}_{\min}$, and a smaller $\mathrm{CW}_{\ma
 When two local categories expire their backoff counters in the same slot, an \emph{internal} (virtual) collision is resolved in favor of the higher-priority category; the lower-priority category behaves as if an external collision had occurred and doubles its contention window~\cite{kong2004EDCA,mangold2003QoS}.
 Figure~\ref{fig:bg:edca-queues} summarizes the four-queue architecture and the mapping from IEEE~802.1D user priorities into access categories.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: EDCA four-queue architecture]}\\[0.4em]
-  \textit{Show MSDUs entering four AC queues (VO, VI, BE, BK), each with its own AIFSN/CW/TXOP backoff entity, a virtual-collision resolver favoring higher ACs, and a single transmission onto the shared medium. Annotate the UP$\rightarrow$AC mapping (UP~6/7$\rightarrow$VO, UP~4/5$\rightarrow$VI, UP~0/3$\rightarrow$BE, UP~1/2$\rightarrow$BK).}
-  \vspace{1.8cm}}}
-  \caption{EDCA architecture: four parallel access-category queues with independent backoff entities, virtual-collision resolution, and the canonical user-priority to access-category mapping.}
-  \label{fig:bg:edca-queues}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:edca-queues}EDCA architecture: four parallel access-category queues with independent backoff entities, virtual-collision resolution, and the canonical user-priority to access-category mapping.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: EDCA four-queue architecture]}\\[0.4em]
+		  \textit{Show MSDUs entering four AC queues (VO, VI, BE, BK), each with its own AIFSN/CW/TXOP backoff entity, a virtual-collision resolver favoring higher ACs, and a single transmission onto the shared medium. Annotate the UP$\rightarrow$AC mapping (UP~6/7$\rightarrow$VO, UP~4/5$\rightarrow$VI, UP~0/3$\rightarrow$BE, UP~1/2$\rightarrow$BK).}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 Table~\ref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by RFC~8325 for infrastructure WLANs; the numerical defaults used in the present study's INET configuration are stated in the System Model chapter and need not coincide with every published draft-era table~\cite{RFC8325_WiFi_QoS}.
 The essential ordering is stable across revisions: \texttt{AC\_VO} is the most aggressive category, followed by \texttt{AC\_VI}, \texttt{AC\_BE}, and \texttt{AC\_BK}.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in the System Model.}
-  \label{tab:bg:edca-params}
-  \begin{tabular}{@{}llccc@{}}
-    \toprule
-    Access category & Typical UP & Relative AIFSN & Relative $\mathrm{CW}_{\min}$ & Relative $\mathrm{CW}_{\max}$ \\
-    \midrule
-    \texttt{AC\_VO} & 6, 7 & shortest & smallest & smallest \\
-    \texttt{AC\_VI} & 4, 5 & short    & small    & small \\
-    \texttt{AC\_BE} & 0, 3 & medium   & large    & large \\
-    \texttt{AC\_BK} & 1, 2 & longest  & large    & large \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:edca-params}Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in the System Model.}
+	\begin{center}
+		\begin{tabular}{@{}llccc@{}}
+		    \toprule
+		    Access category & Typical UP & Relative AIFSN & Relative $\mathrm{CW}_{\min}$ & Relative $\mathrm{CW}_{\max}$ \\
+		    \midrule
+		    \texttt{AC\_VO} & 6, 7 & shortest & smallest & smallest \\
+		    \texttt{AC\_VI} & 4, 5 & short    & small    & small \\
+		    \texttt{AC\_BE} & 0, 3 & medium   & large    & large \\
+		    \texttt{AC\_BK} & 1, 2 & longest  & large    & large \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC8325_WiFi_QoS}.}
 \end{table}
 
 Kong et al.\ provide an analytical model of EDCA that accounts for virtual collisions, heterogeneous AIFS values, and heterogeneous contention windows, and that yields throughput and mean access delay per category~\cite{kong2004EDCA}.
@@ -228,14 +232,15 @@ In OCB mode, frames carry a wildcard BSSID; stations neither associate nor authe
 The physical layer typically uses \SI{10}{\mega\hertz} OFDM channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
 Figure~\ref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: BSS infrastructure Wi-Fi vs.\ 802.11p OCB]}\\[0.4em]
-  \textit{Left: stations associated to an AP inside a BSS, with uplink/downlink and AP-coordinated services. Right: vehicles in OCB mode exchanging direct V2V frames on a shared 5.9~GHz / 10~MHz channel with no association, no AP, and no central scheduler. Annotate ``wildcard BSSID'' and ``distributed contention only.''}
-  \vspace{1.8cm}}}
-  \caption{Comparison of infrastructure BSS operation and IEEE~802.11p Outside the Context of a BSS (OCB) vehicular operation. Prioritization in OCB must be realized locally; AP-centric QoS mechanisms do not apply.}
-  \label{fig:bg:ocb}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:ocb}Comparison of infrastructure BSS operation and IEEE~802.11p Outside the Context of a BSS (OCB) vehicular operation. Prioritization in OCB must be realized locally; AP-centric QoS mechanisms do not apply.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: BSS infrastructure Wi-Fi vs.\ 802.11p OCB]}\\[0.4em]
+		  \textit{Left: stations associated to an AP inside a BSS, with uplink/downlink and AP-coordinated services. Right: vehicles in OCB mode exchanging direct V2V frames on a shared 5.9~GHz / 10~MHz channel with no association, no AP, and no central scheduler. Annotate ``wildcard BSSID'' and ``distributed contention only.''}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 Above the 802.11p MAC, the IEEE~1609.4 multi-channel specification organizes time into synchronization intervals that alternate a Control Channel interval with a Service Channel interval, so that safety and non-safety traffic can be separated in frequency and time~\cite{ieee1609_4}.
@@ -277,14 +282,15 @@ Application criticality reaches the wireless MAC only through an explicit cross-
 This section traces that mapping from the Differentiated Services architecture, through the Expedited Forwarding per-hop behavior and DSCP~46, through the DSCP-to-user-priority-to-access-category path standardized for Wi-Fi, to the multicast limitations that still apply after a correct mapping.
 The path is exactly what the study's \texttt{QosClassifier} implements for crash alerts and is the reason the dissertation carefully distinguishes DSCP~46, the EF per-hop behavior, user priority~6, and \texttt{AC\_VO}: they are related objects on a chain, not synonyms.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: DSCP$\rightarrow$UP$\rightarrow$AC cross-layer path]}\\[0.4em]
-  \textit{Horizontal flow: Application marks DSCP~0 (BE) or DSCP~46 (EF) $\rightarrow$ IP DiffServ field $\rightarrow$ host DSCP-to-UP classifier $\rightarrow$ 802.11 user priority $\rightarrow$ EDCA AC queue $\rightarrow$ contention on the shared medium. Annotate the RFC~8325 default pitfall (EF$\rightarrow$UP~5$\rightarrow$AC\_VI) versus the study's explicit mapping (EF$\rightarrow$UP~6$\rightarrow$AC\_VO).}
-  \vspace{1.8cm}}}
-  \caption{Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
-  \label{fig:bg:dscp-path}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: DSCP$\rightarrow$UP$\rightarrow$AC cross-layer path]}\\[0.4em]
+		  \textit{Horizontal flow: Application marks DSCP~0 (BE) or DSCP~46 (EF) $\rightarrow$ IP DiffServ field $\rightarrow$ host DSCP-to-UP classifier $\rightarrow$ 802.11 user priority $\rightarrow$ EDCA AC queue $\rightarrow$ contention on the shared medium. Annotate the RFC~8325 default pitfall (EF$\rightarrow$UP~5$\rightarrow$AC\_VI) versus the study's explicit mapping (EF$\rightarrow$UP~6$\rightarrow$AC\_VO).}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 \subsection{Differentiated Services architecture}
@@ -327,18 +333,20 @@ RFC~8325 consequently recommends a non-default mapping in which EF is mapped to 
 User-priority markings alone do not affect over-the-air treatment; only the subsequent mapping of user priorities into access categories, and the contention parameters of those categories, produce differentiation~\cite{RFC8325_WiFi_QoS}.
 Table~\ref{tab:bg:dscp-map} summarizes the default pitfall and the recommended Voice mapping for the two codepoints used in this study.
 
-\begin{table}[htbp]
-  \centering
-  \caption{DSCP to user-priority to access-category mapping for the study's two traffic classes, contrasting the common three-MSB default with the RFC~8325 recommendation for Expedited Forwarding.}
-  \label{tab:bg:dscp-map}
-  \begin{tabular}{@{}lllll@{}}
-    \toprule
-    Traffic & DSCP & Default 3-MSB UP & Recommended UP & Resulting AC \\
-    \midrule
-    Background (BE) & 0 (\texttt{000000}) & 0 & 0 & \texttt{AC\_BE} \\
-    Crash alert (EF) & 46 (\texttt{101110}) & 5 $\rightarrow$ \texttt{AC\_VI} & 6 & \texttt{AC\_VO} \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:dscp-map}DSCP to user-priority to access-category mapping for the study's two traffic classes, contrasting the common three-MSB default with the RFC~8325 recommendation for Expedited Forwarding.}
+	\begin{center}
+		\begin{tabular}{@{}lllll@{}}
+		    \toprule
+		    Traffic & DSCP & Default 3-MSB UP & Recommended UP & Resulting AC \\
+		    \midrule
+		    Background (BE) & 0 (\texttt{000000}) & 0 & 0 & \texttt{AC\_BE} \\
+		    Crash alert (EF) & 46 (\texttt{101110}) & 5 $\rightarrow$ \texttt{AC\_VI} & 6 & \texttt{AC\_VO} \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC8325_WiFi_QoS}.}
 \end{table}
 
 RFC~8325 also states an honesty clause that this dissertation adopts verbatim in spirit: IEEE~802.11 ``does not support an EF PHB service, as it is not possible to assure that a given access category will be serviced with strict priority over another (due to the random element within the contention process)''~\cite{RFC8325_WiFi_QoS}.
@@ -366,22 +374,24 @@ Table~\ref{tab:bg:multicast-tools} summarizes which reliability tools are availa
 Directed Multicast Service, GCR, and related AP-based mitigations can raise delivery probability in a BSS but ``still [do] not guarantee success'' and may introduce unacceptable latency~\cite{RFC9119_Multicast_IEEE802_Wireless,kosekszott2012What}; more importantly, they are unavailable without an AP.
 The study therefore keeps one-hop multicast---the natural safety primitive---and concentrates engineering effort on contention shaping rather than on link-layer retransmission.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Link-layer reliability mechanisms for group-addressed frames: availability in infrastructure BSS Wi-Fi versus in IEEE~802.11p OCB operation as used in this study.}
-  \label{tab:bg:multicast-tools}
-  \begin{tabular}{@{}p{0.42\linewidth}cc@{}}
-    \toprule
-    Mechanism & Infrastructure BSS & OCB (this study) \\
-    \midrule
-    Link-layer ACK / retransmission for group-addressed frames & No (base standard) & No \\
-    GCR Unsolicited Retry / Block Ack (802.11aa) & Yes (if implemented) & No \\
-    Directed Multicast / multicast-to-unicast conversion & Yes (AP) & No \\
-    EDCA priority via UP$\rightarrow$AC mapping & Yes & Yes \\
-    DCC aggregate load control (ITS-G5) & N/A & Possible (not enabled here) \\
-    Event-triggered BE suppression (this work) & N/A & Evaluated \\
-    \bottomrule
-  \end{tabular}
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:multicast-tools}Link-layer reliability mechanisms for group-addressed frames: availability in infrastructure BSS Wi-Fi versus in IEEE~802.11p OCB operation as used in this study.}
+	\begin{center}
+		\begin{tabular}{@{}p{0.42\linewidth}cc@{}}
+		    \toprule
+		    Mechanism & Infrastructure BSS & OCB (this study) \\
+		    \midrule
+		    Link-layer ACK / retransmission for group-addressed frames & No (base standard) & No \\
+		    GCR Unsolicited Retry / Block Ack (802.11aa) & Yes (if implemented) & No \\
+		    Directed Multicast / multicast-to-unicast conversion & Yes (AP) & No \\
+		    EDCA priority via UP$\rightarrow$AC mapping & Yes & Yes \\
+		    DCC aggregate load control (ITS-G5) & N/A & Possible (not enabled here) \\
+		    Event-triggered BE suppression (this work) & N/A & Evaluated \\
+		    \bottomrule
+		  \end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{RFC9119_Multicast_IEEE802_Wireless}.}
 \end{table}
 
 As with RFC~8325, RFC~9119 is written around AP/BSS terminology.
@@ -413,14 +423,15 @@ Veins allows the network model to control vehicle entities (for example, stoppin
 SUMO itself is an open-source microscopic traffic simulator supporting multi-modal traffic, lane-changing and car-following models, and external coupling interfaces; Alvarez Lopez et al.\ provide the reference publication describing its architecture and validation role in the ITS research ecosystem~\cite{lopez2018sumo}.
 Figure~\ref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; Veins/INET execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
 
-\begin{figure}[htbp]
-  \centering
-  \fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-  \textbf{[Figure placeholder: Veins--SUMO--INET closed-loop architecture]}\\[0.4em]
-  \textit{Show SUMO (mobility) $\leftrightarrow$ TraCI $\leftrightarrow$ Veins/OMNeT++ (network), with INET 802.11p PHY/MAC, the study's CritPacketSender / CrashBurstApp / QosClassifier / V2xHcf modules, and KPI logging sinks. Annotate the crash-node stop command flowing from the network model into SUMO.}
-  \vspace{1.8cm}}}
-  \caption{Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
-  \label{fig:bg:veins}
+\begin{figure}[htb]
+	\caption{\label{fig:bg:veins}Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
+	\begin{center}
+		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
+		  \textbf{[Figure placeholder: Veins--SUMO--INET closed-loop architecture]}\\[0.4em]
+		  \textit{Show SUMO (mobility) $\leftrightarrow$ TraCI $\leftrightarrow$ Veins/OMNeT++ (network), with INET 802.11p PHY/MAC, the study's CritPacketSender / CrashBurstApp / QosClassifier / V2xHcf modules, and KPI logging sinks. Annotate the crash-node stop command flowing from the network model into SUMO.}
+		  \vspace{1.8cm}}}
+	\end{center}
+	\fonte{Prepared by the author.}
 \end{figure}
 
 The present experiments use this toolchain on a highway corridor with light (10~vehicles) and heavy (100~vehicles) density packages.

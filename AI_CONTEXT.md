@@ -82,6 +82,7 @@ Default behavior:
 - Portuguese **Resumo** + English **Abstract** in `beforetext/beforetext.tex`
 - Main chapters in English
 - Citation commands: `\cite{}`, `\textcite{}`, `\parencite{}` (biblatex/abnt)
+- **Figures/tables (ABNT NBR 14724):** caption **above** the illustration; mandatory `\fonte{...}` **below**; prefer `\caption{\label{...}...}` and placement `[htb]`; tables use `\ABNTEXfontereduzida`. For author-made content use `\fonte{Prepared by the author.}` (or a citation/adaptation note when the content is based on others). Follow `Template/chapters/2-chapter.tex` as the reference pattern.
 
 ## Reference-paper workflow
 
