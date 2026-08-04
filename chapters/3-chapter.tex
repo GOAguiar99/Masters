@@ -1,334 +1,265 @@
 \chapter{System Model}
 \label{chap:sysmodel}
 
-This chapter formalises \emph{Deterministic QoS over Wi-Fi} (\gls{dqwifi}),
-a framework for \textbf{bandwidth-guaranteed in
-\gls{v2x}} communication without relying on vendor-specific IEEE 802.11 amendments. DQ-WiFi integrates (i) periodic
-\textbf{bandwidth reservation} and (ii) \textbf{coordinated listening windows}
-to provide collision-free airtime for time-critical traffic (e.g. collision), while preserving
-legacy CSMA/CA for all transmissions. Reserved bandwidth may serve critical traffic or, if absent, a selected class with delay guarantees. All mechanisms operate at the MAC layer and
-can be implemented in any Wi-Fi stack.
-The chapter is organised as follows:
+\autoref{chap:background} established the standards path from application criticality through \gls{dscp} marking and IEEE~802.11 \gls{edca} to a shared contention medium, and \autoref{sec:rel_work} showed that stronger vehicular \gls{mac} alternatives typically require synchronization, infrastructure, or a different radio access technology.
+The residual design point occupied by this dissertation is narrower: protect rare, high-impact crash alerts with an explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or a new \gls{mac} protocol~\cite{jiang2008ieee80211p,IEEE80211,RFC8325_WiFi_QoS}.
 
-\begin{itemize}
-  \item Section \ref{sec:assumptions}: network, traffic, and timing assumptions.
-  \item Section \ref{sec:topology}: reference topology.
-  \item Section \ref{sec:listening}: bandwidth-reservation mechanism.
-  \item Section \ref{sec:fsm}: generic \gls{fsm}.
-  \item Section \ref{sec:analysis}: worst-case delay bounds.
-\end{itemize}
+This chapter formalizes that design point as an abstract system model---what the proposed system \emph{is}, independently of any particular simulator, programming language, or software stack.
+It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, the modeling assumptions, and the tool-agnostic model parameters that fix the timing, load, and access-control behaviour.
+How the model is realized in software, and how well it performs under experiment, are deferred to \autoref{chap:implementation} and the subsequent evaluation.
+
+The chapter is organized as follows.
+Section~\ref{sec:sys:network} states the network model.
+Section~\ref{sec:sys:traffic} defines the traffic classes.
+Section~\ref{sec:sys:qos} presents the \gls{qos} mapping and the five \gls{mac} policies.
+Section~\ref{sec:sys:event} describes the crash timeline.
+Section~\ref{sec:sys:scope} lists assumptions and scope limits.
+Section~\ref{sec:sys:params} records the abstract model parameters.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%-------------------------------------------------------------------------------
-\section{Assumptions}
-\label{sec:assumptions}
-To ensure reproducibility and isolate the effects of the proposed MAC-layer mechanisms, DQ-WiFi operates under a controlled set of conditions. \autoref{tab:assumptions} summarizes these operating assumptions.
+\section{Network Model}
+\label{sec:sys:network}
+
+The system considers a decentralized vehicular ad hoc network in which vehicles communicate directly over a shared IEEE~802.11p channel.
+No access point, roadside unit, or centralized coordinator participates in forwarding or channel allocation~\cite{jiang2008ieee80211p}.
+All stations therefore contend for the same wireless medium under \gls{ocb} operation, so the delivery of urgent traffic depends on distributed medium access rather than on reserved transmission opportunities~\cite{IEEE80211,etsi_en_302663}.
+
+At the application level, communication follows a one-hop multicast dissemination model: each transmission is injected into the same contention-based medium and may be received by all vehicles within radio range.
+Group-addressed IEEE~802 frames inherit the hostile link-layer contract already discussed in \autoref{chap:background}---no acknowledgement, no automatic retransmission, and typically a conservative mandatory data rate---so timely delivery hinges on contention control and on correct priority mapping rather than on link-layer recovery~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+\autoref{fig:sys:architecture} summarizes this infrastructure-free \gls{v2v} picture.
+
+\begin{figure}[htb]
+	\caption{\label{fig:sys:architecture}System architecture: decentralized vehicle nodes communicating over IEEE~802.11p without infrastructure support.}
+	\begin{center}
+		\includegraphics[width=0.92\linewidth]{Figs/system_model_architecture.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, sensitivity, noise floor, and SNIR threshold appear with the other model parameters in \autoref{tab:sys:parameters}.
+Propagation is free-space path loss with binary obstruction and without small-scale fading or shadowing, as stated in \autoref{sec:sys:scope}.
+\emph{Physical-layer connectivity is held fixed across the five \gls{mac} policies}, so differences between \gls{be} and \gls{vo} service reflect queueing and contention rather than time-varying link quality.
+Dense highway broadcast already stresses this shared medium through repeated backoff freezing under load~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}; the model isolates that contention so that the policies can be compared under controlled offered load.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Traffic Model}
+\label{sec:sys:traffic}
+
+Traffic uses a synthetic two-class abstraction rather than standardized Cooperative Awareness Message (CAM) or Decentralized Environmental Notification Message (DENM) schedules, ITS-G5 or WAVE application stacks, or production vehicular logic.
+The goal is to isolate \gls{mac}-level protection-versus-cost trade-offs under controlled offered load, not to reproduce a complete \gls{its} protocol stack.
+
+Every vehicle generates ordinary background traffic throughout the scenario horizon.
+This flow represents non-critical cooperative traffic and is modeled by a configurable payload, a deterministic inter-arrival interval, and default Best Effort marking (\gls{dscp}~0).
+The model instantiates this process with the low, medium, and high offered-load profiles in \autoref{tab:sys:parameters}, so all \gls{mac} policies face the same application-side load within a given profile.
+
+Crash-alert dissemination is an event-driven overlay on that background.
+One designated vehicle becomes the crash source at the configured crash time and begins emitting alert messages marked with \gls{dscp}~46, the Expedited Forwarding codepoint used in this study as the crash marker~\cite{RFC3246_EF_PHB,RFC4594_DiffServ_Service_Classes}.
+Each logical alert may be repeated a configurable number of times, with configurable spacing and jitter, to represent short warning bursts.
+Importantly, the crash-alert flow is \emph{superimposed} on the background flow rather than replacing it: the crash source continues to contribute ordinary \gls{be} traffic while simultaneously injecting urgent alerts.
+After the crash window ends, alerts cease and the network returns to \gls{be}-only operation, as detailed in \autoref{sec:sys:event}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{QoS Model and MAC Policies}
+\label{sec:sys:qos}
+
+The model admits only two traffic classes.
+Periodic background packets remain Best Effort and carry \gls{dscp}~0.
+Crash-alert packets carry \gls{dscp}~46 and, in the \gls{qos}-enabled policies, are explicitly mapped to the IEEE~802.11 Voice user priority and \gls{ac}~\cite{RFC8325_WiFi_QoS,IEEE80211e_2005}.
+That mapping is not automatic in every stack; the Background chapter's DiffServ path (\autoref{sec:bg:dscp}) is the normative mapping assumed here for QoS-enabled policies~\cite{RFC2474_DSField,RFC2475_DiffServ_Architecture}.
+\autoref{fig:sys:stack} summarizes the abstract end-to-end path from application marking to channel access.
+
+\begin{figure}[htb]
+	\caption{\label{fig:sys:stack}Conceptual cross-layer path for crash-aware prioritization. Study-specific mechanisms act at Application, Network/\gls{qos}, and \gls{mac}; the shared \gls{phy} baseline is identical across all policies.}
+	\begin{center}
+	\ABNTEXfontereduzida
+	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
+		\toprule
+		\textbf{Application:} periodic \gls{be} background and crash-triggered \gls{vo} alert bursts (\gls{dscp}~0~/~\gls{dscp}~46) \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{Network/\gls{qos}:} explicit DSCP-to-Voice user-priority mapping for crash alerts \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{\gls{mac}:} IEEE~802.11p \gls{edca} (\texttt{AC\_BE}, \texttt{AC\_VO}); optional local adaptive \gls{be} suppression \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{\gls{phy}/channel:} shared decentralized vehicular radio (unchanged across policies) \\
+		\bottomrule
+	\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+Five \gls{mac} policies operate on the same traffic and radio model.
+They form a comparison ladder from undifferentiated access, through standard \gls{edca} differentiation, to three adaptive extensions that temporarily suppress competing \gls{be} traffic while crash alerts are active.
+None of the policies reserves the channel or claims deterministic delay bounds: \gls{edca} provides statistical differentiation only~\cite{mangold2003QoS,kosekszott2012What,kong2004EDCA}.
+
+\begin{itemize}
+  \item \texttt{plain} --- Non-\gls{qos} \gls{dcf} baseline: a single pending queue of 128~packets, no DSCP-to-\gls{ac} classifier, and no \gls{edca} differentiation~\cite{IEEE80211,bianchi2000DCF}.
+  \item \texttt{edca\_only} --- Standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0.
+    Queue depths for \texttt{AC\_BK}/\texttt{AC\_BE}/\texttt{AC\_VI}/\texttt{AC\_VO} are 128/128/64/32~packets; \gls{aifsn} values are 7/3/2/2; \texttt{cwMin} values are 15/15/7/3; \texttt{cwMax} values are 1023/1023/15/7~\cite{IEEE80211e_2005}.
+  \item \texttt{edca\_v2x\_vo\_stable} --- Sustained Voice protection: inherits the \texttt{edca\_only} mapping and contention parameters, and adds the adaptive controller below with a block window of~\SI{15}{\milli\second}, a maximum continuous block of~\SI{80}{\milli\second}, a send guard of~\SI{5}{\milli\second}, and a Voice activation threshold of~2~packets.
+  \item \texttt{edca\_v2x\_vo\_guarded} --- Bounded suppression: same inheritance, with a tighter block window of~\SI{4}{\milli\second}, a maximum continuous block of~\SI{20}{\milli\second}, a send guard of~\SI{4}{\milli\second}, and a Voice threshold of~3~packets.
+  \item \texttt{edca\_v2x\_vo\_emergency} --- Emergency preemption: same inheritance with emergency preemption enabled, a block window of~\SI{10}{\milli\second}, a maximum continuous block of~\SI{60}{\milli\second}, a send guard of~\SI{5}{\milli\second}, and a Voice threshold of~1~packet; newly arriving \gls{be} packets may be dropped while protection is active.
+\end{itemize}
+
+\noindent
+For brevity the adaptive policies are often abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency}.
+Full parameter rows appear again in \autoref{tab:sys:parameters}.
+
+\subsection{Adaptive three-mode controller}
+\label{sec:sys:controller}
+
+The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening}, \emph{blocking}, and \emph{sending}---that interposes on \gls{edca} channel-access requests without changing the underlying queue parameters inherited from \texttt{edca\_only}.
+\autoref{fig:sys:fsm} summarizes the modes and transitions.
+
+\begin{figure}[htb]
+	\caption{\label{fig:sys:fsm}Local adaptive controller modes and transitions for the \texttt{edca\_v2x\_vo\_*} policies.}
+	\begin{center}
+	\ABNTEXfontereduzida
+	\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.4cm} X}
+		\toprule
+		\textbf{Mode} & \textbf{Behaviour} \\
+		\midrule
+		\emph{listening} &
+		  Default mode.
+		  Ordinary \gls{edca} operation; the controller monitors local Voice queue buildup and overheard Voice-classified frames. \\
+		\addlinespace
+		\emph{blocking} &
+		  Entered when the Voice activation threshold is crossed.
+		  \gls{be} channel requests are deferred (and under \texttt{emergency}, newly arriving \gls{be} may be dropped) for a finite protection window, bounded by the maximum continuous block. \\
+		\addlinespace
+		\emph{sending} &
+		  Entered while the node's own Voice frames obtain the channel.
+		  \gls{be} suppression remains active; a short send-guard interval must expire before the controller returns to \emph{listening}. \\
+		\bottomrule
+	\end{tabularx}
+
+	\vspace{0.8em}
+	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
+		\toprule
+		\emph{listening}
+		\;$\xrightarrow{\text{VO threshold crossed}}$\;
+		\emph{blocking}
+		\;$\xrightarrow{\text{own VO on air}}$\;
+		\emph{sending}
+		\;$\xrightarrow{\text{window + guard expire}}$\;
+		\emph{listening} \\
+		\bottomrule
+	\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+A node leaves \emph{listening} for \emph{blocking} when local Voice queue buildup or overheard Voice-classified frames cross the activation threshold, moves to \emph{sending} while its own Voice frames obtain the channel, and returns to \emph{listening} once the finite protection window and a short guard interval expire.
+Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but \gls{be} channel requests are deferred while the controller is blocking or sending.
+Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} grants released.
+The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium, open scheduled gates, or provide worst-case latency bounds~\cite{IEEE80211e_2005,kosekszott2012What}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Event Model}
+\label{sec:sys:event}
+
+The system evolves through three phases, illustrated in \autoref{fig:sys:timeline}.
+
+\begin{figure}[htb]
+	\caption{\label{fig:sys:timeline}Conceptual event timeline: normal background traffic, crash-triggered Voice prioritization, and recovery.}
+	\begin{center}
+		\includegraphics[width=\linewidth]{Figs/event_timeline_cropped.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+\begin{enumerate}
+  \item \textbf{Normal operation.}
+    Before the crash event, all vehicles generate only periodic \gls{be} multicast traffic.
+    No crash-alert Voice flow is present, and adaptive controllers remain in \emph{listening}.
+  \item \textbf{Crash window.}
+    At time~\SI{30}{\second} of the scenario horizon, one designated vehicle enters the crash state: it becomes stationary and immediately begins the Voice alert flow for a~\SI{30}{\second} window.
+    Ordinary background traffic remains active across the network, including at the crash source, so urgent packets must compete with existing channel load~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+  \item \textbf{Recovery.}
+    After the crash window expires, crash-alert transmissions cease and the system reverts to \gls{be}-only background traffic.
+    Under the adaptive policies, however, the local effect of the crash can briefly outlast the application burst: nodes that still observe Voice queue pressure or receive crash-related Voice frames may remain temporarily in \emph{blocking} or \emph{sending} until the protection window and its short guard interval expire.
+\end{enumerate}
+
+This three-phase structure is deliberately simple.
+It isolates a single crash source and a bounded alert interval so that the five policies can be compared on the same timeline under light and heavy fleet densities.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Assumptions and Scope}
+\label{sec:sys:scope}
+
+The model is intentionally minimal.
+There is no infrastructure, centralized scheduler, or Time-Sensitive Networking-style gating; there is a single crash source; and there is a two-class \gls{be}/\gls{vo} distinction only.
+Road geometry, fleet density, and radio parameters fix concrete instances of the model; their reference values appear in \autoref{tab:sys:parameters}.
+
+\gls{dcc}, as standardized for ITS-G5 deployments, is \emph{not} part of the model: application transmit rates follow the fixed offered-load profiles rather than reacting to channel busy ratio~\cite{etsi_dcc_2018}.
+As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regulator; excluding it here isolates the protection-versus-cost behaviour of the five \gls{mac} policies.
+
+Small-scale fading, log-normal shadowing, and graded obstacle attenuation are likewise omitted.
+Connectivity uses free-space path loss, a static Signal-to-Noise-plus-Interference Ratio (SNIR) threshold, and binary obstruction (a link is either clear or fully blocked).
+Contention is therefore induced mainly by synchronized multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
+
+Finally, the model makes no deterministic or worst-case latency claims.
+\gls{edca} and all five policies provide statistical service only~\cite{kosekszott2012What,mangold2003QoS}.
+Any quantitative statements about Voice or Best Effort delay belong to the evaluation, not to closed-form bounds derived from this chapter.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Model Parameters}
+\label{sec:sys:params}
+
+\autoref{tab:sys:parameters} collects the tool-agnostic parameters that instantiate the network, traffic, timing, and \gls{mac} models above.
+A reader who re-implements the system in a different language or simulator would still need these values to obtain an equivalent conceptual configuration.
+Software versions, module names, configuration-file naming, random seeds, and measurement instrumentation are outside the scope of this chapter and appear in \autoref{chap:implementation} and the evaluation.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:assumptions}Operating assumptions of the system model.}
+	\caption{\label{tab:sys:parameters}Abstract model parameters for the crash-aware system.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} X}
-		    \toprule
-		    \textbf{Aspect} & \textbf{Assumption}\\
-		    \midrule
-		    \textbf{PHY Layer} &
-		      Any IEEE\,802.11 physical layer is admissible.
-		      The MAC extensions do \emph{not} depend on OFDMA,
-		      Trigger Frames, Target Wake Time, or vendor-specific features.
-		      Hence the model is portable across 802.11 a/b/g/n/ac/ax/be chipsets.\\\addlinespace
-
-		    \textbf{Radio Geometry} &
-		      All stations remain within \SI{300}{m} line-of-sight of the AP, with a fixed set of nodes throughout each run. Hidden terminals are not yet modeled.\\\addlinespace
-
-		    \textbf{Clock Discipline} &
-		      Every node shares a common time base with \mbox{$\le\,$\SI{1}{\micro\second}}
-		      error (e.g.\ IEEE 802.1AS, GNSS, or wired reference).
-		      This bound guarantees unambiguous slot boundaries.\\\addlinespace
-		    \textbf{Loss Model} &
-		      Frames are dropped solely by (i) MAC collisions or (ii) queue
-		      overflow.  Physical-layer errors caused by fading or shadowing are
-		      neglected so that scheduler behaviour can be studied in isolation.\\\addlinespace
-
-		\textbf{Mobility} &
-		  Mobility is not modeled in this stage. Nodes remain static and always associated with the same AP. Handover and dynamic topology are left for final work using Veins and SUMO.\\
-		    \bottomrule
-		  \end{tabularx}
+	\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{3.2cm} X}
+		\toprule
+		\multicolumn{3}{l}{\textbf{Common highway setting}} \\
+		\midrule
+		\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
+		\midrule
+		Scenario horizon & \SI{70}{\second} & Same for all configurations. \\
+		\addlinespace
+		Highway topology & 5~km corridor, 3~lanes/direction & Bidirectional mixed car/truck traffic; nominal lane speed \SI{120}{\km\per\hour}. \\
+		\addlinespace
+		Radio and channel & IEEE~802.11p, 5.9~GHz, 10~MHz, 20~mW & Free-space path loss; no fading/shadowing; binary obstacle loss; $-$85~dBm sensitivity; $-$110~dBm noise; 4~dB SNIR threshold. \\
+		\addlinespace
+		Crash event & Starts at \SI{30}{\second}, lasts \SI{30}{\second} & Designated node stops and emits \gls{dscp}~46 alerts; background traffic stays \gls{dscp}~0. \\
+		\addlinespace
+		Fleet density & Light: 10 vehicles; heavy: 100 vehicles & Same corridor and application model. \\
+		\midrule
+		\multicolumn{3}{l}{\textbf{Application load profiles (low~/~medium~/~high)}} \\
+		\midrule
+		\textbf{Profile} & \textbf{\gls{be} background} & \textbf{Crash \gls{vo} burst} \\
+		\midrule
+		low & \SI{500}{\milli\second}, 200~B & \SI{120}{\milli\second}, 150~B, repeat count~3, \SI{20}{\milli\second} gap, \SI{5}{\milli\second} jitter. \\
+		\addlinespace
+		medium & \SI{250}{\milli\second}, 320~B & \SI{75}{\milli\second}, 180~B, repeat count~4, \SI{15}{\milli\second} gap, \SI{5}{\milli\second} jitter. \\
+		\addlinespace
+		high & \SI{125}{\milli\second}, 420~B & \SI{20}{\milli\second}, 260~B, repeat count~8, \SI{5}{\milli\second} gap, \SI{2}{\milli\second} jitter. \\
+		\midrule
+		\multicolumn{3}{l}{\textbf{\gls{mac} policies}} \\
+		\midrule
+		\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
+		\midrule
+		\texttt{plain} & Non-\gls{qos} \gls{dcf} baseline & Single \gls{dcf} pending queue, 128~packets; no DSCP-to-\gls{ac} classifier; no \gls{edca}; no adaptive blocking. \\
+		\addlinespace
+		\texttt{edca\_only} & Standard \gls{qos} baseline & \gls{dscp}~46~$\rightarrow$~\texttt{AC\_VO}; others UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
+		\addlinespace
+		\texttt{edca\_v2x\_vo\_stable} & Sustained \gls{vo} protection & Inherits \texttt{edca\_only}. Block~\SI{15}{\milli\second}; max continuous~\SI{80}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~2. \\
+		\addlinespace
+		\texttt{edca\_v2x\_vo\_guarded} & Bounded suppression & Same inheritance. Block~\SI{4}{\milli\second}; max continuous~\SI{20}{\milli\second}; send guard~\SI{4}{\milli\second}; \gls{vo} threshold~3. \\
+		\addlinespace
+		\texttt{edca\_v2x\_vo\_emergency} & Emergency preemption & Same inheritance with emergency preemption. Block~\SI{10}{\milli\second}; max continuous~\SI{60}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~1; may drop \gls{be} while protection is active. \\
+		\bottomrule
+	\end{tabularx}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{table}
 
-\newpage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Reference Topology}
-\label{sec:topology}
-
-The reference topology (\autoref{fig:sys_model}) models an infrastructure-based IEEE 802.11 network where a single roadside \gls{ap} acts as a \textbf{Deterministic QoS Controller (DQC)} for $N$ vehicular stations (STAs). Key characteristics include:
-
-\begin{itemize}
-    \item \textbf{Beacon-Driven Coordination:} The DQC will dynamically schedules temporal phases via beacon frames containing:
-    \begin{itemize}
-        \item \textit{Listening Window Duration}: Periods for emergency broadcasts.
-        \item \textit{Active Mode Timing}: EDCA contention periods
-        \item \textit{Block Mode Duration}: Emergency frame detected; enters listening mode for the block duration.
-    \end{itemize}
-    \item \textbf{Context-Adaptive Scheduling:} Cycle parameters will adapt to environment:
-    \begin{itemize}
-        \item \textit{Urban}: Short cycles + extended BLOCKED periods
-        \item \textit{Highway}: Long cycles + minimal blocking
-        \item \textit{Tunnel}: Custom propagation-aware profiles
-    \end{itemize}
-\end{itemize}
-
-\begin{figure}[htb]
-	\caption{\label{fig:sys_model}V2X simple topology with beacon-driven QoS control. Each vehicles implement state machines synchronized to AP directives.}
-	\begin{center}
-		\includegraphics[scale=.25]{Figs/Topology.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%-------------------------------------------------------------------------------
-\section{Bandwidth-Reservation Mechanism}
-\label{sec:listening}
-
-DQ-WiFi reserves airtime implicitly by cycling nodes through the \textbf{ACTIVE} and \textbf{LISTENING} states of the FSM (\autoref{fig:generic_fsm}), avoiding per-flow TDMA. The AP publishes two beacon fields: \verb|activePeriod| (contention phase duration) and \verb|listenPeriod| (protected phase duration). Upon receiving an \texttt{EMERGENCY} frame, the AP forwards it immediately, triggering all STAs to enter the \textbf{BLOCKED} state until the emergency burst completes.
-
-% \todo[inline]{GG: aqui cabe uma figura demonstrando o mecanismo de reserva em uma transmissão por exemplo.}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Generic Finite-State Machine}
-\label{sec:fsm}
-
-Medium access in DQ-WiFi follows the three-state FSM in \autoref{fig:generic_fsm}, executed identically by all nodes (AP/STAs) for network-wide coherence. Implementation specifics appear in \autoref{chap:implementation}; this description remains technology-neutral.
-
-\begin{figure}[htb]
-	\caption{\label{fig:generic_fsm}Abstract FSM for all nodes.}
-	\begin{center}
-		\includegraphics[scale=.55]{Figs/fsm_simple.pdf}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\subsection{State Semantics and Transitions}
-\label{subsec:states}
-
-Each node cycles through three fundamental states:
-
-\begin{enumerate}[label=(\alph*)]
-  \item \textbf{ACTIVE}: Standard CSMA/CA operation where all traffic categories contend using nominal contention parameters. Regular Critical Frame traffic is suppressed in this state to prioritize normal traffic queues (e.g., Video or Best Effort).
-  
-\item \textbf{LISTENING}: Activated after the \texttt{activePeriod} expires. In this state, only protected (high-priority) traffic categories are allowed to transmit. Lower-priority traffic may inherit the contention parameters of protected categories if explicitly enabled, enabling rapid clearance during collision-free intervals. Crucially, by temporarily silencing contention from standard traffic and narrowing access to a known set of flows, this mode acts as a bandwidth reservation window. It ensures that critical frames experience minimal contention, effectively bounding their medium access delay. This deterministic scheduling window is a core enabler of latency guarantees and will be analyzed in detail in Section\,\ref{sec:analysis}.
-
-  
-\item \textbf{BLOCKED}: Triggered exclusively by the detection of a collision-induced critical frame. Upon this event, all STAs suspend transmissions for a guard interval $\Delta_{\text{block}}$, typically set to exceed the worst-case burst duration. This reactive pause prevents collision cascades and ensures that retransmissions occur in a clean channel. Once the interval expires, the system transitions back to \textbf{LISTENING} if still within the protected window, or to \textbf{ACTIVE} otherwise.
-
-\end{enumerate}
-
-State alternation between \textbf{ACTIVE} and \textbf{LISTENING} is dynamically configurable through timing parameters, enabling adaptive bandwidth allocation. The \textbf{BLOCKED} transition provides collision containment through preemptive channel suppression.
-
-\medskip
-\noindent
-\textit{Implementation-specific method names, class diagrams, and timing charts will appear in \autoref{chap:implementation}.}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Worst-Case Delay Analysis}
-% \label{sec:analysis}
-
-% End-to-end one-hop latency is decomposed into four deterministic terms:
-% %
-% \[
-% d = d_{\text{cycle}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}},
-% \]
-% %
-% where:
-% \begin{itemize}
-%     \item \(d_{\text{cycle}}\) is the cycle-misalignment waiting time,
-%     \item \(d_{\text{access}}\) is the CSMA/CA back-off inside the protected window,
-%     \item \(\tau_{\text{MAC}}\) is the on-air transmission time, and
-%     \item \(\tau_{\text{bc}}\) is the broadcast propagation delay.
-% \end{itemize}
-
-% \subsection{Emergency Frames}
-% \label{subsec:emergency}
-% High-priority emergency frames bypass the cycle queue and are transmitted immediately from any state:
-% \[
-% d_{\text{emerg}} \leq d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
-% \]
-% \begin{itemize}
-%     \item \textbf{Near-zero delay}: No cycle misalignment penalty
-%     \item \textbf{Triggers \textsc{BLOCKED}}: All STAs suspend transmissions for the guard interval \(\Delta_{\text{block}}\)
-% \end{itemize}
-
-% \subsection{Regular Critical Frames (LISTENING Mode)}
-% \label{subsec:critframes}
-% Critical frames released during \textsc{ACTIVE} may wait one full contention phase \(T_A\) before the next protected window \(T_L\):
-% \[
-% d_{\text{crit}} \leq T_A + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
-% \]
-% \begin{itemize}
-%     \item \textbf{Cycle dominance}: \(T_A\) is the worst-case waiting time
-%     \item \textbf{Contention-free LISTENING}: \(d_{\text{access}} \leq \sigma\)
-%     \item \textbf{\textsc{BLOCKED} impact}: If an emergency occurs while waiting, add \(\Delta_{\text{block}}\):
-%     \[
-%     d_{\text{crit,wc}} \leq T_A + \Delta_{\text{block}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}}.
-%     \]
-% \end{itemize}
-
-% These closed-form bounds can be instantiated with any 802.11 PHY by substituting the appropriate aSlotTime, preamble duration, data rate, and propagation distance.
-
-%===============================================================================
-%===============================================================================
-\section{Worst-Case Delay Analysis in Critical Packets}
-\label{sec:analysis}
-
-% \todo[inline]{GG: essa análise é baseada em alguma? FAlta referência.}
-
-Building on the stochastic MAC-layer characterization from Section~\ref{sec:bg:dcf} and the analytical delay from~\cite{vardakas2007end}, we define worst-case delay through five key components:
-
-\begin{equation}
-d \;=\; d_{\text{queue}} + d_{\text{cycle}} + d_{\text{access}} + \tau_{\text{MAC}} + \tau_{\text{bc}} .
-\end{equation}
-
-\begin{description}[leftmargin=0pt]
-  \item[$d_{\text{queue}}$ (queuing delay).]%
-    Time spent in transmission buffer before MAC processing. For critical traffic:
-    \[
-    d_{\text{queue}} \leq 
-    \begin{cases} 
-      T_Q & \text{(application-specific bound)} \\
-      P_{99.9}(Q) & \text{(from M/G/1 model)}
-    \end{cases}
-    \]
-    \textbf{Definition}: 
-    \begin{itemize}
-      \item $T_Q$: Application-specific maximum queuing time
-      \item $P_{99.9}(Q)$: 99.9th percentile from queuing model (Sec.~\ref{sec:bg:dcf})
-    \end{itemize}
-    
-  \item[$d_{\text{cycle}}$ (cycle misalignment).]%
-    Waiting time for next transmission window. Bounded by:
-    \[
-    d_{\text{cycle}} \leq T_A
-    \]
-    \textbf{Definition}: 
-    \begin{itemize}
-      \item $T_A$: Duration of active window
-      \item Represents worst-case alignment (frame arrives just after listening window ends)
-    \end{itemize}
-    
-  \item[$d_{\text{access}}$ (CSMA/CA access).]%
-    Contention delay. Bounded by:
-    \[
-    d_{\text{access}} \leq 
-    \begin{cases} 
-      \sigma \cdot CW_{\max} & \text{(loose bound)} \\
-      P_{99.9}(M) & \text{(tight bound)}
-    \end{cases}
-    \]
-    \textbf{Definitions}: 
-    \begin{itemize}
-      \item $\sigma$: Slot time duration (PHY parameter)
-      \item $CW_{\max}$: Maximum contention window size
-      \item $P_{99.9}(M)$: 99.9th percentile of MAC delay distribution
-    \end{itemize}
-    
-  \item[$\tau_{\text{MAC}}$ (on-air time).]%
-    Deterministic transmission time:
-    \[
-    \tau_{\text{MAC}} = \frac{\text{PHY preamble + header} + \text{payload}}{\text{data rate}}
-    \]
-\item[$\tau_{\text{bc}}$ (broadcast propagation).]%
-    Negligible in our model; set to zero due to sub-\SI{1}{\micro\second} scale.
-
-\end{description}
-
-%---------------------------------------------------------------------------%
-%---------------------------------------------------------------------------%
-\subsection{Emergency Frames}
-\label{subsec:emergency}
-
-Emergency traffic bypasses the transmit queue and ordinary contention yet
-remains synchronized with the cycle structure. Its latency is therefore
-
-\[
-d_{\text{emerg}} \;\le\; d_{\text{queue}} + d_{\text{access}} + \tau_{\text{MAC}} .
-\]
-\textbf{Behaviour.}
-\begin{enumerate}
-  \item \textbf{Generation.} Frame may arise during any network phase.
-  \item \textbf{Phase wait \(\le T_A\).} If it appears mid-\emph{ACTIVE}, it waits for the phase to end; if it appears in \emph{LISTENING}, it proceeds immediately.
-  \item \textbf{Single access request \((d_{\text{access}})\).} The \gls{sta} issues one priority request. There is no exponential back-off and no competition with lower ACs.
-  \item \textbf{Transmission \((\tau_{\text{MAC}})\).} Bits are sent on-air at PHY rate.
-  \item \textbf{Guard interval \(\Delta_{\text{block}}\).} The coordinator blocks all other STAs, flushing any residual contention and restoring a clean medium.
-  \item \textbf{Queue time.} Negligible in practice, as emergency frames are transmitted immediately upon generation. Once triggered, the transmission is prioritized and the medium is blocked until the entire burst of packets is completed.
-\end{enumerate}
-
-With queuing eliminated and contention reduced to a single bounded handshake,
-the only variability left is the phase-alignment term \(T_A\); hence emergency
-latency remains both low and deterministic.
-
-
-
-
-%---------------------------------------------------------------------------%
-%---------------------------------------------------------------------------%
-\subsection{Regular Critical Frames}
-\label{subsec:critframes}
-
-Regular critical traffic is polled once per \emph{LISTENING} window.  
-Two deterministic latency paths exist, depending on the arrival phase.
-
-\textbf{1) Arrival inside LISTENING (\(T_L\)).}
-\[
-d_{\text{crit}} \;\le\; d_{\text{queue}} + d_{\text{access}} + \tau_{\text{MAC}} .
-\]
-\begin{itemize}
-  \item Packet is dequeued and transmitted within the same \(T_L\).
-\item \textbf{Single access request \((d_{\text{access}})\).} The STA issues a single high-priority request. There is no exponential back-off and no contention with lower ACs. The channel is lost only to emergency frames. The latency in this case will be analyzed next.
-\end{itemize}
-
-\textbf{2) Arrival inside ACTIVE (\(T_A\)).}
-\[
-d_{\text{crit}} \;\le\; d_{\text{queue}} + T_A + d_{\text{access}} + \tau_{\text{MAC}} .
-\]
-\begin{itemize}
-  \item Worst-case wait \(T_A\) until the next \(T_L\).
-  \item One contention episode \(d_{\text{access}}\) during that \(T_L\).
-\end{itemize}
-
-\textbf{3) Emergency pre-emption.}
-
-If \(k\) emergency events occur before service, each guard interval
-\(\Delta_{\text{block}}^{(i)}\) defers transmission:
-\[
-d_{\text{crit,wc}} \;\le\; d_{\text{queue}} + T_A
-          + \sum_{i=1}^{k}\Delta_{\text{block}}^{(i)}
-          + \tau_{\text{MAC}} .
-\]
-\begin{enumerate}
-  \item Packet enqueued; queue bounded by \(T_Q\) or \(P_{99.9}(Q)\).
-  \item Polled at the next \emph{LISTENING} window (or immediately if already in \(T_L\)).
-  \item Each emergency guard \(\Delta_{\text{block}}\) may defer, but does not unbound, latency.
-\end{enumerate}
-
-Appropriate sizing of \(T_L\), \(T_A\), and \(\Delta_{\text{block}}\) preserves determinism while allowing higher-priority emergency traffic to preempt low-priority traffic.
-\newpage
-\subsection{Visual Abstraction}
-
-\autoref{fig:delay_anal} illustrates the phase alignment for regular critical
-and emergency arrivals. The top timeline shows how regular traffic follows the
-cycle structure, while the bottom highlights the insertion of a \emph{BLOCKED}
-interval for emergency preemption. This visual emphasises that emergency
-transmissions interrupt the cycle immediately, whereas regular frames must
-align with existing transmission opportunities.
-
-\begin{figure}[htb]
-	\caption{\label{fig:delay_anal}Regular Critical and Emergency frame delay bound analysis.}
-	\begin{center}
-		\includegraphics[scale=0.5]{Figs/delay.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
+Together, the network, traffic, \gls{qos}, event, and parameter definitions constitute the crash-aware system studied in the remainder of this dissertation.
+\autoref{chap:implementation} maps the model onto a concrete software realization; the evaluation then asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.

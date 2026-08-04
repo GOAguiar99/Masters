@@ -9,18 +9,18 @@ It is **not** the source of truth for simulation logic, KPI generation, or proto
 
 When working here, assume:
 - `main.tex` is the master document (abnTeX2 / UFSC template)
-- `chapters/*.tex` hold the body text (**legacy DQ-WiFi draft — do not rewrite until explicitly requested**)
+- `chapters/*.tex` hold the body text (Ch0–Ch3 pivoted to crash-aware; Ch4–Ch5 still legacy DQ-WiFi until rewritten)
 - `aftertext/references.bib` is the single bibliography database (biblatex/abnt)
 - `Figs/` contains dissertation figures
-- `context/` holds AI-readable knowledge (summaries, glossary, bib guide)
+- `context/` holds AI-readable knowledge (summaries, glossary, bib guide, chapter plans, [`scientific-paper-structure.md`](context/scientific-paper-structure.md) for System Model vs Implementation vs Evaluation)
 - `ref_papers/` contains local reference PDFs for author context only (gitignored)
 
 ## Scope of current work
 
 This repository currently has:
 - **Ready:** AI context, bibliography merge, ref-papers pipeline, SBESC/ETFA/code summaries, paper figures in `Figs/`, persistent `build/` workflow, Overleaf-ready sources
-- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`)
-- **Not yet rewritten:** `chapters/3-chapter.tex` through `5-chapter.tex` (still DQ-WiFi draft)
+- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`); System Model (`chapters/3-chapter.tex`)
+- **Not yet rewritten:** `chapters/4-chapter.tex` through `5-chapter.tex` (still DQ-WiFi draft)
 
 When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` over editing chapter prose unless the user explicitly asks for a chapter rewrite.
 
