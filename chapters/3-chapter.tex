@@ -95,22 +95,21 @@ They form a comparison ladder from undifferentiated access, through standard \gl
 None of the policies reserves the channel or claims deterministic delay bounds: \gls{edca} provides statistical differentiation only~\cite{mangold2003QoS,kosekszott2012What,kong2004EDCA}.
 
 \begin{itemize}
-  \item \texttt{plain} --- Non-\gls{qos} \gls{dcf} baseline: a single pending queue of 128~packets, no DSCP-to-\gls{ac} classifier, and no \gls{edca} differentiation~\cite{IEEE80211,bianchi2000DCF}.
-  \item \texttt{edca\_only} --- Standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0.
-    Queue depths for \texttt{AC\_BK}/\texttt{AC\_BE}/\texttt{AC\_VI}/\texttt{AC\_VO} are 128/128/64/32~packets; \gls{aifsn} values are 7/3/2/2; \texttt{cwMin} values are 15/15/7/3; \texttt{cwMax} values are 1023/1023/15/7~\cite{IEEE80211e_2005}.
-  \item \texttt{edca\_v2x\_vo\_stable} --- Sustained Voice protection: inherits the \texttt{edca\_only} mapping and contention parameters, and adds the adaptive controller below with a block window of~\SI{15}{\milli\second}, a maximum continuous block of~\SI{80}{\milli\second}, a send guard of~\SI{5}{\milli\second}, and a Voice activation threshold of~2~packets.
-  \item \texttt{edca\_v2x\_vo\_guarded} --- Bounded suppression: same inheritance, with a tighter block window of~\SI{4}{\milli\second}, a maximum continuous block of~\SI{20}{\milli\second}, a send guard of~\SI{4}{\milli\second}, and a Voice threshold of~3~packets.
-  \item \texttt{edca\_v2x\_vo\_emergency} --- Emergency preemption: same inheritance with emergency preemption enabled, a block window of~\SI{10}{\milli\second}, a maximum continuous block of~\SI{60}{\milli\second}, a send guard of~\SI{5}{\milli\second}, and a Voice threshold of~1~packet; newly arriving \gls{be} packets may be dropped while protection is active.
+  \item \texttt{plain} --- Non-\gls{qos} \gls{dcf} baseline: undifferentiated access with a single pending queue and no DSCP-to-\gls{ac} mapping~\cite{IEEE80211,bianchi2000DCF}.
+  \item \texttt{edca\_only} --- Standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0~\cite{IEEE80211e_2005}.
+  \item \texttt{edca\_v2x\_vo\_stable} --- Sustained Voice protection: inherits \texttt{edca\_only} and adds the adaptive controller below with comparatively long protection windows.
+  \item \texttt{edca\_v2x\_vo\_guarded} --- Bounded suppression: same inheritance with tighter, shorter protection windows.
+  \item \texttt{edca\_v2x\_vo\_emergency} --- Emergency preemption: same inheritance with aggressive activation; newly arriving \gls{be} packets may be dropped while protection is active.
 \end{itemize}
 
 \noindent
 For brevity the adaptive policies are often abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency}.
-Full parameter rows appear again in \autoref{tab:sys:parameters}.
+Queue depths, contention windows, and controller timing knobs for each policy appear in \autoref{tab:sys:parameters}.
 
 \subsection{Adaptive three-mode controller}
 \label{sec:sys:controller}
 
-The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening}, \emph{blocking}, and \emph{sending}---that interposes on \gls{edca} channel-access requests without changing the underlying queue parameters inherited from \texttt{edca\_only}.
+The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening}, \emph{blocking}, and \emph{sending}---that temporarily gates \gls{be} eligibility for channel access without changing the underlying queue parameters inherited from \texttt{edca\_only}.
 \autoref{fig:sys:fsm} summarizes the modes and transitions.
 
 \begin{figure}[htb]
@@ -123,11 +122,11 @@ The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening},
 		\midrule
 		\emph{listening} &
 		  Default mode.
-		  Ordinary \gls{edca} operation; the controller monitors local Voice queue buildup and overheard Voice-classified frames. \\
+		  Ordinary \gls{edca} operation; the controller monitors local Voice queue buildup and overheard Voice-marked frames. \\
 		\addlinespace
 		\emph{blocking} &
 		  Entered when the Voice activation threshold is crossed.
-		  \gls{be} channel requests are deferred (and under \texttt{emergency}, newly arriving \gls{be} may be dropped) for a finite protection window, bounded by the maximum continuous block. \\
+		  \gls{be} transmissions are deferred (and under \texttt{emergency}, newly arriving \gls{be} may be dropped) for a finite protection window, bounded by the maximum continuous block. \\
 		\addlinespace
 		\emph{sending} &
 		  Entered while the node's own Voice frames obtain the channel.
@@ -151,9 +150,9 @@ The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening},
 	\fonte{Prepared by the author.}
 \end{figure}
 
-A node leaves \emph{listening} for \emph{blocking} when local Voice queue buildup or overheard Voice-classified frames cross the activation threshold, moves to \emph{sending} while its own Voice frames obtain the channel, and returns to \emph{listening} once the finite protection window and a short guard interval expire.
-Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but \gls{be} channel requests are deferred while the controller is blocking or sending.
-Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} grants released.
+A node leaves \emph{listening} for \emph{blocking} when local Voice queue buildup or overheard Voice-marked frames cross the activation threshold, moves to \emph{sending} while its own Voice frames obtain the channel, and returns to \emph{listening} once the finite protection window and a short guard interval expire.
+Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but lose channel-access eligibility while the controller is blocking or sending.
+Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} transmission opportunities released.
 The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium, open scheduled gates, or provide worst-case latency bounds~\cite{IEEE80211e_2005,kosekszott2012What}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -246,7 +245,7 @@ Software versions, module names, configuration-file naming, random seeds, and me
 		\midrule
 		\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
 		\midrule
-		\texttt{plain} & Non-\gls{qos} \gls{dcf} baseline & Single \gls{dcf} pending queue, 128~packets; no DSCP-to-\gls{ac} classifier; no \gls{edca}; no adaptive blocking. \\
+		\texttt{plain} & Non-\gls{qos} \gls{dcf} baseline & Single \gls{dcf} pending queue, 128~packets; no DSCP-to-\gls{ac} mapping; no \gls{edca}; no adaptive blocking. \\
 		\addlinespace
 		\texttt{edca\_only} & Standard \gls{qos} baseline & \gls{dscp}~46~$\rightarrow$~\texttt{AC\_VO}; others UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
 		\addlinespace

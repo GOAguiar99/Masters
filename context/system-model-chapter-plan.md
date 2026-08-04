@@ -82,7 +82,8 @@ Keep stable label `\label{chap:sysmodel}`.
 
 - Two classes only; DSCP 46 → Voice UP (`RFC8325_WiFi_QoS`); cross-ref `sec:bg:dscp`.
 - Stack-path figure (tabular layers).
-- Five policies with full knobs (plain / edca_only / stable / guarded / emergency).
+- Five policies by role only in prose (plain / edca_only / stable / guarded / emergency); full knobs live in the params table (avoid `.ini`-style dumps).
+- Prefer "DSCP-to-AC mapping" / "gates BE eligibility" over "classifier" / "interposes on channel-access requests".
 - Three-mode controller: *listening* / *blocking* / *sending*.
 - stable/guarded defer BE; emergency may drop BE; no channel reservation (`IEEE80211e_2005`, `kosekszott2012What`).
 - Controller FSM figure (tabular).
