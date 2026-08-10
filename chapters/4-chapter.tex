@@ -1,327 +1,747 @@
 \chapter{Implementation}
 \label{chap:implementation}
 
-This chapter details the practical realization of the \textit{Deterministic QoS over Wi-Fi} system model within the OMNeT++ 6.0.3 and INET 4.5.4 simulation frameworks. All implementation was carried out entirely in OMNeT++ with INET, ensuring modular integration with existing networking components. The implementation focuses on translating the abstract concepts of bandwidth reservation, coordinated listening windows, and emergency handling into functional modules at the application and MAC layers. The core components developed include custom traffic generators, a QoS-aware packet classifier, and a \gls{fsm} integrated into the MAC layer for enforcing the prescribed channel access states.
+\autoref{chap:sysmodel} defined the crash-aware system at a conceptual level: a decentralized IEEE~802.11p highway network, a synthetic two-class \gls{be}/\gls{vo} traffic model, five \gls{mac} policies with a local three-mode controller, and a three-phase crash timeline.
+This chapter maps that model onto the concrete software artifact developed for this dissertation, so that a reader who already understands the design can reproduce the build, follow the packet path, and locate every study-specific module without consulting undocumented source comments.
 
-\section{Application Layer: Traffic Generation}
+The realization is an \gls{omnet}~6.1~\cite{varga2008omnetpp} / \gls{inet}~4.5.2~\cite{inet_framework} / Veins~\cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
+Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
+The chapter is organized as follows.
+Section~\ref{sec:impl:toolchain} pins the toolchain and repository layout.
+Section~\ref{sec:impl:host} describes the vehicle host and scenario compound modules.
+Section~\ref{sec:impl:path} traces the end-to-end packet path.
+Section~\ref{sec:impl:apps} details the application modules.
+Section~\ref{sec:impl:classifier} covers the DSCP-to-Voice classifier.
+Section~\ref{sec:impl:mac} explains the instrumented \gls{mac} and the adaptive \gls{hcf} controller.
+Section~\ref{sec:impl:policies} documents how the five policies are wired in configuration.
+Section~\ref{sec:impl:scenarios} presents the highway scenario packages, the consolidated simulation-parameter table, and the configuration matrix.
+Section~\ref{sec:impl:instrumentation} lists recorded signals and the analysis tooling surface.
+Section~\ref{sec:impl:scope} states implementation scope and deliberate omissions.
+Seeds, statistical aggregation, and measured results belong to the subsequent evaluation and are not reported here.
 
-To evaluate the proposed QoS mechanisms under various traffic conditions, two custom application modules were implemented. Both utilize \gls{dscp} markings to signify packet priority, influencing their treatment further down the network stack.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Simulation Toolchain and Repository Layout}
+\label{sec:impl:toolchain}
 
-\subsection{UdpCritApp: Configurable Priority Traffic}
+The Background chapter motivates bidirectional road-and-network coupling for inter-vehicle protocol studies (\autoref{sec:bg:sim}).
+Here the same stack is pinned to the versions used for the experiments and narrowed to the modules that realize the System Model.
 
-The \texttt{UdpCritApp} module is designed to generate continuous streams of UDP traffic with configurable priority levels, simulating routine V2X messages (e.g., periodic sensor updates).
+\subsection{Framework versions}
+\label{sec:impl:versions}
 
-\textbf{Design and Features:}
-\begin{itemize}
-    \item \textbf{Criticality Levels}: Implements a four-level priority system (\texttt{LOW}, \texttt{MEDIUM}, \texttt{HIGH}, \texttt{CAR\_CRASH}).
-    \item \textbf{DSCP Mapping}: Assigns standard DSCP values to each priority level: 8 (LOW), 16 (MEDIUM), 24 (HIGH), and 46 (CAR\_CRASH).
-    \item \textbf{Configuration}: The priority level for an instance is set via the \texttt{criticality} parameter in the network configuration file (NED).
-\end{itemize}
+\gls{omnet}~6.1 provides the discrete-event engine, component model, and \texttt{.ini}/\texttt{.ned} configuration system in which every vehicle node is assembled~\cite{varga2008omnetpp}.
+\gls{inet}~4.5.2 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the Hybrid Coordination Function (\gls{hcf}) into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
+Veins couples \gls{omnet}/\gls{inet} to \gls{sumo} through \gls{traci}, so highway mobility, lane discipline, and the crash-node stop command remain consistent with the road microsimulation~\cite{veins_sommer2011,lopez2018sumo}.
+In the artifact tree, \texttt{inet/} and \texttt{veins/} are git submodules consumed as read-only frameworks; the study-authored code lives under \texttt{veins\_qos/}~\cite{aguiar2026_veins_qos}.
 
-\textbf{Implementation Details:}
-The module extends INET's \texttt{UdpBasicApp}. Its key modification is the override of the \texttt{setSocketOptions()} method. During initialization (\texttt{INITSTAGE\_LOCAL}), the socket is configured to mark the Type of Service (TOS) field for all outgoing packets with the DSCP value corresponding to its configured criticality level. This ensures network-level prioritization without altering the core packet generation logic of its parent class.
+\subsection{Repository layout}
+\label{sec:impl:layout}
 
-\subsection{UdpCollisionApp: Emergency Event Simulation}
-
-The \texttt{UdpCollisionApp} module is tailored to simulate the bursty, high-priority traffic characteristic of emergency events in V2X scenarios, such as collision messages.
-
-\textbf{Design and Features:}
-\begin{itemize}
-    \item \textbf{Fixed Criticality}: All generated packets are marked with the highest priority (DSCP 46, \texttt{CAR\_CRASH}).
-    \item \textbf{Event-Based Bursts}: The start time of an emergency burst is randomized within a configurable interval (\texttt{collisionStartMin} to \texttt{collisionStartMax}). The burst itself has a fixed duration (\texttt{burstDuration}), during which packets are sent at a regular interval.
-    \item \textbf{Dynamic Destination}: Supports sending bursts to multiple pre-configured destination addresses, randomly selecting a target for each packet within the burst to simulate broadcast or multi-cast scenarios.
-\end{itemize}
-
-\textbf{Implementation Details:}
-This module inherits directly from \texttt{ApplicationBase} and implements the \texttt{UdpSocket::Callback} interface for fine-grained control over its lifecycle. It uses self-messages to manage its state: a timer for the randomized start (\texttt{START}), a periodic message for sending packets during the active burst (\texttt{SEND}), and a timer to stop transmission after the burst duration elapses (\texttt{STOP}). The DSCP value of 46 is hard-coded within its \texttt{setSocketOptions()} method.
-
-\autoref{tab:app_comparison} provides a concise comparison of these two traffic generation modules, highlighting their distinct roles in the evaluation framework.
+\autoref{tab:impl:layout} summarizes the directories that matter for implementation and reproducibility.
+Only the active highway packages participate in the dissertation experiment matrix; older square and early highway packages remain in the tree as development history and are not part of the reported study~\cite{aguiar2026_veins_qos}.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:app_comparison}Comparison of traffic generation application modules.}
+	\caption{\label{tab:impl:layout}Artifact directory layout relevant to the crash-aware implementation.}
 	\begin{center}
-		\setlength{\tabcolsep}{10pt} % Horizontal padding
-		\renewcommand{\arraystretch}{1.4} % Vertical spacing (default=1.0)
-
-		\begin{tabularx}{\linewidth}{lXX}
-		\toprule
-		\textbf{Feature} & \textbf{UdpCritApp} & \textbf{UdpCollisionApp} \\
-		\midrule
-		Criticality & Configurable (4 levels) & Fixed (CAR\_CRASH / DSCP 46) \\
-		Traffic Pattern & Continuous regular intervals & Time-bounded burst transmission \\
-		Startup Timing & Immediate (by default) & Randomized within time window \\
-		Base Implementation & Extends \texttt{UdpBasicApp} & Directly extends \texttt{ApplicationBase} \\
-		DSCP Control & Per-instance configuration & Hard-coded in \texttt{setSocketOptions()} \\
-		Primary Use Case & Traffic generation for QoS tests & Emergency event simulation \\
-		\bottomrule
+		\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{4.4cm} X@{}}
+			\toprule
+			\textbf{Path} & \textbf{Role} \\
+			\midrule
+			veins\_qos/src/traffic/ &
+			  Study applications: \texttt{CritPacketSender}, \texttt{CrashBurstApp}. \\
+			\addlinespace
+			veins\_qos/src/qos/ &
+			  Explicit DSCP-to-user-priority classifier. \\
+			\addlinespace
+			veins\_qos/src/mac/ &
+			  Instrumented IEEE~802.11 \gls{mac}, adaptive \gls{hcf}, and \gls{fsm} controller. \\
+			\addlinespace
+			veins\_qos/src/veins\_inet/ &
+			  Veins$\leftrightarrow$\gls{inet} host, mobility, manager, and UDP application base. \\
+			\addlinespace
+			veins\_qos/simulations/veins\_inet\_highway\_\{light,heavy\}/ &
+			  Active density packages: SUMO network, obstacles, \texttt{omnetpp.ini}, runners. \\
+			\addlinespace
+			kpi\_dashboard/ &
+			  Offline parser of OMNeT++ \texttt{.sca}/\texttt{.vec} result files and figure export. \\
+			\addlinespace
+			inet/, veins/ &
+			  Framework submodules (read-only). \\
+			\bottomrule
 		\end{tabularx}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{table}
 
-\subsection{QoS-Aware Packet Classification}
-\label{sec:qosclassifier}
-A crucial supporting component is a packet classifier. This classifier inspects the DSCP field of incoming IP packets and maps them to the appropriate IEEE 802.11e Access Category (AC) queue within the MAC layer. This ensures that high-priority packets (e.g., DSCP 46) are placed into the high-priority \texttt{AC\_VO} queue, directly influencing their scheduling and transmission order according to the rules of the current FSM state. 
+\subsection{Attribution}
+\label{sec:impl:attribution}
 
-\autoref{fig:classifier_flow} illustrates the packet classification flow. When a packet arrives, the classifier first checks whether it is IPv4 or IPv6. In the case of IPv4, the DSCP field is extracted directly, while for IPv6 the Traffic Class field is shifted to obtain the DSCP value. Each DSCP value is then mapped to the corresponding User Priority (UP). Non-IP packets are mapped by default to the best-effort class (\texttt{UP\_BE}). Finally, the packet is tagged with its computed User Priority and forwarded through the output gate. 
+The Veins/\gls{inet} integration modules under \texttt{veins\_qos/src/veins\_inet/} derive from the Veins project (Sommer et al.)~\cite{veins_sommer2011}.
+The \texttt{VeinsInetTransparentMobility} component incorporates work by Jannusch Bigge (TU Dresden); it is present in the tree but is \emph{not} selected by the active highway configurations, which use \texttt{VeinsInetMobility} instead~\cite{aguiar2026_veins_qos}.
+Study-specific logic is confined to the application generators, the classifier, the instrumented \gls{mac}, and---for the adaptive policies only---a replacement \gls{hcf} submodule, so that physical-layer connectivity, mobility, and offered-load profiles stay shared across all five \gls{mac} policies (\autoref{sec:sys:network}).
 
-This mechanism guarantees consistent QoS-aware mapping across both IPv4 and IPv6 traffic, allowing differentiated handling of flows based on application requirements.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Host and Scenario Compound Modules}
+\label{sec:impl:host}
 
-\begin{figure}[htb]
-	\caption{\label{fig:classifier_flow}QoS-aware DSCP to User Priority classification process.}
-	\begin{center}
-		\includegraphics[width=0.7\linewidth]{Figs/classifier.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
+\subsection{Vehicle host}
+\label{sec:impl:car}
 
+Each simulated vehicle is an instance of \texttt{veins\_qos.veins\_inet.VeinsInetCar}, a thin extension of INET's \texttt{AdhocHost} that carries a single IEEE~802.11 wireless interface (\texttt{wlan0}), an IPv4 stack with \texttt{HostAutoConfigurator}, and a Veins mobility submodule~\cite{inet_framework,aguiar2026_veins_qos}.
+The manager launches cars with
 
-\subsection{Finite-State Machine Controller}
+\begin{quote}
+\ttfamily *.manager.moduleType = "veins\_qos.veins\_inet.VeinsInetCar"
+\end{quote}
 
-The core of the DQ-WiFi implementation is the \texttt{EdcaFsmController}, a novel submodule integrated into the \gls{hcf} of INET's \texttt{Ieee80211Mac} model. This controller acts as a central gatekeeper, intercepting events from both the upper layers (applications) and the lower layers (PHY) to enforce the state machine defined in the system model. It encapsulates all timing logic and state variables---\texttt{activePeriod}, \texttt{listenPeriod}, and \texttt{blockingEndTime}---and provides helper methods (\texttt{switchState()}, \texttt{isListening()}, \texttt{isBlocked()}) to the MAC layer for coordinated decision-making.
+so that every TraCI-injected node receives the same compound type.
+Mobility is bound to \texttt{veins\_qos.veins\_inet.VeinsInetMobility}, which mirrors SUMO positions, headings, and presence into the INET mobility model~\cite{veins_sommer2011}.
+IPv4 autoconfiguration joins the multicast group \texttt{224.0.0.1} on \texttt{wlan0}, matching the application destination used by both traffic generators.
 
-The integration was achieved by modifying key methods in the HCF/EDCA architecture to consult the FSM controller before proceeding with standard operations. The following figures and explanations detail this integration point-by-point.
+\subsection{Application base}
+\label{sec:impl:appbase}
 
-\subsubsection{Integration with Upper-Layer Packet Processing}
-The ingress path from the network layer is the first point of control. \autoref{fig:upper_fsm} illustrates the modified \texttt{processUpperFrame()} method, where FSM logic now gates channel access requests.
+Both study applications extend \texttt{VeinsInetApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware UDP socket setup~\cite{inet_framework,aguiar2026_veins_qos}.
+The base class opens a UDP socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access.
+Study applications therefore inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
 
-\begin{figure}[htb]
-	\caption{\label{fig:upper_fsm}FSM logic integrated into \texttt{processUpperFrame()}.}
-	\begin{center}
-		\includegraphics[width=0.95\linewidth]{Figs/upperframe.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
+\subsection{Scenario network}
+\label{sec:impl:scenario-ned}
 
-\textbf{Implementation Details:}
-\begin{enumerate}
-    \item \textbf{Classification and Enqueuing:} Incoming IP packets are first processed by the QoS-aware classifier (Section~\ref{sec:qosclassifier}).
-    \item \textbf{FSM Permission Check:} After enqueuing, the \texttt{EdcaFsmController} state is consulted before any request for channel access is made.
-    \item \textbf{State-Driven Access Logic:}
-    \begin{itemize}
-        \item \textbf{ACTIVE State:} By default, all ACs contend normally under CSMA/CA. If \texttt{BEAperiodic} is disabled, behaviour is IEEE 802.11e-compliant. If enabled, AC\_BE traffic is silenced, reallocating bandwidth to mission-critical queues.
-        \item \textbf{LISTENING State:} Only AC\_VO and AC\_BE may transmit. AC\_VO retains its low-latency parameters, while AC\_BE inherits VO’s tighter AIFSN and contention window, draining its queue rapidly inside a protected window.
-        \item \textbf{Emergency Handling:} If the \texttt{carCrash} flag is active but the FSM is in \texttt{LISTENING}, normal channel requests are blocked, ensuring uninterrupted emergency exchanges.
-        \item \textbf{General Access:} In other cases, the method checks \texttt{isBlocked()}. If not blocked, it calls \texttt{maybeRequestChannelAccess(ac)}, which follows EDCA contention but within the temporal contract enforced by the FSM.
-    \end{itemize}
-\end{enumerate}
-
-The alternation between ACTIVE and LISTENING is governed by the configurable pair \texttt{activePeriod}/\texttt{listenPeriod}, so reshaping the bandwidth contract requires no code changes. This provides fine-grained enforcement, ensuring packets are only submitted during their authorized FSM states.
-
-
-\subsubsection{Integration with Lower-Layer Frame Processing}
-The egress path for outgoing and incoming frames is handled by the
-\texttt{processLowerFrame()} method, which now incorporates FSM checks as shown in \autoref{fig:lower_fsm}.
-
-\begin{figure}[htb]
-	\caption{\label{fig:lower_fsm}FSM logic integrated into \texttt{processLowerFrame()}.}
-	\begin{center}
-		\includegraphics[width=0.95\linewidth]{Figs/lowerframe.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\textbf{Implementation Details:}
-\begin{enumerate}
-    \item \textbf{Emergency Frame Detection:} A voice-priority frame (QoS TID\,6, mapped to AC\_VO) arriving while the \texttt{carCrash} flag is set is treated as a collision sentinel. If the FSM is not already suppressed, the method immediately calls \texttt{triggerBlocking()}.
-    \item \textbf{The \texttt{triggerBlocking()} Transition:} This routine enforces the BLOCKED state:
-    \begin{itemize}
-        \item Sets \texttt{blockingEndTime} to the current time plus the configured \newline \texttt{blockDuration}.
-        \item Forces the FSM into \texttt{BLOCKED} via \texttt{switchState()}.
-        \item Cancels ongoing EDCA timers and clears the current channel owner, freezing every EDCAF and imposing a silent guard interval.
-    \end{itemize}
-    This mechanism quenches collision cascades typical of hidden-terminal failures in dense platoons.
-    \item \textbf{Post-Blocking Recovery:} When \texttt{blockingEndTime} expires, the controller returns to \texttt{LISTENING} if the quiet window is still valid; otherwise, it re-enters \texttt{ACTIVE} and resumes the periodic cycle.
-    \item \textbf{Standard Frame Processing:} Non-emergency frames continue under standard EDCA rules but remain subject to FSM gating. Frame sequencing, acknowledgments, and retransmissions are preserved, though suspended whenever the machine is in \texttt{BLOCKED}.
-\end{enumerate}
-
-This design ensures a deterministic, reactive suppression mechanism: emergency events immediately pre-empt ACTIVE and LISTENING, guaranteeing a collision-free interval without relying on explicit preemption protocols.
-
-\newpage
-
-\subsubsection{Architectural Integration within the HCF Module}
-The integration of the \texttt{EdcaFsmController} into the HCF/EDCA architecture is shown in \autoref{fig:model_fsm}. The diagram synthesises the revised class structure and exposes the controller’s role in orchestrating channel access.
-
-\begin{figure}[htb]
-	\caption{\label{fig:model_fsm}Integration of the FSM controller into the HCF/EDCA architecture.}
-	\begin{center}
-		\includegraphics[width=0.95\linewidth]{Figs/mymodel.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\textbf{Implementation Details:}
-\begin{enumerate}
-    \item \textbf{Controller as Submodule:} The \texttt{EdcaFsmController} is instantiated as a direct subcomponent of the \texttt{Hcf} class. It encapsulates the three-state machine (\texttt{ACTIVE}, \texttt{LISTENING}, \texttt{BLOCKED}), together with timers and state variables (\texttt{EdcaFsmState}) that regulate transitions.
-    \item \textbf{Feature Switches:} The boolean flags \texttt{BEAperiodic} and \texttt{carCrash} are implemented at the controller level. These switches alter contention behaviour by silencing AC\_BE during critical windows or invoking BLOCKED preemption in response to emergency events.
-    \item \textbf{Control Flow Hooks:} The original upper- and lower-frame handlers
-    (\texttt{processUpperFrame()}, \texttt{processLowerFrame()})
-    are extended to trigger FSM events. Their interaction with the controller drives the finite-state transitions detailed in \Autoref{fig:upper_fsm,fig:lower_fsm}.
-\end{enumerate}
-
-This architecture enforces deterministic QoS at the MAC layer through behavioural gating rather than intrusive rewrites. Together with the upper- and lower-frame FSMs (\Autoref{fig:upper_fsm,fig:lower_fsm}), the integration establishes the timing semantics, bandwidth-reservation strategy, and fail-safe collision handling that underpin the DQ-WiFi enhancement.
-
-
-
-\chapter{Preliminary Results}
-\label{chap:results}
-
-To assess how each incremental MAC feature influences network performance, we run repeatable packet-level simulations and record aggregate throughput, end-to-end delay, maximum delay and jitter for the relevant traffic classes. Results are reported as generic, untuned values so that improvements stem solely from protocol changes rather than parameter optimisation.
-
-\textbf{BEAperiodic = polling-like service on \textbf{AC\_BE}.}
-\texttt{BEAperiodic} is a boolean flag that turns the EDCA Best-Effort queue (AC\_BE) into a polling-style aperiodic server with a fixed duty cycle. When \texttt{BEAperiodic} is \emph{true}, the MAC FSM enforces
-an \emph{ACTIVE}/\emph{LISTENING} schedule of period \(T=\texttt{activePeriod}+\texttt{listenPeriod}\):
-(i) during \emph{ACTIVE}, AC\_BE is muted (no transmissions); (ii) during \emph{LISTENING}, AC\_BE is preferentially serviced and drains its backlog. This emulates a polling server that provides deterministic service opportunities to aperiodic traffic. In our mapping, \textbf{CONTROL} packets use AC\_BE; therefore their worst-case waiting time is upper-bounded by \(\texttt{activePeriod}\) (before the next LISTENING window), plus the in-window queuing time. We expose two switches in experiments: a global controller flag (\texttt{BEAperiodic=true}) and an EDCAF-level tag that marks AC\_BE as aperiodic.
-
-\textbf{Common setup.} One 802.11 AP and \(N\) vehicles (STAs) in LOS; EDCA queues with DSCP\(\rightarrow\)UP classification; MAC FSM provides \emph{ACTIVE}, \emph{LISTENING}, and \emph{BLOCKED}. Each vehicle runs three apps:
-\begin{enumerate}
-  \item \textbf{CONTROL} (periodic, medium priority) \(\rightarrow\) \emph{AC\_BE} (subject to \texttt{BEAperiodic} when enabled),
-  \item \textbf{SENSOR} (periodic, high priority) \(\rightarrow\) \emph{AC\_VI},
-  \item \textbf{COLLISION} (burst, alert) \(\rightarrow\) \emph{AC\_VO}; may trigger \emph{BLOCKED} via the collision sentinel.
-\end{enumerate}
-Unless stated, we use INET 802.11ac defaults; EDCAF capacity \(-1\); \(\texttt{activePeriod}=3\,\mathrm{s}\), \(\texttt{listenPeriod}=1\,\mathrm{s}\).
-
-\section{Simulation scenarios}
-We evaluate four scenarios with increasing QoS enforcement for critical and aperiodic traffic. All scenarios share the same topology and application setup; the MAC configuration varies as follows:
-
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:scenarios}Scenario matrix: QoS features enabled per profile.}
-	\begin{center}
-		\scriptsize
-		  \setlength{\tabcolsep}{4pt}
-		  \begin{adjustbox}{max width=\linewidth}
-		  \begin{tabular}{@{}lccccc@{}}
-		    \toprule
-		    \textbf{Feature} & \textbf{NOQOS} & \textbf{EDCA\_ONLY} & \textbf{CRASH\_QOS} & \textbf{CRASH\_QOS2} & \textbf{CRASH\_QOS3} \\
-		    \midrule
-		    Extends                               & ---   & NOQOS      & EDCA\_ONLY   & EDCA\_ONLY   & CRASH\_QOS2 \\
-		    \texttt{mac.qosStation}               & false & true       & true         & true         & true \\
-		    \texttt{classifier.typename}          & ---   & \texttt{DscpQosClassifier} & \texttt{DscpQosClassifier} & \texttt{DscpQosClassifier} & \texttt{DscpQosClassifier} \\
-		    EDCAF queue capacity                  & ---   & \(-1\)     & \(-1\)       & \(-1\)       & \(-1\) \\
-		    \texttt{mac.hcf.carCrash}             & false & false      & true         & true        & true \\
-		    BEAperiodic (EDCAF level)             & ---   & ---        & false        & true         & true \\
-		    FSM \texttt{activePeriod}             & ---   & ---        & ---          & \(3\,\mathrm{s}\) & \(3\,\mathrm{s}\) \\
-		    FSM \texttt{listenPeriod}             & ---   & ---        & ---          & \(1\,\mathrm{s}\) & \(1\,\mathrm{s}\) \\
-		    \texttt{burstDuration} (alert app)    & \(3\,\mathrm{s}\) & \(3\,\mathrm{s}\) & \(3\,\mathrm{s}\) & \(0\,\mathrm{s}\) & \(3\,\mathrm{s}\) \\
-		    \bottomrule
-		  \end{tabular}
-		  \end{adjustbox}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-\section{Evaluation}
-This section evaluates the performance of the Auto5G QoS model, analyzing its ability to provide deterministic latency for critical traffic while managing other data flows.
-
-Throughput Analysis (\ref{results:thp}) uses temporal graphs to visually compare how different QoS configurations manage channel access and isolate traffic classes.
-
-End-to-End Delay Analysis (\ref{results:end}) quantifies the latency and jitter trade-offs, demonstrating how the model guarantees ultra-low latency for alerts and bounded delays for best-effort traffic.
-
-
-\section{Throughput Analysis}
-\label{results:thp}
-
-\begin{figure}[htb]
-	\caption{\label{fig:no_qos}NO QOS - Baseline with no MAC-level QoS. All packets share a single FIFO queue.}
-	\begin{center}
-		\includegraphics[width=1\textwidth]{Figs/noqos.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\autoref{fig:no_qos} is the baseline with no MAC-level QoS. All packets share a single \gls{fifo}, so best-effort traffic (blue, AC\_BE), video-grade traffic (orange, AC\_VI) and voice-critical traffic (green, AC\_VO) contend indiscriminately. The orange AC\_VI curve rises and falls erratically, while the blue AC\_BE curve is repeatedly starved whenever the green AC\_VO burst appears. The mixed pattern confirms that, without QoS, the radio cannot sustain deterministic behaviour.
-
-\begin{figure}[htb]
-	\caption{\label{fig:edca_only}EDCA Only - Four queues are enabled, proving standard correctly ranks traffic.}
-	\begin{center}
-		\includegraphics[width=1\textwidth]{Figs/edca_only.png}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-With plain EDCA (\autoref{fig:edca_only}) four queues are enabled (Even-though we are using only three). The orange AC\_VI plateau now sits clearly above the blue AC\_BE floor, and the intermittent green AC\_VO packets punch through with higher priority, proving that the standard correctly ranks traffic. Yet best-effort packets still share the same contention window, so they occasionally intrude on VI slots and prolong queueing. The next configurations target these two shortcomings.
-
-\begin{figure}[htb]
-	\caption{\label{fig:crash_qos1}CRASH\_QOS1 – car-crash sentinel only. Collision triggers a 3s blackout (BLOCKED state).}
-	\begin{center}
-		\includegraphics[width=1\textwidth]{Figs/carcrashonly.png} % Placeholder for Figure 13
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\autoref{fig:crash_qos1} activates the collision sentinel (\texttt{carCrash = true}) while leaving \\ \texttt{BEAperiodic} disabled. When the hidden-terminal burst triggers the sentinel, the controller enters BLOCKED, all colours vanish for the programmed 3s blackout and then resume exactly where they left off. The isolation window is evident: the green AC\_VO packets that caused the collision are quarantined, leaving the orange AC\_VI service curve smooth once the blackout ends. The reduction in mean end-to-end delay for these collision packets is quantified later in \ref{results:end}.
-
-\begin{figure}[htb]
-	\caption{\label{fig:crash_qos2}CRASH\_QOS2—bandwidth reservation only. Deterministic hand-over between AC\_VI (ACTIVE period) and AC\_BE (LISTENING period).}
-	\begin{center}
-		\includegraphics[width=1\textwidth]{Figs/reservaonly.png} % Placeholder for Figure 14
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-In \autoref{fig:crash_qos2} the collision sentinel is disabled and only the bandwidth-reservation mechanism is active (\texttt{BEAperiodic = true}, 3 s ACTIVE / 1 s LISTENING). Two queues are present—orange AC\_VI (video) and blue AC\_BE (best-effort). During each ACTIVE period AC\_VI enjoys the channel exclusively while AC\_BE remains muted. When the controller switches to LISTENING, AC\_VI pauses and AC\_BE drains its backlog in a brief high-rate burst before the cycle repeats. The clean hand-over between orange and blue traces visualises the tighter CW and AFS that AC\_BE inherits during LISTENING. Because every BE packet is transmitted inside its dedicated one-second window, the best-effort latency becomes deterministically bounded—results quantified in the next section.
-
-\begin{figure}[htb]
-	\caption{\label{fig:crash_qos3}CRASH\_QOS3—bandwidth reservation + car-crash sentinel. The two mechanisms coexist.}
-	\begin{center}
-		\includegraphics[width=1\textwidth]{Figs/both.png} % Placeholder for Figure 15
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\autoref{fig:crash_qos3} combines collision blocking and bandwidth reservation. The periodic blue AC\_BE bursts characteristic of \autoref{fig:crash_qos2} persist, but when a collision is detected the BLOCKED state pre-empts all traffic throughput drops to zero, and then the orange AC\_VI and blue AC\_BE streams resume their duty-cycle pattern while the green AC\_VO burst is confined to the isolated window. The graph shows that the two mechanisms coexist without wasting airtime: throughput returns to the reservation cycle immediately after unblocking, while collision frames remain strictly isolated.
-
-In summary, the NO\_QOS profile offers no protection. EDCA improves data separation but still mixes queues, the collision sentinel cleanly isolates faulty intervals (\autoref{fig:crash_qos1}), and the reservation window reallocates bandwidth with deterministic hand-over between VI and BE (\autoref{fig:crash_qos2}--\ref{fig:crash_qos3}). The hybrid profile (\autoref{fig:crash_qos3}) retains both benefits—collision isolation for AC\_VO and bounded latency for AC\_BE—without sacrificing channel utilisation. Detailed delay and jitter metrics are presented in the following subsection.
-
-\section{End-To-End Delay Analysis}
-In the next table Legacy EDCA is optimal for raw delay but fails to guarantee worst-case bounds. Collision blocking guarantees sub-millisecond delivery for alert traffic, and bandwidth reservation delivers a provable upper bound for best-effort packets. The hybrid scheme (CRASH\_QOS3) combines both advantages, trading higher CONTROL/SENSOR delay for deterministic BE latency and collision-immunity for alert traffic—precisely the priority mix required in safety-critical V2X scenarios.
-\label{results:end}
-% needs in preamble: \usepackage{booktabs} \usepackage{adjustbox}
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:delay_metrics}End-to-End Delay and Jitter Metrics for Different QoS Configurations}
-	\begin{center}
-		\footnotesize
-		  \setlength{\tabcolsep}{4pt}
-		  \begin{adjustbox}{max width=\linewidth}
-		  \begin{tabular}{@{}l *{5}{c}@{}}
-		    \toprule
-		    \textbf{Metric / Flow Type} & \textbf{NOQOS} & \textbf{EDCA\_ONLY} & \textbf{CRASH\_QOS} & \textbf{CRASH\_QOS2} & \textbf{CRASH\_QOS3} \\
-		    \midrule
-		    Avg. Delay — CONTROL (Medium)   & 80 ms   & 48.18 ms & 269 ms    & 1.14 s  & 1.51 s \\
-		    Avg. Delay — SENSOR (High)      & 55.7 ms & 22.15 ms & 158.75 ms & 203 ms  & 325 ms \\
-		    Avg. Delay — COLLISION (Alert)  & 382 ms  & 2.05 ms  & 0.440 ms  & —       & 0.441 ms \\
-		    Max Delay — CONTROL             & 2 s     & 1.39 s   & 5 s       & 3.04 s  & 7.74 s \\
-		    Jitter — COLLISION              & 214 ms  & 2.23 ms  & 45.7 \textmu s & —   & 45.4 \textmu s \\
-		    \bottomrule
-		  \end{tabular}
-		  \end{adjustbox}
-	\end{center}
-	\fonte{Prepared by the author.}
-	\small\textit{*Values obtained with default parameters—no tuning or optimisation.}
-\end{table}
-
-
-
-
-\subsection*{Analysis}
-The effects below follow directly from the delay decomposition in Section~\ref{sec:analysis}
-(\(d_{\text{queue}}\), \(d_{\text{cycle}}\), \(d_{\text{access}}\), \(\tau_{\text{MAC}}\), and blackout \(\Delta_{\text{block}}\)).
+Each active package defines a \texttt{Scenario} network NED that composes:
 
 \begin{itemize}
-    \item \textbf{NOQOS} shows the highest collision frame delays and jitter because all traffic shares one FIFO.
-    \item \textbf{EDCA\_ONLY} isolates queues, cutting average CONTROL delay by $\sim$40\% and COLLISION delay by two orders of magnitude, but worst-case latency is unknown.
-    \item \textbf{CRASH\_QOS} adds the \emph{BLOCKED} state. Alert traffic (AC\_VO) now arrives in sub-millisecond time with micro-second jitter because it bypasses \(d_{\text{cycle}}\) and minimizes \(d_{\text{access}}\); however, CONTROL delay rises since the blackout inserts \(\Delta_{\text{block}}\) for all other queues.
-    \item \textbf{CRASH\_QOS2} activates bandwidth-reservation only. The 3\,s \emph{ACTIVE} period mutes AC\_BE, so CONTROL frames see a deterministic bound dominated by \(d_{\text{cycle}}\le T_A=3\,\mathrm{s}\); the measured worst case of 3.04\,s matches \(T_A\) plus a small \(d_{\text{access}}\) term.
-\item \textbf{CRASH\_QOS3} — reservation and blocking coexist. If no collision occurs, the 3\,s reservation bound is respected for CONTROL (\(d_{\text{cycle}}\le T_A\)). When a collision occurs, the blackout pre-empts the reservation; with a single event (\(k=1\)) the worst-case bound from Section~\ref{sec:analysis} reduces to
-\[
-d_{\text{crit,wc}} \;\le\; d_{\text{queue}} + T_A + \Delta_{\text{block}} + \tau_{\text{MAC}} ,
-\]
-which matches the observed \(7.74\,\mathrm{s}\). ALERT traffic keeps sub-millisecond latency because blocking grants it immediate priority and removes \(d_{\text{cycle}}\).
-
+  \item \texttt{Ieee80211DimensionalRadioMedium} --- shared radio medium for all nodes;
+  \item \texttt{VeinsInetManager} --- TraCI scenario manager that launches SUMO through \texttt{veins\_launchd} on \texttt{localhost:9999} using \texttt{highway.launchd.xml};
+  \item \texttt{PhysicalEnvironment} --- obstacle geometry from \texttt{highway.obstacles.xml};
+  \item visualizers (optional for interactive runs);
+  \item an initial \texttt{VeinsInetCar} placeholder; additional cars are injected by TraCI as SUMO vehicles appear.
 \end{itemize}
 
-These generic results confirm the design trade-off: reservation guarantees a fixed upper bound for best-effort queues (mapped here as CONTROL Frames), while collision blocking preserves ultra-low latency for alerts—at the cost of elongating CONTROL latency whenever both mechanisms overlap.
+This compound is the OMNeT++ \texttt{network} selected by every runnable configuration in the package~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{End-to-End Packet Path}
+\label{sec:impl:path}
+
+\autoref{fig:impl:stack} and the steps below summarize how a packet moves from creation to KPI recording.
+The path is identical for Best Effort and Voice except for DSCP marking, classifier mapping, and---under adaptive policies---\gls{hcf}-level Best Effort gating.
+
+\begin{figure}[htb]
+	\caption{\label{fig:impl:stack}Implemented cross-layer path from study applications to the shared radio. Adaptive \gls{hcf} modules appear only under the \texttt{edca\_v2x\_vo\_*} policies.}
+	\begin{center}
+	\ABNTEXfontereduzida
+	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
+		\toprule
+		\textbf{Application:} \texttt{CritPacketSender} (\gls{dscp}~0) or \texttt{CrashBurstApp} (\gls{dscp}~46); \texttt{CreationTimeTag}, optional sequence tag \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{UDP / IPv4:} multicast to \texttt{224.0.0.1} on \texttt{wlan0} (Crash destPort~9001; Crit local/dest~9001) \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{Classifier (EDCA policies):} \texttt{QosClassifier} maps \gls{dscp}~46~$\rightarrow$~\gls{up} Voice; others~$\rightarrow$~\gls{up}~0 \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{\gls{mac}:} \texttt{V2xIeee80211Mac}; \texttt{plain} uses \gls{dcf}; EDCA uses stock \texttt{Hcf} or \texttt{V2xHcf} \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{\gls{phy}:} \texttt{Ieee80211DimensionalRadio}, free-space path loss, \texttt{IdealObstacleLoss}, static SNIR \\
+		\midrule
+		$\downarrow$ \\
+		\textbf{Reception KPIs:} \texttt{CritPacketSender} on every node (port~9001) records BE/VO RX and delay \\
+		\bottomrule
+	\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+\begin{enumerate}
+  \item The sending application creates a UDP payload, attaches a \texttt{CreationTimeTag} (and, for crash bursts, a sequence request), and marks the packet with a \texttt{DscpReq} of~0 or~46.
+  \item \texttt{VeinsInetApplicationBase::sendPacket} delivers the frame to UDP, which sends to multicast \texttt{224.0.0.1}.
+  \item IPv4 forwards onto \texttt{wlan0}. Under EDCA policies, \texttt{QosClassifier} converts DSCP into a \texttt{UserPriorityReq} before the frame enters the IEEE~802.11 \gls{mac}~\cite{RFC8325_WiFi_QoS}.
+  \item \texttt{V2xIeee80211Mac} either enqueues into a single \gls{dcf} pending queue (\texttt{plain}) or into \gls{edca} access-category queues (\texttt{edca\_*}). Adaptive policies consult \texttt{V2xEdcaFsmController} before granting Best Effort channel access~\cite{IEEE80211e_2005}.
+  \item The dimensional 802.11p radio transmits on the shared medium; receivers reverse the path through \gls{phy}, \gls{mac}, IP, and UDP.
+  \item Every node's \texttt{CritPacketSender} (\texttt{app[0]}, port~9001) processes received datagrams, classifies them by DSCP into BE or VO KPI streams, skips self-originated addresses, and optionally deduplicates Voice repeats.
+\end{enumerate}
+
+Crash-alert frames are therefore generated by \texttt{CrashBurstApp} but counted at receivers by \texttt{CritPacketSender}, because the crash application sends to destination port~9001---the same port on which every vehicle listens for cooperative traffic~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Application Layer}
+\label{sec:impl:apps}
+
+Two custom application modules implement the synthetic traffic model of \autoref{sec:sys:traffic}.
+Both are instantiated on every vehicle (\texttt{numApps = 2}); only the configured crash target activates the Voice overlay.
+
+\subsection{\texttt{CritPacketSender}: periodic Best Effort}
+\label{sec:impl:crit}
+
+\texttt{veins\_qos.traffic.CritPacketSender} extends \texttt{VeinsInetApplicationBase} and generates the ordinary background flow~\cite{aguiar2026_veins_qos}.
+\autoref{tab:impl:crit} lists the principal NED parameters and recorded statistics.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:crit}Principal parameters and statistics of \texttt{CritPacketSender}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.6cm} X@{}}
+			\toprule
+			\textbf{Item} & \textbf{Role in the artifact} \\
+			\midrule
+			\texttt{sendInterval}, \texttt{payloadBytes} &
+			  Periodic offered load; overridden by \texttt{\_netload\_*} overlays. \\
+			\addlinespace
+			\texttt{dscp} (default~0) &
+			  Best Effort marking carried as \texttt{DscpReq}. \\
+			\addlinespace
+			\texttt{localPort}/\texttt{destPort} (9001) &
+			  UDP endpoints for BE TX and for all BE/VO RX KPIs. \\
+			\addlinespace
+			\texttt{voDedupWindow} &
+			  Enables run-long Voice deduplication keyed by (source,~sequence); the time-valued name is retained for legacy configs, but entries are not mid-run expired. \\
+			\addlinespace
+			Statistics &
+			  \texttt{beTxPackets}, \texttt{beRxPackets}, \texttt{voRxPackets}, \texttt{beEndToEndDelay}, \texttt{voEndToEndDelay} (vector + count/mean/min/max). \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+On transmission, the module stamps \texttt{CreationTimeTag} and emits a Best Effort counter.
+On reception it ignores datagrams whose Layer-3 source equals the local \texttt{wlan0} address, maps remaining packets by DSCP into BE or VO delay/RX streams, and---when deduplication is enabled---accepts only the first Voice packet of each (source,~sequence) pair for the remainder of the run.
+This design keeps a single receiver module as the KPI sink for both traffic classes.
+
+\subsection{\texttt{CrashBurstApp}: crash-triggered Voice}
+\label{sec:impl:crash}
+
+\texttt{veins\_qos.traffic.CrashBurstApp} implements the crash-alert overlay~\cite{RFC3246_EF_PHB,aguiar2026_veins_qos}.
+Every vehicle instantiates the module, but only the node whose OMNeT++ index equals \texttt{targetNodeIndex} (default~0) schedules crash behaviour; the sentinel value~$-1$ would activate all nodes and is unused in the active matrix.
+
+At absolute simulation time \texttt{crashAt} (30~s in the highway packages), the target node:
+
+\begin{enumerate}
+  \item marks itself visually (red icon) for interactive inspection;
+  \item commands SUMO through TraCI to set speed to zero, realizing the stationary crash source of \autoref{sec:sys:event}~\cite{veins_sommer2011,lopez2018sumo};
+  \item begins emitting Voice bursts marked with DSCP~46, each logical sequence comprising \texttt{repeatCount} physical packets spaced by \texttt{repeatGap} with optional \texttt{repeatJitter}.
+\end{enumerate}
+
+After \texttt{resumeAfter} (30~s), Voice transmission stops and TraCI restores normal speed control (\texttt{setSpeed(-1)}).
+The crash source continues to run \texttt{CritPacketSender} throughout, so alerts are superimposed on ongoing Best Effort traffic rather than replacing it (\autoref{sec:sys:traffic}).
+
+\autoref{tab:impl:crash} summarizes the crash-application surface.
+Physical Voice transmissions increment \texttt{voTxPackets}; each logical burst sequence increments \texttt{voLogicalTxPackets}.
+The evaluation prefers logical TX when present so that repeatCount does not inflate the denominator of reception ratios; the implementation exposes both counters precisely for that reason~\cite{aguiar2026_veins_qos}.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:crash}Principal parameters and statistics of \texttt{CrashBurstApp}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.6cm} X@{}}
+			\toprule
+			\textbf{Item} & \textbf{Role in the artifact} \\
+			\midrule
+			\texttt{targetNodeIndex} &
+			  Which OMNeT++ node becomes the crash source (default~0). \\
+			\addlinespace
+			\texttt{crashAt}, \texttt{resumeAfter} &
+			  Absolute crash start and crash-window duration. \\
+			\addlinespace
+			\texttt{sendInterval}, \texttt{payloadBytes} &
+			  Inter-burst period and payload during the window. \\
+			\addlinespace
+			\texttt{repeatCount}, \texttt{repeatGap}, \texttt{repeatJitter} &
+			  Physical repeats of each logical alert. \\
+			\addlinespace
+			\texttt{localPort}~9002 / \texttt{destPort}~9001 &
+			  TX on a dedicated local port; RX KPIs collected by Crit on~9001. \\
+			\addlinespace
+			Statistics &
+			  \texttt{voTxPackets} (physical), \texttt{voLogicalTxPackets} (per sequence). \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+There is no multi-level criticality ladder and no separate four-priority application family: the implementation stays on the two-class \gls{be}/\gls{vo} abstraction fixed in the System Model.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{QoS Classifier}
+\label{sec:impl:classifier}
+
+Correct placement of crash alerts into the Voice access category is not automatic under the common three-MSB DSCP-to-\gls{up} heuristic (\autoref{sec:bg:rfc8325}, \autoref{sec:sys:qos}).
+The artifact therefore installs an explicit classifier rather than relying on default DiffServ-to-802.11 mapping~\cite{RFC8325_WiFi_QoS}.
+
+\texttt{veins\_qos.qos.QosClassifier} implements INET's \texttt{IIeee8021dQosClassifier} interface.
+It reads DSCP from packet indications or requests (and, if needed, from IPv4/IPv6 headers), maps \texttt{crashDscp} (default~46) to Voice user priority, and assigns \texttt{defaultUp} (default~0, Best Effort) to every other packet~\cite{RFC8325_WiFi_QoS,IEEE80211e_2005,aguiar2026_veins_qos}.
+The resulting \texttt{UserPriorityReq} selects the corresponding \gls{edca} access category inside the \gls{hcf}.
+
+The classifier is installed only under EDCA policies:
+
+\begin{quote}
+\ttfamily
+*.node[*].wlan[*].classifier.typename = "veins\_qos.qos.QosClassifier"\\
+*.node[*].wlan[*].classifier.crashDscp = 46\\
+*.node[*].wlan[*].classifier.defaultUp = 0
+\end{quote}
+
+Under \texttt{plain}, no classifier is configured: a single \gls{dcf} pending queue carries all traffic without DSCP-to-\gls{ac} differentiation, matching the non-QoS baseline of \autoref{sec:sys:qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{MAC Layer: Instrumented MAC and Adaptive HCF}
+\label{sec:impl:mac}
+
+All active configurations replace the stock IEEE~802.11 \gls{mac} typename with an instrumented subclass, while only the adaptive policies replace the \gls{hcf} submodule~\cite{IEEE80211e_2005,inet_framework,aguiar2026_veins_qos}.
+
+\subsection{\texttt{V2xIeee80211Mac}}
+\label{sec:impl:v2xmac}
+
+\texttt{veins\_qos.mac.V2xIeee80211Mac} extends INET's \texttt{Ieee80211Mac} and is selected globally:
+
+\begin{quote}
+\ttfamily *.node[*].wlan[*].mac.typename = "veins\_qos.mac.V2xIeee80211Mac"
+\end{quote}
+
+The module subscribes to \texttt{packetDroppedSignal} and, at finish time, records scalar drop totals partitioned by access category (BK, BE, VI, VO, and unclassified) and by drop reason (queue overflow, retry-limit reached, congestion, incorrectly received, and related INET reasons).
+Those counters are the \gls{mac}-side counterpart to the application delay and reception statistics: they expose where frames were discarded under each policy without requiring Evaluation-side reinterpretation of raw event logs~\cite{aguiar2026_veins_qos}.
+
+\subsection{\texttt{V2xHcf} and \texttt{V2xEdcaFsmController}}
+\label{sec:impl:v2xhcf}
+
+The adaptive policies substitute
+
+\begin{quote}
+\ttfamily *.node[*].wlan[*].mac.hcf.typename = "veins\_qos.mac.V2xHcf"
+\end{quote}
+
+for the stock INET \texttt{Hcf}.
+\texttt{V2xHcf} implements the \texttt{IHcf} contract and embeds a full QoS \gls{hcf} submodule tree (EDCA, HCCA placeholder, originator/recipient QoS data services, rate selection, acknowledgement and RTS/CTS policies) plus a study-specific \texttt{FSMController} of type \texttt{V2xEdcaFsmController}~\cite{IEEE80211e_2005,aguiar2026_veins_qos}.
+Because only the typename changes, queue depths and contention parameters inherited from \texttt{edca\_only} remain numerically identical across the adaptive profiles.
+
+\autoref{tab:impl:v2xhcf} lists the controller-facing parameters declared on \texttt{V2xHcf} and its FSM submodule.
+Their semantics match the three-mode controller of \autoref{sec:sys:controller}; this section records how those knobs are named in software.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:v2xhcf}Adaptive controller parameters exposed by \texttt{V2xHcf} / \texttt{V2xEdcaFsmController}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{4.0cm} X@{}}
+			\toprule
+			\textbf{Parameter} & \textbf{Meaning} \\
+			\midrule
+			adaptiveBlocking &
+			  Enables Voice-driven Best Effort suppression through the FSM. \\
+			\addlinespace
+			emergencyPreemption &
+			  When true, newly arriving Best Effort may be dropped and stale Best Effort grants suppressed while protection is active. \\
+			\addlinespace
+			blockDuration &
+			  Protection-window extension per Voice demand event (local enqueue or overheard Voice frame). \\
+			\addlinespace
+			maxContinuousBlock &
+			  Cap on one continuous blocking/sending interval (also mirrored on the FSM). \\
+			\addlinespace
+			voQueueThreshold &
+			  Local Voice queue depth that can trigger protection from upper traffic. \\
+			\addlinespace
+			FSMController.sendingGuardTimeout &
+			  Short guard that delays return to listening around Voice send transitions. \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\subsection{Controller integration hooks}
+\label{sec:impl:hooks}
+
+\autoref{tab:impl:hooks} summarizes how \texttt{V2xHcf} couples application- and peer-observed Voice activity to Best Effort eligibility.
+The controller does not rewrite backoff arithmetic or introduce scheduled gates; it interposes on channel-access eligibility for Best Effort while Voice frames remain subject to ordinary \gls{edca} contention~\cite{IEEE80211e_2005}.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:hooks}Principal integration hooks of \texttt{V2xHcf} relative to the stock INET \gls{hcf}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.4cm} X@{}}
+			\toprule
+			\textbf{Hook} & \textbf{Behaviour in the adaptive policies} \\
+			\midrule
+			Voice demand detection &
+			  Local Voice enqueue above \texttt{voQueueThreshold}, or an overheard Voice-classified \gls{mac} frame, calls into the FSM (\texttt{onVoDemandDetected}) and may start or extend a protection window of length \texttt{blockDuration}, capped by \texttt{maxContinuousBlock}. \\
+			\addlinespace
+			Upper-frame gating &
+			  While the FSM reports Best Effort blocked (\emph{blocking} or \emph{sending}), Best Effort channel-access requests are deferred. \\
+			\addlinespace
+			Own Voice on air &
+			  Start and end of the node's own Voice transmissions drive \texttt{onVoTransmissionStart}/\texttt{End}, moving the FSM through \emph{sending} and applying \texttt{sendingGuardTimeout} before listening resumes. \\
+			\addlinespace
+			Emergency preemption &
+			  If \texttt{emergencyPreemption} is true, newly arriving Best Effort frames may be dropped with a congestion reason and stale Best Effort grants suppressed while protection is active. \\
+			\addlinespace
+			Instrumentation &
+			  Signals/scalars \texttt{beDroppedWhileBlocked}, \texttt{beGrantSuppressedWhileBlocked}, and \texttt{voProtectionActivation}; FSM vector \texttt{v2xState} with encoding 0~=~listening, 1~=~blocking, 2~=~sending. \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{MAC Policy Configuration Wiring}
+\label{sec:impl:policies}
+
+\autoref{tab:impl:map} restates the stack mapping.
+The subsections below document the exact OMNeT++ configuration composition used in the active highway \texttt{omnetpp.ini} files~\cite{aguiar2026_veins_qos}.
+Numeric access-control values are collected in \autoref{tab:impl:parameters}; here the emphasis is on \emph{which} typename and parameter paths bind them.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:map}Artifact mapping per stack layer.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+			\toprule
+			\textbf{Layer} & \textbf{Reused baseline} & \textbf{Introduced modules} \\
+			\midrule
+			App. &
+			  Multicast UDP hooks in \texttt{VeinsInetApplicationBase} &
+			  \texttt{CritPacketSender}, \texttt{CrashBurstApp}; KPI tags and deduplication \\
+			\addlinespace
+			Net/\gls{qos} &
+			  IPv4 forwarding and transport &
+			  \texttt{QosClassifier} (\gls{dscp}~46~$\rightarrow$ Voice \gls{up}) \\
+			\addlinespace
+			\gls{mac} &
+			  IEEE~802.11p \gls{dcf}/\gls{edca} queues and channel access &
+			  \texttt{V2xIeee80211Mac}; \texttt{V2xHcf}+\texttt{V2xEdcaFsmController} on adaptive policies \\
+			\addlinespace
+			\gls{phy} &
+			  Dimensional radio, propagation, mobility, TraCI coupling &
+			  None (shared across all policies) \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\subsection{\texttt{plain}}
+\label{sec:impl:plain}
+
+\texttt{[Config plain]} keeps a non-QoS station.
+It sets the single DCF pending-queue capacity to 128~packets and does not enable \texttt{qosStation}, does not install \texttt{QosClassifier}, and does not override \texttt{hcf.typename}.
+DSCP markings still travel with IP packets for KPI classification at receivers, but they do not drive EDCA access categories.
+
+\subsection{\texttt{edca\_only}}
+\label{sec:impl:edca}
+
+\texttt{[Config edca\_only]} extends the plain baseline with standard EDCA~\cite{IEEE80211e_2005}:
+
+\begin{itemize}
+  \item \texttt{mac.qosStation = true};
+  \item \texttt{mac.hcf.typename = "Hcf"} (stock INET);
+  \item \texttt{QosClassifier} as above;
+  \item pending-queue capacities BK/BE/VI/VO = 128/128/64/32 (\texttt{edcaf[0..3]});
+  \item MSDU aggregation policy cleared (\texttt{msduAggregationPolicy.typename = ""});
+  \item \gls{aifsn} BK/BE/VI/VO = 7/3/2/2;
+  \item \texttt{cwMin}/\texttt{cwMax} BK/BE = 15--1023, VI = 7--15, VO = 3--7.
+\end{itemize}
+
+INET indexes \texttt{edcaf[0]=BK}, \texttt{[1]=BE}, \texttt{[2]=VI}, \texttt{[3]=VO}; the active applications exercise only BE and VO, so VI/BK queues exist but remain empty under the two-class traffic model.
+
+\subsection{Adaptive profiles}
+\label{sec:impl:adaptive}
+
+Each adaptive configuration extends \texttt{edca\_only}, replaces \texttt{hcf.typename} with \texttt{veins\_qos.mac.V2xHcf}, and sets \texttt{adaptiveBlocking = true}.
+\autoref{tab:impl:policyknobs} records the profile-specific knobs exactly as bound in \texttt{omnetpp.ini}.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:policyknobs}Adaptive policy knobs as bound in the highway \texttt{omnetpp.ini}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+			\toprule
+			\textbf{Config} & \textbf{Controller binding} \\
+			\midrule
+			\texttt{edca\_v2x\_vo\_stable} &
+			  \texttt{blockDuration=15ms}, \texttt{maxContinuousBlock=80ms}, \texttt{sendingGuardTimeout=5ms}, \texttt{voQueueThreshold=2}; \texttt{emergencyPreemption} left false. \\
+			\addlinespace
+			\texttt{edca\_v2x\_vo\_guarded} &
+			  \texttt{blockDuration=4ms}, \texttt{maxContinuousBlock=20ms}, \texttt{sendingGuardTimeout=4ms}, \texttt{voQueueThreshold=3}; preemption false. \\
+			\addlinespace
+			\texttt{edca\_v2x\_vo\_emergency} &
+			  \texttt{emergencyPreemption=true}, \texttt{blockDuration=10ms}, \texttt{maxContinuousBlock=60ms}, \texttt{sendingGuardTimeout=5ms}, \texttt{voQueueThreshold=1}. \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+Legacy configuration names from earlier prototypes (for example Friendly/Protect aliases documented in the artifact's deprecation notes) are not part of the active matrix and must not be confused with the five policies of \autoref{sec:sys:qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Scenario Packages, Simulation Parameters, and Configuration Matrix}
+\label{sec:impl:scenarios}
+
+\subsection{Consolidated simulation parameters}
+\label{sec:impl:parameters}
+
+\autoref{tab:impl:parameters} collects the concrete timing, topology, radio, application, classifier, and \gls{mac} bindings used by the active highway artifact.
+It is the numeric counterpart of the System Model in \autoref{chap:sysmodel}: the conceptual roles of the five policies and the crash timeline are defined there; the values that instantiate them in this study are recorded here~\cite{aguiar2026_veins_qos}.
+Best Effort inter-arrivals use OMNeT++ \texttt{exponential($\cdot$)} draws with the stated mean; Voice burst periods are fixed, with optional per-repeat jitter.
+Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency} in the first column; the full OMNeT++ configuration names are \texttt{edca\_v2x\_vo\_*}.
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:parameters}Simulation parameters used in the crash-aware Veins/\gls{inet} artifact.}
+	\begin{center}
+	\setlength{\tabcolsep}{3.5pt}
+	\begin{tabularx}{\linewidth}{@{}
+		>{\raggedright\arraybackslash}p{2.6cm}
+		>{\raggedright\arraybackslash}p{2.9cm}
+		>{\raggedright\arraybackslash}X
+		@{}}
+		\toprule
+		\multicolumn{3}{@{}l@{}}{\textbf{Common highway setting}} \\
+		\midrule
+		\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
+		\midrule
+		Sim.\ time &
+		  \SI{70}{\second} &
+		  \texttt{sim-time-limit}; identical for every configuration. \\
+		\addlinespace
+		Corridor &
+		  5~km, 3~lanes &
+		  Bidirectional SUMO corridor; mixed car/truck types (EIDM, LC2013); nominal lane speed \SI{120}{\km\per\hour}. \\
+		\addlinespace
+		Density &
+		  10~/~100~veh. &
+		  Light and heavy packages (\texttt{veins\_inet\_highway\_light}/\texttt{\_heavy}); same \texttt{omnetpp.ini}, different \texttt{highway.rou.xml}. \\
+		\addlinespace
+		Crash &
+		  \SI{30}{\second}--\SI{60}{\second} &
+		  Node index~0 (\texttt{node0\_highway}): TraCI stop, DSCP~46 alerts; BE background continues. \\
+		\addlinespace
+		Radio &
+		  802.11p / ch.~3 &
+		  5.9~GHz, 10~MHz, 20~mW; \texttt{Ieee80211DimensionalRadio}; mode~\texttt{p}. \\
+		\addlinespace
+		Propagation &
+		  FS~+~binary &
+		  Free-space path loss; no fading/shadowing; \texttt{IdealObstacleLoss} + \texttt{highway.obstacles.xml}; SNIR~\SI{4}{\decibel}; sens.\ $-$85~dBm; noise $-$110~dBm. \\
+		\addlinespace
+		Multicast &
+		  \texttt{224.0.0.1} &
+		  On \texttt{wlan0}. Crit ports 9001/9001; Crash local~9002, dest~9001 (VO RX counted in Crit). \\
+		\addlinespace
+		TraCI &
+		  port~9999 &
+		  \texttt{localhost}; \texttt{VeinsInetManager} + \texttt{veins\_launchd}; update~\SI{1}{\second}; SUMO step~\SI{0.1}{\second}. \\
+		\addlinespace
+		Host/\gls{mac} &
+		  \texttt{VeinsInetCar} &
+		  Always \texttt{V2xIeee80211Mac}; adaptive policies replace \texttt{Hcf} with \texttt{V2xHcf}. \\
+		\addlinespace
+		Classifier &
+		  DSCP~46~$\rightarrow$~VO &
+		  \texttt{QosClassifier} on EDCA policies only (\texttt{crashDscp=46}, \texttt{defaultUp=0}); unused under \texttt{plain}. \\
+		\addlinespace
+		Recording &
+		  vec.\ +\ sca. &
+		  \texttt{**.vector-recording}/\texttt{scalar-recording = true}. \\
+		\addlinespace
+		Matrix &
+		  15~/~package &
+		  Five policies $\times$ three loads; $\times$ two densities $=$ 30 named experiments before seeds. \\
+		\midrule
+		\multicolumn{3}{@{}l@{}}{\textbf{Application load profiles (\texttt{\_netload\_*})}} \\
+		\midrule
+		\textbf{Profile} & \textbf{BE (\texttt{app[0]})} & \textbf{VO crash (\texttt{app[1]})} \\
+		\midrule
+		\texttt{low} &
+		  exp.~\SI{500}{\milli\second}, 200~B &
+		  \SI{120}{\milli\second}, 150~B; repeat~3; gap~\SI{20}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
+		\addlinespace
+		\texttt{medium} &
+		  exp.~\SI{250}{\milli\second}, 320~B &
+		  \SI{75}{\milli\second}, 180~B; repeat~4; gap~\SI{15}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
+		\addlinespace
+		\texttt{high} &
+		  exp.~\SI{125}{\milli\second}, 420~B &
+		  \SI{20}{\milli\second}, 260~B; repeat~8; gap~\SI{5}{\milli\second}; jitter~\SI{2}{\milli\second}. \\
+		\midrule
+		\multicolumn{3}{@{}l@{}}{\textbf{\gls{mac} policies (runnable name \texttt{<policy>\_netload\_<profile>})}} \\
+		\midrule
+		\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
+		\midrule
+		\texttt{plain} &
+		  Non-\gls{qos} \gls{dcf} &
+		  Single pending queue~128; no classifier; no \gls{edca}; no adaptive blocking. \\
+		\addlinespace
+		\texttt{edca\_only} &
+		  Stock EDCA &
+		  \texttt{Hcf} + \texttt{QosClassifier}. DSCP~46~$\rightarrow$~\texttt{AC\_VO}, else UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
+		\addlinespace
+		\texttt{stable} &
+		  Sustained VO &
+		  Config \texttt{edca\_v2x\_vo\_stable}. Inherits \texttt{edca\_only}; \texttt{V2xHcf}. Block~\SI{15}{\milli\second}; max cont.~\SI{80}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~2. \\
+		\addlinespace
+		\texttt{guarded} &
+		  Bounded VO &
+		  Config \texttt{edca\_v2x\_vo\_guarded}. Same inheritance. Block~\SI{4}{\milli\second}; max cont.~\SI{20}{\milli\second}; guard~\SI{4}{\milli\second}; VO thr.~3. \\
+		\addlinespace
+		\texttt{emergency} &
+		  Emergency VO &
+		  Config \texttt{edca\_v2x\_vo\_emergency}; \texttt{emergencyPreemption=true}. Block~\SI{10}{\milli\second}; max cont.~\SI{60}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~1; may drop BE. \\
+		\bottomrule
+	\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\subsection{Density packages}
+\label{sec:impl:density}
+
+The dissertation experiments use two parallel packages under
+\texttt{veins\_qos/simulations/}~\cite{aguiar2026_veins_qos}:
+
+\begin{itemize}
+  \item \texttt{veins\_inet\_highway\_light} --- light-density corridor with 10~vehicles;
+  \item \texttt{veins\_inet\_highway\_heavy} --- heavy-density corridor with 100~vehicles.
+\end{itemize}
+
+Both packages share the same corridor geometry (\texttt{highway.net.xml}), obstacle file, launchd description, and---byte-for-byte in the active tree---the same \texttt{omnetpp.ini}.
+Fleet size is selected by the SUMO route file (\texttt{highway.rou.xml}): a fixed vehicle \texttt{node0\_highway} departs at time~0 and becomes OMNeT++ node index~0 (the default crash target), while additional vehicles are injected from SUMO flows.
+Separating density (package) from offered load (ini overlay) is deliberate: the two stress dimensions can be varied independently~\cite{aguiar2026_veins_qos}.
+
+\subsection{Road network and mobility}
+\label{sec:impl:sumo}
+
+The SUMO network is a bidirectional highway corridor of approximately 5~km with multiple lanes per direction, merge and exit geometry, and mixed car/truck vehicle types under EIDM car-following and LC2013 lane-changing models~\cite{lopez2018sumo}.
+Simulation step size is 0.1~s; teleportation on gridlock is disabled (\texttt{time-to-teleport=-1}) so that stopped crash nodes remain in place.
+Veins updates network-node mobility from TraCI; the manager polls on a one-second update interval in the highway ini, while SUMO itself advances at its finer step~\cite{veins_sommer2011}.
+
+\subsection{Radio and propagation baseline}
+\label{sec:impl:radio}
+
+Every configuration shares the IEEE~802.11p radio profile summarized in \autoref{tab:impl:parameters}~\cite{IEEE80211,inet_framework}:
+
+\begin{itemize}
+  \item operation mode \texttt{p}, band 5.9~GHz, channel~3, bandwidth 10~MHz, transmit power 20~mW;
+  \item radio typename \texttt{Ieee80211DimensionalRadio};
+  \item antenna mobility attached to the vehicle mobility module with a fixed longitudinal/height offset;
+  \item obstacle loss typename \texttt{IdealObstacleLoss}, configured from
+        \texttt{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
+  \item free-space path loss and a static SNIR threshold, without small-scale fading or shadowing (\autoref{sec:sys:scope}).
+\end{itemize}
+
+Because this baseline is identical across policies, cross-policy differences isolate queueing, contention, and local Best Effort suppression.
+
+\subsection{Timing and default application binding}
+\label{sec:impl:timing}
+
+Under \texttt{[General]}, both packages set \texttt{sim-time-limit = 70s}, crash start \texttt{crashAt = 30s}, and crash duration \texttt{resumeAfter = 30s}, matching \autoref{sec:sys:event} and \autoref{tab:impl:parameters}.
+Default application parameters in \texttt{[General]} match the medium load profile; the \texttt{\_netload\_*} overlays override them for the full matrix.
+
+\subsection{Load overlays and runnable matrix}
+\label{sec:impl:matrix}
+
+Three helper configurations vary only application-side load, using the means and payloads in \autoref{tab:impl:parameters}.
+Runnable experiments compose a policy configuration with a load overlay via OMNeT++ \texttt{extends}, for example
+
+\begin{quote}
+\ttfamily
+[Config edca\_v2x\_vo\_emergency\_netload\_high]\\
+extends = edca\_v2x\_vo\_emergency, \_netload\_high
+\end{quote}
+
+yielding the naming pattern \texttt{<policy>\_netload\_<low|medium|high>}: five policies $\times$ three loads $=$ fifteen named configurations per density package~\cite{aguiar2026_veins_qos}.
+Across both light and heavy packages the unique named experiments therefore total thirty before seed repetitions (seed counts belong to Evaluation).
+
+Batch execution helpers in each package (\texttt{run}, \texttt{run\_matrix.sh}) select profiles such as high-load-only cores or the full fifteen-config matrix; they presuppose a running \texttt{veins\_launchd} on port~9999.
+Building the study library follows the standard OMNeT++ pattern (\texttt{make makefiles \&\& make} under \texttt{veins\_qos/}) with NED paths that include INET, Veins, and \texttt{veins\_inet} sources~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Instrumentation and Analysis Surface}
+\label{sec:impl:instrumentation}
+
+\subsection{Recorded signals}
+\label{sec:impl:signals}
+
+Highway configurations enable comprehensive recording:
+
+\begin{quote}
+\ttfamily **.vector-recording = true\\
+**.scalar-recording = true
+\end{quote}
+
+\autoref{tab:impl:signals} collects the study-relevant statistics emitted by the modules described above.
+These signals are the measurement surface consumed by Evaluation; their statistical treatment (seeds, pooling, confidence reporting) is deferred to that chapter.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:signals}Study-relevant instrumentation exposed by the artifact.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+			\toprule
+			\textbf{Source} & \textbf{Recorded quantities} \\
+			\midrule
+			\texttt{CritPacketSender} &
+			  BE TX/RX counts; VO RX counts; BE and VO end-to-end delay vectors with count/mean/min/max scalars. \\
+			\addlinespace
+			\texttt{CrashBurstApp} &
+			  Physical VO TX count; logical VO sequence count. \\
+			\addlinespace
+			\texttt{V2xIeee80211Mac} &
+			  Per-\gls{ac} drop totals; per-reason drop totals (overflow, retry limit, congestion, \ldots). \\
+			\addlinespace
+			\texttt{V2xHcf} &
+			  Best Effort drops while blocked; Best Effort grant suppressions; Voice protection activations. \\
+			\addlinespace
+			\texttt{V2xEdcaFsmController} &
+			  \texttt{v2xState} vector (listening/blocking/sending). \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+End-to-end delay is computed at receivers as simulation time minus \texttt{CreationTimeTag}.
+For crash frames the creation stamp is the actual send instant of each physical repeat, so delay reflects channel and queueing latency rather than logical inter-burst spacing~\cite{aguiar2026_veins_qos}.
+
+\subsection{Offline analysis tooling}
+\label{sec:impl:kpi}
+
+The companion \texttt{kpi\_dashboard/} project parses OMNeT++ scalar and vector result files, caches intermediate tables, and exports publication figures~\cite{aguiar2026_veins_qos}.
+From an implementation perspective its contract is:
+
+\begin{itemize}
+  \item ingest \texttt{.sca}/\texttt{.vec} outputs under each scenario's \texttt{results/} directory;
+  \item aggregate application delays and counts from \texttt{Scenario.node[*].app[0]} (and crash TX from \texttt{app[1]});
+  \item expose controller and drop counters when present under adaptive policies;
+  \item write tabular and figure artifacts consumed by Evaluation.
+\end{itemize}
+
+The dashboard does not alter simulation behaviour; it is a reproducibility aid that turns the instrumentation of \autoref{tab:impl:signals} into analysis-ready products.
+Interpretation of those products---protection-versus-cost trade-offs, confidence intervals, and discussion---belongs to the Evaluation chapter.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation Scope and Deliberate Omissions}
+\label{sec:impl:scope}
+
+The code base stays aligned with the minimal System Model of \autoref{sec:sys:scope}:
+
+\begin{itemize}
+  \item a single crash source and a two-class \gls{be}/\gls{vo} distinction only;
+  \item no infrastructure, roadside unit, or Time-Sensitive Networking-style gating;
+  \item no \gls{dcc} rate control---application rates follow the fixed offered-load overlays;
+  \item no multi-crash orchestration and no standardized CAM/DENM stack;
+  \item no small-scale fading, shadowing, or graded obstacle attenuation beyond binary \texttt{IdealObstacleLoss}~\cite{inet_ideal_obstacle_loss}.
+\end{itemize}
+
+Older packages under \texttt{simulations/veins\_inet\_square/},
+\texttt{veins\_inet\_highway/}, and \texttt{veins\_inet\_light/}
+are retained for development history and must not be mixed with the active light/heavy highway result trees when analysing the dissertation campaigns~\cite{aguiar2026_veins_qos}.
+An offline UPPAAL model of the adaptive controller may exist in the broader artifact tree for optional formal inspection; it is not part of the runtime simulation path described here and is not developed further in this chapter.
+
+Together, the toolchain, host compounds, packet path, applications, classifier, instrumented \gls{mac}, adaptive \gls{hcf}, policy wiring, scenario packages, and instrumentation constitute the concrete realization of the crash-aware System Model.
+The evaluation that follows asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.

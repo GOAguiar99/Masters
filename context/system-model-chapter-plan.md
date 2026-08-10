@@ -101,11 +101,13 @@ Keep stable label `\label{chap:sysmodel}`.
 - Free-space + binary obstruction + static SNIR; no fading/shadowing (**no** class name `IdealObstacleLoss`).
 - No deterministic / worst-case latency claims.
 
-### 4.6 Model Parameters (`sec:sys:params`)
+### 4.6 Model Parameters — moved to Implementation
 
-- Tool-agnostic parameter table (topology, radio, densities, load profiles, MAC knobs).
-- **Exclude:** simulator/toolchain, seeds, config naming (`netload_*` as code identifiers), artifact cite.
-- Bridge sentence to Implementation / Evaluation only.
+Concrete timing, load, radio, and policy knobs live in Implementation as `\autoref{tab:impl:parameters}` (`sec:impl:parameters`), not in System Model.
+System Model keeps conceptual roles only; forward-ref the Implementation table for numeric bindings.
+(August 2026: former `sec:sys:params` / Table~7 relocated per dissertation structure review.)
+
+~~### 4.6 Model Parameters (`sec:sys:params`)~~
 
 ---
 
@@ -117,7 +119,7 @@ Keep stable label `\label{chap:sysmodel}`.
 | Event timeline | `Figs/event_timeline_cropped.pdf` | Real figure |
 | Stack path | Tabular in chapter | App→Net/QoS→MAC→PHY |
 | Controller FSM | Tabular in chapter | listening↔blocking↔sending |
-| Params table | Abstract model parameters | ABNT caption/`\fonte`; no simulator rows |
+| Params / simulation bindings table | Implementation `tab:impl:parameters` | Moved from System Model (Aug 2026); exponential BE means; full `edca_v2x_vo_*` names |
 
 Legacy figures (`Topology.png`, `fsm_simple.pdf`, `delay.png`) are no longer referenced after rewrite.
 

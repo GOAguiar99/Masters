@@ -4,7 +4,7 @@
 **Secondary short-paper source:** `../ETFA-2026---Paper/text.tex`
 **Technical source of truth:** `../veins-inet-qos/veins_qos/`
 **Reviewer feedback:** `../SBESC-2026-Paper/DSD2026_REVIEW.md` (DSD 2026 reviews — address these in the dissertation)
-**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted so far:** Resumo/Abstract, Introduction, Background, Related Work (`chapters/2-chapter.tex`), and System Model (`chapters/3-chapter.tex`). **Still legacy DQ-WiFi draft:** `chapters/4-chapter.tex` through `5-chapter.tex`.
+**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted so far:** Resumo/Abstract, Introduction, Background, Related Work (`chapters/2-chapter.tex`), System Model (`chapters/3-chapter.tex`), and Implementation (`chapters/4-chapter.tex`). **Still legacy DQ-WiFi draft:** Evaluation content (to be added) and `chapters/5-chapter.tex`.
 
 > Do not rewrite the remaining legacy chapters until explicitly requested. Use this roadmap and `context/` when planning future edits.
 
@@ -26,8 +26,8 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 | Background | `chapters/1-chapter.tex` | **Done** — 802.11p, DCF, EDCA, DSCP/EF path, multicast limits, DCC contrast, simulation toolchain (plan: `context/background-chapter-plan.md`) | SBESC §II-A + ETFA §Background + `context/reference-notes.md` | (removed) |
 | Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
-| Implementation | `chapters/4-chapter.tex` (part 1) | OMNeT++ 6.1 / INET 4.5.2 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table | SBESC §III-C | UdpCritApp, EdcaFsmController, classifier PNGs |
-| Evaluation | `chapters/4-chapter.tex` (part 2) or split | Light sweep + heavy stress tables, fig_06 CDF, full discussion (see below) | SBESC §IV | Legacy noqos/edca/reserva plots |
+| Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.2 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
+| Evaluation | new chapter file or append after Implementation | Light sweep + heavy stress tables, fig_06 CDF, full discussion (see below) | SBESC §IV | Legacy noqos/edca/reserva plots (removed from Ch4) |
 | Work plan / Conclusion | `chapters/5-chapter.tex` | SBESC2025 prior work + DSD→SBESC 2026 submission trail + thesis completion; conditional takeaway (marking as default, blocking as event-triggered escalation) | SBESC §V | DQ-WiFi phase descriptions |
 
 ## SBESC-only discussion material to absorb (post-DSD-review)
@@ -75,8 +75,8 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 | File(s) | Referenced by |
 |---------|---------------|
 | `Topology.png`, `fsm_simple.pdf`, `delay.png`, `delay.pdf` | (orphaned; formerly Ch3) |
-| `classifier.png`, `mymodel.png`, `upperframe.png`, `lowerframe.png` | `chapters/4-chapter.tex` |
-| `noqos.png`, `edca_only.png`, `reservaonly.png`, `both.png`, `carcrashonly.png` | `chapters/4-chapter.tex` |
+| `classifier.png`, `mymodel.png`, `upperframe.png`, `lowerframe.png` | (orphaned; formerly Ch4 Implementation) |
+| `noqos.png`, `edca_only.png`, `reservaonly.png`, `both.png`, `carcrashonly.png` | (orphaned; formerly Ch4 Preliminary Results) |
 
 ## Suggested writing order
 
@@ -85,9 +85,10 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 3. ~~Background (Ch1)~~ — done (full rewrite; figure placeholders pending artwork)
 4. ~~Related Work (Ch2)~~ — done (stronger MACs, dynamics, adaptive EDCA/DCC, short TSN/OFDMA)
 5. ~~System Model (Ch3)~~ — done (SBESC §III-A/B + ETFA System Model structure)
-6. Implementation + Evaluation (Ch4) — port SBESC §III-C + §IV including all discussion paragraphs
-7. Work plan + conclusion (Ch5)
-8. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
+6. ~~Implementation (Ch4)~~ — done (SBESC §III-C + code module map)
+7. Evaluation — port SBESC §IV including all discussion paragraphs (new chapter or file after Ch4)
+8. Work plan + conclusion (Ch5)
+9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
 
 ## Headline results (heavy density, high load, 3-run means)
 

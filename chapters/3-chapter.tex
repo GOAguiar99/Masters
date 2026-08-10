@@ -5,8 +5,8 @@
 The residual design point occupied by this dissertation is narrower: protect rare, high-impact crash alerts with an explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or a new \gls{mac} protocol~\cite{jiang2008ieee80211p,IEEE80211,RFC8325_WiFi_QoS}.
 
 This chapter formalizes that design point as an abstract system model---what the proposed system \emph{is}, independently of any particular simulator, programming language, or software stack.
-It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, the modeling assumptions, and the tool-agnostic model parameters that fix the timing, load, and access-control behaviour.
-How the model is realized in software, and how well it performs under experiment, are deferred to \autoref{chap:implementation} and the subsequent evaluation.
+It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, and the modeling assumptions.
+Concrete numeric bindings for timing, load, radio, and access-control knobs are recorded with the software realization in \autoref{chap:implementation}; how well the system performs under experiment is deferred to the subsequent evaluation.
 
 The chapter is organized as follows.
 Section~\ref{sec:sys:network} states the network model.
@@ -14,7 +14,6 @@ Section~\ref{sec:sys:traffic} defines the traffic classes.
 Section~\ref{sec:sys:qos} presents the \gls{qos} mapping and the five \gls{mac} policies.
 Section~\ref{sec:sys:event} describes the crash timeline.
 Section~\ref{sec:sys:scope} lists assumptions and scope limits.
-Section~\ref{sec:sys:params} records the abstract model parameters.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network Model}
@@ -36,7 +35,7 @@ Group-addressed IEEE~802 frames inherit the hostile link-layer contract already 
 	\fonte{Prepared by the author.}
 \end{figure}
 
-The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, sensitivity, noise floor, and SNIR threshold appear with the other model parameters in \autoref{tab:sys:parameters}.
+The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, channel index, sensitivity, noise floor, and SNIR threshold are fixed for all policies and recorded with the implementation parameters in \autoref{tab:impl:parameters}.
 Propagation is free-space path loss with binary obstruction and without small-scale fading or shadowing, as stated in \autoref{sec:sys:scope}.
 \emph{Physical-layer connectivity is held fixed across the five \gls{mac} policies}, so differences between \gls{be} and \gls{vo} service reflect queueing and contention rather than time-varying link quality.
 Dense highway broadcast already stresses this shared medium through repeated backoff freezing under load~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}; the model isolates that contention so that the policies can be compared under controlled offered load.
@@ -49,8 +48,8 @@ Traffic uses a synthetic two-class abstraction rather than standardized Cooperat
 The goal is to isolate \gls{mac}-level protection-versus-cost trade-offs under controlled offered load, not to reproduce a complete \gls{its} protocol stack.
 
 Every vehicle generates ordinary background traffic throughout the scenario horizon.
-This flow represents non-critical cooperative traffic and is modeled by a configurable payload, a deterministic inter-arrival interval, and default Best Effort marking (\gls{dscp}~0).
-The model instantiates this process with the low, medium, and high offered-load profiles in \autoref{tab:sys:parameters}, so all \gls{mac} policies face the same application-side load within a given profile.
+This flow represents non-critical cooperative traffic and is modeled by a configurable payload, a random inter-arrival process with a prescribed mean (exponential draws in the software artifact), and default Best Effort marking (\gls{dscp}~0).
+The model instantiates this process with low, medium, and high offered-load profiles so all \gls{mac} policies face the same application-side load within a given profile; the concrete means, payloads, and Voice burst parameters appear in \autoref{tab:impl:parameters}.
 
 Crash-alert dissemination is an event-driven overlay on that background.
 One designated vehicle becomes the crash source at the configured crash time and begins emitting alert messages marked with \gls{dscp}~46, the Expedited Forwarding codepoint used in this study as the crash marker~\cite{RFC3246_EF_PHB,RFC4594_DiffServ_Service_Classes}.
@@ -104,7 +103,7 @@ None of the policies reserves the channel or claims deterministic delay bounds: 
 
 \noindent
 For brevity the adaptive policies are often abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency}.
-Queue depths, contention windows, and controller timing knobs for each policy appear in \autoref{tab:sys:parameters}.
+Queue depths, contention windows, and controller timing knobs for each policy are bound in the implementation and listed in \autoref{tab:impl:parameters}.
 
 \subsection{Adaptive three-mode controller}
 \label{sec:sys:controller}
@@ -190,75 +189,18 @@ It isolates a single crash source and a bounded alert interval so that the five 
 
 The model is intentionally minimal.
 There is no infrastructure, centralized scheduler, or Time-Sensitive Networking-style gating; there is a single crash source; and there is a two-class \gls{be}/\gls{vo} distinction only.
-Road geometry, fleet density, and radio parameters fix concrete instances of the model; their reference values appear in \autoref{tab:sys:parameters}.
+Road geometry, fleet density, and radio parameters fix concrete instances of the model; their reference values are recorded with the implementation in \autoref{tab:impl:parameters}.
 
 \gls{dcc}, as standardized for ITS-G5 deployments, is \emph{not} part of the model: application transmit rates follow the fixed offered-load profiles rather than reacting to channel busy ratio~\cite{etsi_dcc_2018}.
 As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regulator; excluding it here isolates the protection-versus-cost behaviour of the five \gls{mac} policies.
 
 Small-scale fading, log-normal shadowing, and graded obstacle attenuation are likewise omitted.
 Connectivity uses free-space path loss, a static Signal-to-Noise-plus-Interference Ratio (SNIR) threshold, and binary obstruction (a link is either clear or fully blocked).
-Contention is therefore induced mainly by synchronized multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
+Contention is therefore induced mainly by multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
 
 Finally, the model makes no deterministic or worst-case latency claims.
 \gls{edca} and all five policies provide statistical service only~\cite{kosekszott2012What,mangold2003QoS}.
 Any quantitative statements about Voice or Best Effort delay belong to the evaluation, not to closed-form bounds derived from this chapter.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Model Parameters}
-\label{sec:sys:params}
-
-\autoref{tab:sys:parameters} collects the tool-agnostic parameters that instantiate the network, traffic, timing, and \gls{mac} models above.
-A reader who re-implements the system in a different language or simulator would still need these values to obtain an equivalent conceptual configuration.
-Software versions, module names, configuration-file naming, random seeds, and measurement instrumentation are outside the scope of this chapter and appear in \autoref{chap:implementation} and the evaluation.
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:sys:parameters}Abstract model parameters for the crash-aware system.}
-	\begin{center}
-	\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{3.2cm} X}
-		\toprule
-		\multicolumn{3}{l}{\textbf{Common highway setting}} \\
-		\midrule
-		\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
-		\midrule
-		Scenario horizon & \SI{70}{\second} & Same for all configurations. \\
-		\addlinespace
-		Highway topology & 5~km corridor, 3~lanes/direction & Bidirectional mixed car/truck traffic; nominal lane speed \SI{120}{\km\per\hour}. \\
-		\addlinespace
-		Radio and channel & IEEE~802.11p, 5.9~GHz, 10~MHz, 20~mW & Free-space path loss; no fading/shadowing; binary obstacle loss; $-$85~dBm sensitivity; $-$110~dBm noise; 4~dB SNIR threshold. \\
-		\addlinespace
-		Crash event & Starts at \SI{30}{\second}, lasts \SI{30}{\second} & Designated node stops and emits \gls{dscp}~46 alerts; background traffic stays \gls{dscp}~0. \\
-		\addlinespace
-		Fleet density & Light: 10 vehicles; heavy: 100 vehicles & Same corridor and application model. \\
-		\midrule
-		\multicolumn{3}{l}{\textbf{Application load profiles (low~/~medium~/~high)}} \\
-		\midrule
-		\textbf{Profile} & \textbf{\gls{be} background} & \textbf{Crash \gls{vo} burst} \\
-		\midrule
-		low & \SI{500}{\milli\second}, 200~B & \SI{120}{\milli\second}, 150~B, repeat count~3, \SI{20}{\milli\second} gap, \SI{5}{\milli\second} jitter. \\
-		\addlinespace
-		medium & \SI{250}{\milli\second}, 320~B & \SI{75}{\milli\second}, 180~B, repeat count~4, \SI{15}{\milli\second} gap, \SI{5}{\milli\second} jitter. \\
-		\addlinespace
-		high & \SI{125}{\milli\second}, 420~B & \SI{20}{\milli\second}, 260~B, repeat count~8, \SI{5}{\milli\second} gap, \SI{2}{\milli\second} jitter. \\
-		\midrule
-		\multicolumn{3}{l}{\textbf{\gls{mac} policies}} \\
-		\midrule
-		\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
-		\midrule
-		\texttt{plain} & Non-\gls{qos} \gls{dcf} baseline & Single \gls{dcf} pending queue, 128~packets; no DSCP-to-\gls{ac} mapping; no \gls{edca}; no adaptive blocking. \\
-		\addlinespace
-		\texttt{edca\_only} & Standard \gls{qos} baseline & \gls{dscp}~46~$\rightarrow$~\texttt{AC\_VO}; others UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
-		\addlinespace
-		\texttt{v2x\_vo\_stable} & Sustained \gls{vo} protection & Inherits \texttt{edca\_only}. Block~\SI{15}{\milli\second}; max continuous~\SI{80}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~2. \\
-		\addlinespace
-		\texttt{v2x\_vo\_guarded} & Bounded suppression & Same inheritance. Block~\SI{4}{\milli\second}; max continuous~\SI{20}{\milli\second}; send guard~\SI{4}{\milli\second}; \gls{vo} threshold~3. \\
-		\addlinespace
-		\texttt{v2x\_vo\_emergency} & Emergency preemption & Same inheritance with emergency preemption. Block~\SI{10}{\milli\second}; max continuous~\SI{60}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~1; may drop \gls{be} while protection is active. \\
-		\bottomrule
-	\end{tabularx}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-Together, the network, traffic, \gls{qos}, event, and parameter definitions constitute the crash-aware system studied in the remainder of this dissertation.
-\autoref{chap:implementation} maps the model onto a concrete software realization; the evaluation then asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
+Together, the network, traffic, \gls{qos}, event, and scope definitions constitute the crash-aware system studied in the remainder of this dissertation.
+\autoref{chap:implementation} maps the model onto a concrete software realization and records the numeric parameter bindings used in the artifact; the evaluation then asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
