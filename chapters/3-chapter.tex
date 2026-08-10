@@ -249,11 +249,11 @@ Software versions, module names, configuration-file naming, random seeds, and me
 		\addlinespace
 		\texttt{edca\_only} & Standard \gls{qos} baseline & \gls{dscp}~46~$\rightarrow$~\texttt{AC\_VO}; others UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
 		\addlinespace
-		\texttt{edca\_v2x\_vo\_stable} & Sustained \gls{vo} protection & Inherits \texttt{edca\_only}. Block~\SI{15}{\milli\second}; max continuous~\SI{80}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~2. \\
+		\texttt{v2x\_vo\_stable} & Sustained \gls{vo} protection & Inherits \texttt{edca\_only}. Block~\SI{15}{\milli\second}; max continuous~\SI{80}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~2. \\
 		\addlinespace
-		\texttt{edca\_v2x\_vo\_guarded} & Bounded suppression & Same inheritance. Block~\SI{4}{\milli\second}; max continuous~\SI{20}{\milli\second}; send guard~\SI{4}{\milli\second}; \gls{vo} threshold~3. \\
+		\texttt{v2x\_vo\_guarded} & Bounded suppression & Same inheritance. Block~\SI{4}{\milli\second}; max continuous~\SI{20}{\milli\second}; send guard~\SI{4}{\milli\second}; \gls{vo} threshold~3. \\
 		\addlinespace
-		\texttt{edca\_v2x\_vo\_emergency} & Emergency preemption & Same inheritance with emergency preemption. Block~\SI{10}{\milli\second}; max continuous~\SI{60}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~1; may drop \gls{be} while protection is active. \\
+		\texttt{v2x\_vo\_emergency} & Emergency preemption & Same inheritance with emergency preemption. Block~\SI{10}{\milli\second}; max continuous~\SI{60}{\milli\second}; send guard~\SI{5}{\milli\second}; \gls{vo} threshold~1; may drop \gls{be} while protection is active. \\
 		\bottomrule
 	\end{tabularx}
 	\end{center}
