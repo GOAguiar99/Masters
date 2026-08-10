@@ -1,85 +1,382 @@
-\chapter{Work Plan and Schedule}
+\chapter{Evaluation}
+\label{chap:evaluation}
 
-This chapter outlines the work plan and timeline for completing the Master's thesis titled "Deterministic QoS over Wi-Fi: Bandwidth Reservation and Coordinated Listening for V2X Communication." The research applies established real-time systems concepts, specifically polling servers and temporal partitioning, to the IEEE 802.11 MAC layer. The focus is on the practical implementation, evaluation, and analysis of this adapted approach for V2X scenarios. The proposed schedule spans from the initial research phase to the final thesis submission.
+\autoref{chap:sysmodel} defined the crash-aware system conceptually, and \autoref{chap:implementation} mapped it onto the Veins/\gls{inet} artifact.
+This chapter asks whether that realization works as intended: does crash-triggered Voice traffic obtain better wireless service than ordinary Best Effort under contention, and what cost does that protection impose on ordinary traffic?
 
-\section{Research Phases and Timeline}
+The evaluation is a protection-versus-cost study, not a claim of deterministic real-time guarantees~\cite{kosekszott2012What,IEEE80211e_2005}.
+Two highway-density packages are used: a light-density sensitivity sweep (10~vehicles) and a heavy-density congestion stress case (100~vehicles), with emphasis on the latter, which exposes the strongest separation~\cite{aguiar2026_veins_qos}.
+Numeric bindings for timing, radio, load, and \gls{mac} policies are those of \autoref{tab:impl:parameters}; this chapter reports outcomes, not module wiring.
 
-The research plan consists of five main phases. The first three phases (Phase 1: Literature Review and Background Study, Phase 2: System Modeling and Adaptation, and Phase 3: Implementation and Simulation Development) have been successfully completed, resulting in deliverables for Chapters 1-5. 
+The chapter is organized as follows.
+Section~\ref{sec:eval:setup} states the experimental matrix and seed budgets.
+Section~\ref{sec:eval:metrics} defines metrics and aggregation.
+Section~\ref{sec:eval:light} presents the light-density gating sweep.
+Section~\ref{sec:eval:heavy} reports heavy-density stress results.
+Section~\ref{sec:eval:discussion} discusses interpretation, practical significance, and limitations.
+Section~\ref{sec:eval:summary} summarizes the conditional takeaway.
 
-This section details the remaining phases of the work plan:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Experimental Setup}
+\label{sec:eval:setup}
 
-\subsection{Phase 4: Extensive Evaluation and Comparative Analysis (Current Phase)}
-\begin{itemize}
-    \item \textbf{Duration:} Months 10-12
-    \item \textbf{Activities:}
-    \begin{itemize}
-        \item Execute simulations across all defined scenarios (Table 3).
-        \item Quantitative analysis of throughput, delay, and jitter for each traffic class.
-        \item Validation of theoretical delay bounds against empirical results.
-        \item Comparative performance analysis against baseline EDCA.
-        \item Parameter sensitivity analysis (e.g., impact of varying \texttt{activePeriod} and \texttt{listenPeriod}).
-    \end{itemize}
-    \item \textbf{Deliverables:} Chapter 6 of the thesis, complete results dataset.
-    \item \textbf{Status:} In progress (preliminary results obtained)
-\end{itemize}
+All experiments use the consolidated bindings in \autoref{tab:impl:parameters} and the reproducibility scripts in the public artifact~\cite{aguiar2026_veins_qos}.
+The light-density package runs the full matrix of five \gls{mac} policies and three offered-load profiles (15~configurations) with five seeds each; the heavy-density package runs the same matrix with three seeds.
+Each configuration name follows \texttt{<policy>\_netload\_<low|medium|high>} as documented in \autoref{chap:implementation}.
 
-\subsection{Phase 5: Thesis Consolidation, Writing, and Defense}
-\begin{itemize}
-    \item \textbf{Duration:} Months 13-15
-    \item \textbf{Activities:}
-    \begin{itemize}
-        \item Finalize all results and analysis.
-        \item Complete thesis writing, focusing on discussion of findings and limitations.
-        \item Review, refinement, and formatting of the complete manuscript.
-        \item Preparation and rehearsal of the thesis defense presentation.
-        \item Final submission and oral defense.
-    \end{itemize}
-    \item \textbf{Deliverables:} Complete thesis document, defense presentation.
-    \item \textbf{Status:} Pending
-\end{itemize}
+Contention is induced by offered load and fleet density rather than by synthetic random-waypoint mobility alone~\cite{veins_sommer2011}.
+At \texttt{netload\_high}, each of the 100~vehicles emits Best Effort multicast with an exponential mean of~\SI{125}{\milli\second} (near 800~packets/s fleet-wide), while the crash source adds up to eight physical Voice repeats every~\SI{20}{\milli\second} during the alert window.
+The resulting stress is visible in \autoref{sec:eval:heavy}: Best Effort 95th-percentile (P95) delays of 57--174~ms, \gls{mac} drop totals of $251$--$485\times10^{3}$ per run, and Best Effort queue-overflow counts up to $197\times10^{3}$, confirming sustained channel contention~\cite{aguiar2026_veins_qos,Continuous_Backoff_Freezing_Li}.
 
-\section{Timeline Overview}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Metrics and Aggregation}
+\label{sec:eval:metrics}
 
-\begin{table}[htb]
+The primary metrics are class-specific end-to-end delay, jitter, multicast reach, and \gls{mac}-layer losses; the definitions below apply to the Evaluation tables in this chapter.
+
+End-to-end delay runs from packet creation to reception at each receiving vehicle.
+Mean delays aggregate per-run statistics across receivers, while tail and jitter statistics pool all receivers' per-packet samples, excluding locally looped-back copies.
+The 95th percentile is the main tail metric because rare but long delays dominate crash-alert usefulness; mean absolute jitter summarizes short-term delay variation on the same samples.
+
+Because every packet is multicast, reception is a fan-out that can exceed one:
+Voice \emph{RX/alert} (equivalently RX per logical transmission in the load ladder) divides received alert copies by logical alert sequences;
+Best Effort \emph{RX/TX} divides received background copies by transmitted packets.
+\gls{mac} analysis reports total drops, drops per application transmission, and per-access-category attribution (Best Effort, Voice, unclassified); Voice incomplete receptions track crash-frame loss at the application view.
+Controller instrumentation adds Voice protection activations, Best Effort drops while blocked, and held Best Effort grants (\autoref{chap:implementation}).
+
+Each repetition yields one run-level \gls{kpi} row.
+Configuration summaries in this chapter are arithmetic means over seeds.
+Heavy-density results use three seeds and light-density results five; \emph{no confidence intervals and no significance tests are reported}.
+The numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Light-Density Sensitivity Sweep}
+\label{sec:eval:light}
+
+The light-density sweep tests whether crash-aware protection is beneficial before the channel becomes saturated.
+At \texttt{low} and \texttt{medium} offered load, both access categories remain sub-millisecond for every policy, so \gls{qos} differentiation has little room; the discriminative case is \texttt{high} load with ten contending nodes.
+
+\autoref{tab:eval:light} reports high-load results normalized to \texttt{plain\_netload\_high}.
+Positive percentages indicate degradation relative to that baseline; negative values indicate improvement.
+Absolute delays at this density are small: the \texttt{plain} Voice tail is already sub-millisecond.
+
+\begin{table}[H]
 	\ABNTEXfontereduzida
-	\caption{Research Timeline and Milestones}
+	\caption{\label{tab:eval:light}Normalized light-density high-load results relative to \texttt{plain\_netload\_high} (10~vehicles, five seeds). Positive percentages indicate degradation; negative values indicate improvement.}
 	\begin{center}
-		\begin{tabular}{|l|c|c|c|c|c|}
-		\hline
-		\textbf{Activity} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} \\
-		& \textbf{(M1-3)} & \textbf{(M4-6)} & \textbf{(M7-9)} & \textbf{(M10-12)} & \textbf{(M13-15)} \\
-		\hline
-		Literature Review & \checkmark & & & & \\
-		\hline
-		System Modeling & & \checkmark & & & \\
-		\hline
-		Implementation & & & \checkmark & & \\
-		\hline
-		Evaluation \& Analysis & & & & \checkmark & \\
-		\hline
-		Thesis Writing \& Defense & & & & & \checkmark \\
-		\hline
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrrr@{}}
+			\toprule
+			& \multicolumn{2}{c}{\textbf{\gls{vo} delay change}} &
+			  \multicolumn{2}{c}{\textbf{\gls{be} delay change}} \\
+			\cmidrule(lr){2-3}
+			\cmidrule(lr){4-5}
+			\textbf{Policy} & \textbf{Mean} & \textbf{P95} & \textbf{Mean} & \textbf{P95} \\
+			\midrule
+			EDCA      & $+4.4\%$  & $+2.2\%$   & $+5389.9\%$ & $+5605.2\%$ \\
+			Stable    & $+9.4\%$  & $+17.1\%$  & $+6204.3\%$ & $+9665.7\%$ \\
+			Guarded   & $+8.8\%$  & $+12.7\%$  & $+5555.4\%$ & $+6478.2\%$ \\
+			Emergency & $\mathbf{-17.2\%}$ & $\mathbf{-37.6\%}$ & $+6311.9\%$ & $+4854.7\%$ \\
+			\bottomrule
 		\end{tabular}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{table}
 
-\section{Achieved and Expected Outcomes}
+\autoref{tab:eval:light} reveals a consistent pattern: marking and bounded adaptive profiles degrade crash-alert delay slightly while inflating Best Effort delay by orders of magnitude.
+The mechanism is not failed Voice prioritization but \emph{untimely} protection: under mild congestion the controller still reacts to Voice activity and defers Best Effort access, so background packets queue although the channel is not yet Voice-limited (\autoref{sec:sys:controller}).
+Only \texttt{emergency} reverses the Voice trend, because preemption removes stale Best Effort work instead of merely postponing it; the gain is small in absolute terms since the baseline Voice tail is already sub-millisecond.
+The sweep is therefore a gating test: adaptive blocking without dropping is risky when protection windows can open under low channel stress.
 
-This section details the outcomes already achieved during the research and the final deliverables expected upon completion of the work plan.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Heavy-Density Stress Results}
+\label{sec:eval:heavy}
 
-\subsection{Achieved Outcomes}
-To date, the following outcomes have been successfully achieved:
-\begin{itemize}
-    \item A functional implementation of a polling-inspired QoS mechanism for Wi-Fi within the \gls{omnet}/\gls{inet} network simulator.
-    \item An accepted conference paper at the 2025 Brazilian Symposium on Computing Systems Engineering (SBESC2025) titled "Exploring Wireless \gls{tsn} and QoS in V2X Scenarios".
-\end{itemize}
+The heavy-density package stresses the shared medium with one hundred vehicles on the same corridor and load matrix.
+The tables below expand the dashboard \gls{kpi} summary beyond the page-limited conference version: class-specific delay and jitter, Voice loss and reach, per-access-category drop attribution, and load ladders for normalized \gls{mac} loss and Voice reception.
+Three figures carry the visual story that matters most for crash alerts---the high-load P95 priority gap (\autoref{fig:eval:p95_gap_heavy}), the Voice delay CDF (\autoref{fig:eval:vo_cdf}), and high-load drop attribution (\autoref{fig:eval:drop_attr}).
 
-\subsection{Expected Outcomes}
-The successful completion of the remaining phases is expected to yield the following:
-\begin{itemize}
-    \item A detailed empirical evaluation of the approach's effectiveness in providing deterministic latency for critical V2X traffic.
-    \item A clear comparative analysis quantifying the performance trade-offs against the standard EDCA mechanism.
-    \item One additional journal or conference paper to be submitted and published from the complete results of this research.
-    \item A comprehensive Master's thesis documenting the adaptation, implementation, and evaluation process and its results.
-\end{itemize}
+\subsection{QoS separation under congestion}
+\label{sec:eval:heavy:qos}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_qos}Heavy-density high-load delay, jitter, and multicast reach (100~vehicles, three-run means; delays and jitter in~ms).}
+	\begin{center}
+		\scriptsize
+		\setlength{\tabcolsep}{3pt}
+		\begin{tabular}{@{}lrrrrrrrr@{}}
+			\toprule
+			& \multicolumn{4}{c}{\textbf{\gls{vo} (crash alert)}} &
+			  \multicolumn{4}{c}{\textbf{\gls{be} (background)}} \\
+			\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+			\textbf{Policy} &
+			\textbf{Mean} & \textbf{P95} & \textbf{Jitter} & \textbf{RX/alert} &
+			\textbf{Mean} & \textbf{P95} & \textbf{Jitter} & \textbf{RX/TX} \\
+			\midrule
+			Plain     & 0.575 & 1.290 & 0.321 & 9.068 & 27.589 & 57.367 & 5.572 & 6.153 \\
+			EDCA      & 0.433 & 0.896 & 0.193 & 9.904 & 54.760 & 155.857 & 23.059 & 6.147 \\
+			Stable    & 0.469 & 1.155 & 0.261 & 9.826 & 59.434 & 144.314 & 21.710 & 5.534 \\
+			Guarded   & 0.443 & 0.960 & 0.207 & 9.778 & 74.938 & 174.401 & 25.430 & 3.644 \\
+			Emergency & \textbf{0.282} & \textbf{0.461} & \textbf{0.047} & 9.912 & 60.664 & 98.663 & 23.331 & 5.021 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:p95_gap_heavy}Best Effort versus Voice P95 delay at \texttt{netload\_high}, heavy density (100~vehicles). Crash Voice remains near 1~ms while Best Effort tails stretch to tens--hundreds of milliseconds; emergency yields the lowest Voice P95 among the five policies.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_01_p95_delay_priority_gap_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:vo_cdf}Empirical Voice delay distribution at \texttt{netload\_high}, heavy density (100~vehicles). Emergency compresses the tail most; EDCA alone shifts the distribution only slightly.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_06_vo_delay_cdf_high_load_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+\autoref{tab:eval:heavy_qos} shows that EDCA lowers Voice P95 from 1.29~ms to 0.90~ms but leaves the distribution shape close to the non-\gls{qos} baseline; emergency lowers it further to 0.46~ms---about a 49\% reduction relative to EDCA---while also collapsing Voice jitter from 0.193~ms (EDCA) to 0.047~ms.
+\autoref{fig:eval:p95_gap_heavy} makes the priority gap explicit under the same high-load regime, and \autoref{fig:eval:vo_cdf} confirms that emergency compresses the full Voice delay mass rather than only the mean~\cite{aguiar2026_veins_qos}.
+Bounded \texttt{stable}/\texttt{guarded} improve mean Voice delay but leave Voice P95 closer to baseline, indicating that deferred Best Effort backlog can still affect later bursts.
+Voice RX/alert stays near~10 (each alert reaches roughly nine receivers), while Best Effort RX/TX falls from 6.15 under \texttt{plain} to 5.02 (emergency) and 3.64 (guarded).
+
+\subsection{Voice loss and MAC drop attribution}
+\label{sec:eval:heavy:mac}
+
+Crash usefulness also depends on whether Voice frames are lost.
+\autoref{tab:eval:heavy_vo_loss} isolates Voice-side loss and reach together with Best Effort queue overflow; \autoref{tab:eval:heavy_drop_attr} attributes aggregate \gls{mac} drops to Best Effort, Voice, or unclassified counters (dashboard drop-attribution export); \autoref{tab:eval:heavy_ctrl} records controller activity for the adaptive profiles.
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_vo_loss}Heavy-density high-load Voice loss and Best Effort overflow (100~vehicles, three-run means; counts in thousands, $\times 10^{3}$). \emph{VO incomplete} counts incomplete Voice receptions; lower is better for crash dissemination.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrrr@{}}
+			\toprule
+			\textbf{Policy} &
+			\textbf{VO incomplete} &
+			\textbf{VO RX/alert} &
+			\textbf{Total MAC drops} &
+			\textbf{BE queue overflow} \\
+			\midrule
+			Plain     & \textbf{0}  & 9.068 & 281 & 0   \\
+			EDCA      & 18 & 9.904 & 251 & 31  \\
+			Stable    & 21 & 9.826 & 340 & 47  \\
+			Guarded   & 21 & 9.778 & 485 & 197 \\
+			Emergency & 15 & 9.912 & 273 & 65  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_drop_attr}Heavy-density high-load \gls{mac} drop attribution by access category (100~vehicles, three-run means; counts in thousands, $\times 10^{3}$). Under EDCA and the adaptive profiles, Voice contributes only a small share of total loss; emergency records the fewest Voice-attributed drops among those policies.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrrr@{}}
+			\toprule
+			\textbf{Policy} &
+			\textbf{BE} &
+			\textbf{VO} &
+			\textbf{Unclassified} &
+			\textbf{Total} \\
+			\midrule
+			Plain     & 0   & 0  & 281 & 281 \\
+			EDCA      & 233 & 18 & 0   & 251 \\
+			Stable    & 319 & 21 & 0   & 340 \\
+			Guarded   & 463 & 21 & 0   & 485 \\
+			Emergency & 257 & \textbf{15} & 0   & 273 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:drop_attr}Packet-drop attribution at \texttt{netload\_high}, heavy density: stacked Best Effort, Voice, and unclassified \gls{mac} drops. Most loss falls on Best Effort; among QoS-enabled policies, emergency yields the smallest Voice share.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_05_mac_drop_attribution_high_load_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_ctrl}Adaptive-controller actions at heavy-density high load (three-run means; counts in thousands, $\times 10^{3}$).}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrr@{}}
+			\toprule
+			\textbf{Policy} &
+			\textbf{VO protection} &
+			\textbf{BE drop while blocked} &
+			\textbf{BE hold} \\
+			\midrule
+			Stable    & 93  & 0  & 0 \\
+			Guarded   & 94  & 0  & 0 \\
+			Emergency & 112 & 22 & 0.17 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+Under \texttt{plain}, the single \gls{dcf} queue reports all loss as unclassified.
+Once EDCA classification is enabled, \autoref{tab:eval:heavy_drop_attr} and \autoref{fig:eval:drop_attr} show that almost all drops fall on Best Effort, while Voice-attributed drops remain an order of magnitude smaller (18--21~$\times 10^{3}$ for EDCA/stable/guarded, and 15~$\times 10^{3}$ for emergency).
+That Voice column matches the incomplete-reception counts in \autoref{tab:eval:heavy_vo_loss}: emergency is the best QoS-enabled policy for reducing Voice-frame loss, not only for shortening Voice delay.
+\texttt{guarded} still has the largest total loss and Best Effort queue-overflow count, showing that suppression without preemption can build Best Effort backlog until queues drop frames.
+\texttt{emergency} combines the highest Voice-protection count with explicit Best Effort drops (\autoref{tab:eval:heavy_ctrl}) while keeping aggregate \gls{mac} loss close to the \gls{dcf} baseline, so its cost appears as controlled preemption rather than sustained overflow.
+
+\subsection{Load and density as enabling conditions}
+\label{sec:eval:heavy:ladder}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_p95}95th-percentile delay (ms) across offered-load regimes for the five-policy ladder (100~vehicles, three-run means; tail percentiles as defined in \autoref{sec:eval:metrics}).}
+	\begin{center}
+		\scriptsize
+		\setlength{\tabcolsep}{4pt}
+		\begin{tabular}{@{}lrrrrr@{}}
+			\toprule
+			\textbf{Load} & \textbf{Plain} & \textbf{EDCA} & \textbf{Stable} & \textbf{Guarded} & \textbf{Emerg.} \\
+			\midrule
+			\multicolumn{6}{@{}l}{\textit{\gls{vo} (crash alert)}} \\
+			\texttt{low}    & 0.185 & 0.185 & 0.185 & 0.185 & 0.185 \\
+			\texttt{medium} & 0.373 & 0.314 & 0.332 & 0.284 & 0.321 \\
+			\texttt{high}   & 1.290 & 0.896 & 1.155 & 0.960 & \textbf{0.461} \\
+			\addlinespace
+			\multicolumn{6}{@{}l}{\textit{\gls{be} (background)}} \\
+			\texttt{low}    & 0.217 & 0.217 & 27.799 & 28.156 & 0.217 \\
+			\texttt{medium} & 0.415 & 0.462 & 1.567 & 0.504 & 35.903 \\
+			\texttt{high}   & 57.367 & 155.857 & 144.314 & 174.401 & 98.663 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_drop_rate}Normalized \gls{mac} drop rate (drops per application transmission) across strategy and offered load (heavy density, three-run means). High-load cells match the aggregate loss intensity behind \autoref{tab:eval:heavy_drop_attr}.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrr@{}}
+			\toprule
+			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
+			\midrule
+			Plain     & 0.187 & 0.605 & 1.255 \\
+			EDCA      & 0.197 & 0.713 & 1.520 \\
+			Stable    & 0.312 & 0.692 & 1.683 \\
+			Guarded   & 0.576 & 0.591 & 1.562 \\
+			Emergency & 0.260 & 0.804 & \textbf{1.242} \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_vo_rx}Voice reception ratio (RX per logical transmission) across strategy and offered load (heavy density, three-run means). Reach stays near ten receivers per alert; the main policy effect under congestion is delay and Voice-loss shaping rather than fan-out collapse.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrr@{}}
+			\toprule
+			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
+			\midrule
+			Plain     & 9.927 & 9.936 & 9.068 \\
+			EDCA      & 9.929 & 9.952 & 9.904 \\
+			Stable    & 9.949 & 9.880 & 9.826 \\
+			Guarded   & 9.819 & 9.948 & 9.778 \\
+			Emergency & 9.945 & 9.952 & 9.912 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\autoref{tab:eval:heavy_p95} explains \emph{when} the policy ladder should be armed.
+At \texttt{low} load, Voice P95 is identical across policies, yet \texttt{stable}/\texttt{guarded} inflate Best Effort P95 by two orders of magnitude---bounded blocking without congestion is self-inflicted Best Effort queueing.
+By \texttt{high} load, emergency achieves the lowest Voice P95, whereas guarded maximizes Best Effort tail delay.
+\autoref{tab:eval:heavy_drop_rate} shows the same enabling condition for loss: normalized \gls{mac} drop rates remain modest at low/medium load and jump at \texttt{high}, where emergency keeps the lowest high-load intensity among the five policies (1.242 drops/TX).
+\autoref{tab:eval:heavy_vo_rx} confirms that Voice fan-out stays near ten receivers across the matrix, so the congestion benefit is delay/jitter reduction and fewer Voice-attributed drops (\autoref{tab:eval:heavy_drop_attr}), not a large change in multicast reach.
+Cross-reading \autoref{tab:eval:light} and \autoref{tab:eval:heavy_p95} shows that protection windows help only when Voice queueing and channel occupancy are high enough that removing Best Effort competition actually shortens Voice service; below that point, deferring Best Effort merely shifts delay onto a class that did not need protection.
+The adaptive profiles are therefore event-triggered escalation levels rather than permanently enabled \gls{qos} modes.
+
+\section{Discussion}
+\label{sec:eval:discussion}
+
+\subsection{Event-triggered escalation, not always-on QoS}
+\label{sec:eval:disc:escalation}
+
+The light-density sweep and the heavy-density load ladder jointly show that adaptive blocking is harmful when armed under low channel stress and useful only when congestion makes Best Effort competition material to Voice service.
+In other words, the mechanism should be treated as an escalation level attached to genuine crash-alert activity, not as an always-on replacement for ordinary EDCA marking~\cite{IEEE80211e_2005,aguiar2026_veins_qos}.
+Explicit DSCP-to-Voice mapping remains a reasonable default; bounded or emergency suppression should be reserved for periods when the channel is already contested.
+
+\subsection{Why Best Effort and Voice delays differ under plain DCF}
+\label{sec:eval:disc:plain}
+
+Under \texttt{plain}, both classes receive identical per-frame \gls{mac} treatment (one \gls{dcf} queue, no classifier), yet \autoref{tab:eval:heavy_qos} shows different per-class statistics because the classes are sampled differently.
+Best Effort pools one hundred periodic senders over the whole~\SI{70}{\second} run, whereas Voice originates from a single stationary sender during the~\SI{30}{\second} alert window and uses smaller payloads (260 versus 420~B at high load).
+Cross-class comparisons within one policy therefore describe two different traffic processes; cross-policy comparisons within one class remain the controlled measurement.
+
+\subsection{Practical significance of the observed Voice gains}
+\label{sec:eval:disc:significance}
+
+The absolute Voice delays are small: even the plain baseline keeps Voice P95 near 1.3~ms at \texttt{netload\_high}, well below representative V2X latency budgets such as the~\SI{25}{\milli\second} end-to-end bound for cooperative platooning in \gls{threegpp} TS~22.186~\cite{ts22186}.
+The reported reductions therefore quantify each policy's tail-shaping headroom---and its cost---rather than an application-level safety benefit in the simulated scenario.
+Under harsher conditions the same contention that produces 57--174~ms Best Effort tails would act on alert traffic as well; the study accordingly claims \gls{mac}-level tail shaping under synthetic saturation, not improved crash outcomes.
+
+\subsection{Protection cost and the coarse Best Effort class}
+\label{sec:eval:disc:cost}
+
+The clearest cost signal is that every protection mechanism makes Best Effort service worse than plain \gls{dcf} at high load (Best Effort P95 from 57~ms to 99--174~ms), and \texttt{emergency} converts part of the backlog into explicit loss.
+Because the model treats \emph{all} Best Effort traffic as suppressible, these penalties are a worst-case bound for the two-class abstraction (\autoref{sec:sys:scope}): in a real stack, traffic outside the current crash alert may still be safety relevant, so a binary Voice/Best Effort split can underestimate preemption harm.
+Deployments would need finer-grained classes before comparable \gls{mac} aggression, and the trade-off is defensible only for genuinely critical, short-lived flows such as the alert window studied here.
+
+\subsection{Fairness of the Best Effort penalty}
+\label{sec:eval:disc:spatial}
+
+The reported Best Effort statistics pool all vehicles, but the penalty is unlikely to be uniform: protection is armed locally by overheard Voice frames, so vehicles near the crash source defer or drop Best Effort traffic while distant vehicles continue unaffected (\autoref{sec:sys:controller}).
+The Best Effort cost is thus spatially concentrated around the event---arguably desirable for a crash---but pooled averages understate the worst-affected vehicles; per-vehicle fairness is left as future work.
+
+\subsection{Denial-of-service risk of Voice-triggered suppression}
+\label{sec:eval:disc:dos}
+
+Protection is armed by local Voice queue pressure and \emph{overheard} Voice frames without authenticating the sender, so a faulty or malicious node continuously emitting Voice-marked traffic could keep nearby vehicles in blocking mode, deferring or---under \texttt{emergency}---dropping their Best Effort traffic.
+The risk is bounded but not removed: protection windows are finite (20--80~ms maximum continuous block plus a guard interval, \autoref{tab:impl:parameters}) and suppression affects only a node's own Best Effort transmissions, not reception.
+Real deployment would additionally require V2X message authentication, rate limiting of alert bursts, and plausibility checks before Voice frames may trigger suppression.
+
+\subsection{Limitations and threats to validity}
+\label{sec:eval:disc:limits}
+
+Heavy-density \glspl{kpi} average three seeds without confidence intervals or significance tests, so results are qualitative mechanism checks rather than proven effect sizes; all observed prioritization is statistical contention shaping, not deterministic real-time communication~\cite{kosekszott2012What}.
+The evaluation is simulation-only, models a single crash source on a one-hop highway corridor, and uses the simplified \gls{phy} assumptions of \autoref{chap:implementation} and \autoref{sec:sys:scope}; concurrent alerts would arm overlapping protection windows whose interaction is not evaluated.
+Results do not predict absolute performance under richer propagation or congestion control, and no adaptive-EDCA or \gls{dcc} baseline is implemented, so no superiority claim is made against those families~\cite{etsi_dcc_2018}.
+The \texttt{high} crash-burst profile is a deliberate stress case rather than a standardized alert schedule, and no application-level safety deadline is evaluated.
+The three adaptive profiles are fixed design points whose triggers are not individually ablated, although their spread of block windows (4--15~ms) and Voice thresholds (1--3 packets) acts as a coarse sensitivity ladder; a systematic parameter sweep is future work.
+Within that scope the comparison remains internally fair: all configurations share the same \gls{phy} stack, mobility trace, and load matrix, isolating \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Chapter Summary}
+\label{sec:eval:summary}
+
+The evaluation compared five \gls{mac} policies on the same highway matrix and found a conditional protection-versus-cost frontier.
+Under heavy density and high load, emergency preemption reduces Voice P95 by about 49\% relative to EDCA (0.90~ms to 0.46~ms), collapses Voice jitter to 0.047~ms, and records the fewest Voice-attributed \gls{mac} drops among the QoS-enabled policies (15~$\times 10^{3}$ versus 18--21~$\times 10^{3}$), while Best Effort P95 rises from 57~ms under plain \gls{dcf} to 99~ms; under light contention, bounded suppression mainly harms Best Effort without improving alerts.
+The practical takeaway is therefore conditional: explicit DSCP-to-Voice marking is a reasonable default, whereas adaptive blocking---especially emergency preemption---is justified only as an event-triggered escalation under genuine congestion, with authentication and rate limiting as deployment prerequisites.
+The absolute Voice delays in this synthetic setting remain far below representative platooning budgets~\cite{ts22186}; the contribution is \gls{mac}-level tail shaping under controlled saturation, not a claim of application-level crash-outcome improvement.
+
+The subsequent chapter records the remaining work plan for consolidating these findings into the finished dissertation.

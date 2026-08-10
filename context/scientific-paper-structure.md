@@ -16,7 +16,7 @@ In this repository the mapping is approximately:
 |------|--------------------------------|----------------------|
 | System Model | `chapters/3-chapter.tex` (`chap:sysmodel`) | SBESC/ETFA §System Model (not §Implementation) |
 | Implementation | `chapters/4-chapter.tex` (`chap:implementation`) | SBESC §III-C / ETFA §Implementation |
-| Evaluation | forthcoming Evaluation chapter | SBESC/ETFA §Evaluation |
+| Evaluation | `chapters/5-chapter.tex` (`chap:evaluation`) | SBESC/ETFA §Evaluation |
 
 **Hard rule for Chapter 3:** even though SBESC merges System Model and Implementation in one section, the dissertation System Model must stay technology-agnostic. Simulator versions, module/class names, config file naming, artifact URLs, seeds, and KPI instrumentation belong in Implementation or Evaluation.
 

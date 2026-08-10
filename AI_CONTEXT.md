@@ -9,7 +9,7 @@ It is **not** the source of truth for simulation logic, KPI generation, or proto
 
 When working here, assume:
 - `main.tex` is the master document (abnTeX2 / UFSC template)
-- `chapters/*.tex` hold the body text (Ch0–Ch4 pivoted to crash-aware; Evaluation and Ch5 still legacy / pending until rewritten)
+- `chapters/*.tex` hold the body text (Ch0–Ch5 pivoted to crash-aware; Work Plan/Conclusion in `chapters/6-chapter.tex` still legacy until rewritten)
 - `aftertext/references.bib` is the single bibliography database (biblatex/abnt)
 - `Figs/` contains dissertation figures
 - `context/` holds AI-readable knowledge (summaries, glossary, bib guide, chapter plans, [`scientific-paper-structure.md`](context/scientific-paper-structure.md) for System Model vs Implementation vs Evaluation)
@@ -19,8 +19,8 @@ When working here, assume:
 
 This repository currently has:
 - **Ready:** AI context, bibliography merge, ref-papers pipeline, SBESC/ETFA/code summaries, paper figures in `Figs/`, persistent `build/` workflow, Overleaf-ready sources
-- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`); System Model (`chapters/3-chapter.tex`); Implementation (`chapters/4-chapter.tex`)
-- **Not yet rewritten:** Evaluation (SBESC §IV; formerly Preliminary Results in Ch4) and `chapters/5-chapter.tex` (still DQ-WiFi draft)
+- **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`); System Model (`chapters/3-chapter.tex`); Implementation (`chapters/4-chapter.tex`); Evaluation (`chapters/5-chapter.tex`)
+- **Not yet rewritten:** Work Plan / Conclusion (`chapters/6-chapter.tex`, still DQ-WiFi draft)
 
 When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` over editing chapter prose unless the user explicitly asks for a chapter rewrite.
 

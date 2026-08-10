@@ -17,7 +17,7 @@ Section~\ref{sec:impl:policies} documents how the five policies are wired in con
 Section~\ref{sec:impl:scenarios} presents the highway scenario packages, the consolidated simulation-parameter table, and the configuration matrix.
 Section~\ref{sec:impl:instrumentation} lists recorded signals and the analysis tooling surface.
 Section~\ref{sec:impl:scope} states implementation scope and deliberate omissions.
-Seeds, statistical aggregation, and measured results belong to the subsequent evaluation and are not reported here.
+Seeds, statistical aggregation, and measured results belong to \autoref{chap:evaluation} and are not reported here.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Simulation Toolchain and Repository Layout}
@@ -744,4 +744,4 @@ are retained for development history and must not be mixed with the active light
 An offline UPPAAL model of the adaptive controller may exist in the broader artifact tree for optional formal inspection; it is not part of the runtime simulation path described here and is not developed further in this chapter.
 
 Together, the toolchain, host compounds, packet path, applications, classifier, instrumented \gls{mac}, adaptive \gls{hcf}, policy wiring, scenario packages, and instrumentation constitute the concrete realization of the crash-aware System Model.
-The evaluation that follows asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
+\autoref{chap:evaluation} asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
