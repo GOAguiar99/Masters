@@ -48,7 +48,7 @@ For the present dissertation, the relevant takeaway is motivational: slot-based 
 \subsection{Preemptive-resume priority in UAV-assisted VANETs}
 \label{sec:rw:prp}
 
-Li et al.\ address \gls{bsm} delivery under high vehicle density by combining IEEE~802.11 CSMA/CA with a preemptive-resume priority scheme and an arbitration device, in a setting where a UAV acts as a receiver for BSM uploads toward roadside processing~\cite{PRP_MAC_Li}.
+Li et al.\ address \gls{bsm} delivery under high vehicle density by combining IEEE~802.11 CSMA/CA with a preemptive-resume priority scheme and an arbitration device, in a setting where a \gls{uav} acts as a receiver for BSM uploads toward \gls{rsu} processing~\cite{PRP_MAC_Li}.
 Higher-priority packets can preempt lower-priority ones; queuing analysis is used to size transmission intervals so that BSM delay meets driving-safety targets under the modeled load~\cite{PRP_MAC_Li}.
 Simulations support the claim that preemption reduces BSM delay relative to non-preemptive baselines in the UAV-assisted topology they study.
 
@@ -59,7 +59,7 @@ The dissertation retains the intuition that aggressive prioritization of urgent 
 \subsection{Contention-free cooperative TDMA}
 \label{sec:rw:cfc}
 
-Linn, Liu, and Gao propose CFC-MAC, a distributed contention-free cooperative MAC for VANETs that combines cooperative forwarding, vectorized trajectory estimation, and time-slot reallocation to resolve heterogeneous collisions under stochastic traffic~\cite{CFC_MAC_Linn}.
+Linn, Liu, and Gao propose CFC-MAC, a distributed contention-free cooperative MAC for \glspl{vanet} that combines cooperative forwarding, vectorized trajectory estimation, and time-slot reallocation to resolve heterogeneous collisions under stochastic traffic~\cite{CFC_MAC_Linn}.
 The protocol seeks deterministic access delay and low collision rates by identifying cooperative vehicles, suppressing merging collisions through relative-velocity estimation, and reclaiming or reassigning slots after collision detection~\cite{CFC_MAC_Linn}.
 Reported simulations show substantial collision-rate and access-delay improvements over existing solutions under the authors' scenarios.
 
@@ -82,7 +82,7 @@ The citation's role here is to acknowledge that the industry pursues tighter res
 
 An earlier conference study by Aguiar and Gracioli explored wireless TSN and QoS support for V2X under a simpler IEEE~802.11 setting, with emphasis on Time-Aware Shaper schedules and synchronization rather than on decentralized crash-triggered prioritization~\cite{11288825}.
 That work is a precursor in the sense that it investigated determinism-oriented QoS for vehicular Wi-Fi; it is not the same research question.
-The present dissertation drops TAS-oriented scheduling, abandons synchronization as a requirement, and focuses on a shared OCB channel in which crash-alert Voice bursts compete with ordinary BE multicast under five MAC policies that require no gate-control lists~\cite{11288825}.
+The present dissertation drops \gls{tas}-oriented scheduling, abandons synchronization as a requirement, and focuses on a shared OCB channel in which crash-alert Voice bursts compete with ordinary BE multicast under five MAC policies that require no gate-control lists~\cite{11288825}.
 
 \subsection{Synthesis: stronger control under broader assumptions}
 \label{sec:rw:stronger-synth}

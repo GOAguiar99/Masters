@@ -35,7 +35,7 @@ Group-addressed IEEE~802 frames inherit the hostile link-layer contract already 
 	\fonte{Prepared by the author.}
 \end{figure}
 
-The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, channel index, sensitivity, noise floor, and SNIR threshold are fixed for all policies and recorded with the implementation parameters in \autoref{tab:impl:parameters}.
+The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, channel index, sensitivity, noise floor, and \gls{snir} threshold are fixed for all policies and recorded with the implementation parameters in \autoref{tab:impl:parameters}.
 Propagation is free-space path loss with binary obstruction and without small-scale fading or shadowing, as stated in \autoref{sec:sys:scope}.
 \emph{Physical-layer connectivity is held fixed across the five \gls{mac} policies}, so differences between \gls{be} and \gls{vo} service reflect queueing and contention rather than time-varying link quality.
 Dense highway broadcast already stresses this shared medium through repeated backoff freezing under load~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}; the model isolates that contention so that the policies can be compared under controlled offered load.
@@ -44,7 +44,7 @@ Dense highway broadcast already stresses this shared medium through repeated bac
 \section{Traffic Model}
 \label{sec:sys:traffic}
 
-Traffic uses a synthetic two-class abstraction rather than standardized Cooperative Awareness Message (CAM) or Decentralized Environmental Notification Message (DENM) schedules, ITS-G5 or WAVE application stacks, or production vehicular logic.
+Traffic uses a synthetic two-class abstraction rather than standardized \gls{cam} or \gls{denm} schedules, ITS-G5 or WAVE application stacks, or production vehicular logic.
 The goal is to isolate \gls{mac}-level protection-versus-cost trade-offs under controlled offered load, not to reproduce a complete \gls{its} protocol stack.
 
 Every vehicle generates ordinary background traffic throughout the scenario horizon.
@@ -195,7 +195,7 @@ Road geometry, fleet density, and radio parameters fix concrete instances of the
 As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regulator; excluding it here isolates the protection-versus-cost behaviour of the five \gls{mac} policies.
 
 Small-scale fading, log-normal shadowing, and graded obstacle attenuation are likewise omitted.
-Connectivity uses free-space path loss, a static Signal-to-Noise-plus-Interference Ratio (SNIR) threshold, and binary obstruction (a link is either clear or fully blocked).
+Connectivity uses free-space path loss, a static \gls{snir} threshold, and binary obstruction (a link is either clear or fully blocked).
 Contention is therefore induced mainly by multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
 
 Finally, the model makes no deterministic or worst-case latency claims.

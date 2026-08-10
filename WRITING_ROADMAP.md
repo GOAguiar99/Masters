@@ -4,7 +4,7 @@
 **Secondary short-paper source:** `../ETFA-2026---Paper/text.tex`
 **Technical source of truth:** `../veins-inet-qos/veins_qos/`
 **Reviewer feedback:** `../SBESC-2026-Paper/DSD2026_REVIEW.md` (DSD 2026 reviews — address these in the dissertation)
-**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted so far:** Resumo/Abstract, Introduction, Background, Related Work, System Model, Implementation, and Evaluation (`chapters/5-chapter.tex`). **Still legacy DQ-WiFi draft:** `chapters/6-chapter.tex` (Work Plan / Conclusion).
+**Status:** Repo cleaned (build/ workflow, Overleaf-ready), title/metadata pivoted. **Pivoted:** Resumo/Abstract, Introduction, Background, Related Work, System Model, Implementation, Evaluation, and Conclusion (`chapters/6-chapter.tex`).
 
 > Do not rewrite the remaining legacy chapters until explicitly requested. Use this roadmap and `context/` when planning future edits.
 
@@ -28,7 +28,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
 | Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.2 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
 | Evaluation | `chapters/5-chapter.tex` | **Done** — light sweep + heavy stress tables, fig_06 CDF, full DSD discussion (plan: `context/evaluation-chapter-plan.md`) | SBESC §IV | (legacy Preliminary Results removed earlier) |
-| Work plan / Conclusion | `chapters/6-chapter.tex` | SBESC2025 prior work + DSD→SBESC 2026 submission trail + thesis completion; conditional takeaway (marking as default, blocking as event-triggered escalation) | SBESC §V | DQ-WiFi phase descriptions |
+| Conclusion | `chapters/6-chapter.tex` | **Done** — conditional takeaway (marking as default, blocking as event-triggered escalation); no Work Plan/Schedule (plan: `context/conclusion-chapter-plan.md`) | SBESC §V | DQ-WiFi work-plan phases / timeline |
 
 ## SBESC-only discussion material to absorb (post-DSD-review)
 
@@ -86,8 +86,8 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 4. ~~Related Work (Ch2)~~ — done (stronger MACs, dynamics, adaptive EDCA/DCC, short TSN/OFDMA)
 5. ~~System Model (Ch3)~~ — done (SBESC §III-A/B + ETFA System Model structure)
 6. ~~Implementation (Ch4)~~ — done (SBESC §III-C + code module map)
-7. ~~Evaluation (Ch5)~~ — done (SBESC §IV + seven DSD discussion points)
-8. Work plan + conclusion (Ch6; currently `chapters/6-chapter.tex`)
+7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (SBESC §IV + seven DSD discussion points)
+8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
 
 ## Headline results (heavy density, high load, 3-run means)

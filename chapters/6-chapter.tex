@@ -1,85 +1,86 @@
-\chapter{Work Plan and Schedule}
+\chapter{Conclusion}
+\label{chap:conclusion}
 
-This chapter outlines the work plan and timeline for completing the Master's thesis titled "Deterministic QoS over Wi-Fi: Bandwidth Reservation and Coordinated Listening for V2X Communication." The research applies established real-time systems concepts, specifically polling servers and temporal partitioning, to the IEEE 802.11 MAC layer. The focus is on the practical implementation, evaluation, and analysis of this adapted approach for V2X scenarios. The proposed schedule spans from the initial research phase to the final thesis submission.
+This dissertation asked whether crash-triggered Voice traffic can obtain better wireless service than ordinary Best Effort under contention in decentralized vehicular Wi-Fi, and at what cost that protection is paid.
+The answer was pursued with a deliberately minimal two-class model: all vehicles exchange periodic Best Effort multicast, one designated crash source injects temporary Voice alert bursts marked DSCP~46, and five \gls{mac} policies are compared on the same highway matrix---plain \gls{dcf}, EDCA with explicit Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) that suppress competing Best Effort while alerts are active~(\autoref{chap:sysmodel}, \autoref{chap:implementation}).
+The evaluation is simulation-only and mechanism-oriented: it isolates statistical contention shaping under controlled load and density, not deterministic real-time guarantees or application-level crash outcomes~(\autoref{chap:evaluation})~\cite{kosekszott2012What,IEEE80211e_2005,aguiar2026_veins_qos}.
 
-\section{Research Phases and Timeline}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Main Findings}
+\label{sec:conc:findings}
 
-The research plan consists of five main phases. The first three phases (Phase 1: Literature Review and Background Study, Phase 2: System Modeling and Adaptation, and Phase 3: Implementation and Simulation Development) have been successfully completed, resulting in deliverables for Chapters 1-5. 
+Under heavy density and high offered load---the regime that exposes the strongest separation---emergency preemption is the clearest Voice winner among the five policies.
+Relative to EDCA alone, it reduces Voice P95 from 0.90~ms to 0.46~ms (about 49\%), collapses Voice jitter to 0.047~ms, and records the fewest Voice-attributed \gls{mac} drops among the QoS-enabled policies ($15\times10^{3}$ versus $18$--$21\times10^{3}$).
+Those Voice gains are not free: Best Effort P95 rises from 57~ms under plain \gls{dcf} to 99~ms under emergency, and part of the deferred backlog is converted into explicit Best Effort drops while protection is armed~\cite{aguiar2026_veins_qos}.
 
-This section details the remaining phases of the work plan:
+The light-density high-load sweep is a gating test rather than a Voice-gain story.
+Bounded adaptive profiles (\texttt{stable}/\texttt{guarded}) and EDCA alone slightly degrade crash-alert delay while inflating Best Effort delay by orders of magnitude; only \texttt{emergency} improves the Voice tail ($-37.6\%$ Voice P95 relative to plain).
+Cross-reading both densities shows an enabling condition: adaptive blocking helps when Voice queueing and channel occupancy are high enough that removing Best Effort competition shortens Voice service; under mild stress it mainly shifts delay onto ordinary traffic that did not need protection.
 
-\subsection{Phase 4: Extensive Evaluation and Comparative Analysis (Current Phase)}
-\begin{itemize}
-    \item \textbf{Duration:} Months 10-12
-    \item \textbf{Activities:}
-    \begin{itemize}
-        \item Execute simulations across all defined scenarios (Table 3).
-        \item Quantitative analysis of throughput, delay, and jitter for each traffic class.
-        \item Validation of theoretical delay bounds against empirical results.
-        \item Comparative performance analysis against baseline EDCA.
-        \item Parameter sensitivity analysis (e.g., impact of varying \texttt{activePeriod} and \texttt{listenPeriod}).
-    \end{itemize}
-    \item \textbf{Deliverables:} Chapter 6 of the thesis, complete results dataset.
-    \item \textbf{Status:} In progress (preliminary results obtained)
-\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Practical Takeaway}
+\label{sec:conc:takeaway}
 
-\subsection{Phase 5: Thesis Consolidation, Writing, and Defense}
-\begin{itemize}
-    \item \textbf{Duration:} Months 13-15
-    \item \textbf{Activities:}
-    \begin{itemize}
-        \item Finalize all results and analysis.
-        \item Complete thesis writing, focusing on discussion of findings and limitations.
-        \item Review, refinement, and formatting of the complete manuscript.
-        \item Preparation and rehearsal of the thesis defense presentation.
-        \item Final submission and oral defense.
-    \end{itemize}
-    \item \textbf{Deliverables:} Complete thesis document, defense presentation.
-    \item \textbf{Status:} Pending
-\end{itemize}
+The practical takeaway is therefore conditional.
+Explicit DSCP-to-Voice mapping remains a reasonable default for crash-marked alerts~\cite{IEEE80211e_2005}.
+Adaptive Best Effort suppression---especially emergency preemption---should be treated as an event-triggered escalation level attached to genuine congestion and genuine alert activity, not as an always-on replacement for ordinary EDCA.
+Deployment would additionally require authentication, rate limiting, and plausibility checks before overheard Voice frames may arm suppression, because the same local trigger that protects a crash can be abused by faulty or malicious Voice traffic (\autoref{chap:evaluation}).
 
-\section{Timeline Overview}
+The absolute Voice delays in this synthetic setting remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}.
+The contribution is accordingly \gls{mac}-level tail shaping and Voice-loss reduction under controlled saturation, not a claim that the simulated scenario already improves crash outcomes at the application layer.
 
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{Research Timeline and Milestones}
-	\begin{center}
-		\begin{tabular}{|l|c|c|c|c|c|}
-		\hline
-		\textbf{Activity} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} \\
-		& \textbf{(M1-3)} & \textbf{(M4-6)} & \textbf{(M7-9)} & \textbf{(M10-12)} & \textbf{(M13-15)} \\
-		\hline
-		Literature Review & \checkmark & & & & \\
-		\hline
-		System Modeling & & \checkmark & & & \\
-		\hline
-		Implementation & & & \checkmark & & \\
-		\hline
-		Evaluation \& Analysis & & & & \checkmark & \\
-		\hline
-		Thesis Writing \& Defense & & & & & \checkmark \\
-		\hline
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Limitations}
+\label{sec:conc:limits}
 
-\section{Achieved and Expected Outcomes}
+The study's limits are those already argued in the Evaluation discussion (\autoref{sec:eval:discussion}); they are restated here as the boundary conditions on the Conclusion.
 
-This section details the outcomes already achieved during the research and the final deliverables expected upon completion of the work plan.
+\noindent\textbf{Simulation scope and statistical strength.}
+The evaluation is simulation-only, with no testbed or hardware validation, so claims remain tied to the configured Veins/\gls{inet} model~\cite{aguiar2026_veins_qos}.
+Heavy-density \glspl{kpi} average three seeds without confidence intervals or significance tests, and light-density results use five seeds under the same reporting rule; the numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes.
+All observed prioritization is statistical contention shaping, not deterministic real-time communication~\cite{kosekszott2012What}.
 
-\subsection{Achieved Outcomes}
-To date, the following outcomes have been successfully achieved:
-\begin{itemize}
-    \item A functional implementation of a polling-inspired QoS mechanism for Wi-Fi within the \gls{omnet}/\gls{inet} network simulator.
-    \item An accepted conference paper at the 2025 Brazilian Symposium on Computing Systems Engineering (SBESC2025) titled "Exploring Wireless \gls{tsn} and QoS in V2X Scenarios".
-\end{itemize}
+\medskip
+\noindent\textbf{Traffic abstraction and baselines.}
+The traffic model is a synthetic two-class Best Effort / Voice abstraction rather than \gls{cam}/\gls{denm} schedules or richer multi-class ITS stacks, and the high crash-burst profile is a deliberate stress case rather than a standardized alert timetable.
+Treating \emph{all} Best Effort as suppressible is a worst-case bound for that abstraction: in a real stack, traffic outside the current crash alert may still be safety relevant, so a binary split can underestimate preemption harm (\autoref{sec:eval:disc:cost}).
+No adaptive-EDCA or \gls{dcc} baseline is implemented, so no superiority claim is made against those always-on families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
+The three adaptive profiles are fixed design points whose triggers are not individually ablated.
 
-\subsection{Expected Outcomes}
-The successful completion of the remaining phases is expected to yield the following:
-\begin{itemize}
-    \item A detailed empirical evaluation of the approach's effectiveness in providing deterministic latency for critical V2X traffic.
-    \item A clear comparative analysis quantifying the performance trade-offs against the standard EDCA mechanism.
-    \item One additional journal or conference paper to be submitted and published from the complete results of this research.
-    \item A comprehensive Master's thesis documenting the adaptation, implementation, and evaluation process and its results.
-\end{itemize}
+\medskip
+\noindent\textbf{Radio, topology, and delivery model.}
+Connectivity uses free-space path loss, a static \gls{snir} threshold, and binary obstacle loss; small-scale fading, shadowing, and graded attenuation are omitted (\autoref{chap:implementation}).
+The corridor is a one-hop highway multicast setting with a single crash source: overlapping protection windows from concurrent alerts are not evaluated, alerts are not retransmitted as multi-hop relays across the 5~km road, and only the light/heavy density pair with three offered-load levels is swept---not a continuous highway-parameter space of speeds, lane layouts, or channel plans.
+
+\medskip
+\noindent\textbf{Interpretation caveats that affect how results are read.}
+Absolute Voice delays remain far below representative platooning budgets even under plain \gls{dcf} (\autoref{sec:eval:disc:significance})~\cite{ts22186}, so the reported sub-millisecond Voice gains quantify \gls{mac}-level headroom rather than demonstrated application-level safety benefit, while Best Effort penalties can be severe.
+Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}); only within-class, cross-policy comparisons are controlled.
+Pooled Best Effort averages understate spatially concentrated cost near the crash source (\autoref{sec:eval:disc:spatial}), and unauthenticated Voice frames can arm suppression---a denial-of-service risk bounded by finite windows but not removed without authentication and rate limiting (\autoref{sec:eval:disc:dos}).
+
+Within that scope the comparison remains internally fair---shared radio stack, mobility, and load matrix---so the reported differences isolate \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Future Work}
+\label{sec:conc:future}
+
+Several extensions follow directly from the DSD-era limitations above and from the Evaluation discussion.
+
+\medskip
+\noindent\textbf{Stronger evidence and richer scenarios.}
+Larger seed batches with confidence intervals or significance tests would move the study from qualitative mechanism checks toward statistically supported effect sizes.
+Richer propagation (fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the conditional frontier survives more realistic radio and traffic stress.
+Connecting Voice delay and loss to an application-level safety deadline, crash-avoidance distance, or other outcome metric would address the practical-significance gap left by the present sub-millisecond Voice tails~\cite{ts22186}.
+
+\medskip
+\noindent\textbf{Baselines, parameters, and concurrency.}
+Activation-criteria ablations and systematic parameter sweeps would separate which trigger and window settings drive the observed Voice gains.
+Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the event-triggered profiles against established always-on congestion and prioritization families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
+Concurrent alert sources---and the interaction of overlapping protection windows---remain unevaluated.
+
+\medskip
+\noindent\textbf{Deployment constraints.}
+Security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source are prerequisites before comparable \gls{mac} aggression could be defended outside a synthetic two-class study.
+Hardware-in-the-loop or testbed validation would further bound how much of the simulated protection-versus-cost frontier transfers to real 802.11p stacks.
+
+In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay, jitter, and Voice-frame loss under heavy congestion, but only as a carefully bounded, event-triggered escalation whose cost to ordinary traffic must be acknowledged and constrained.

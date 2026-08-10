@@ -2,7 +2,7 @@
 
 **Goal:** add a dissertation-depth Evaluation chapter that answers *whether* crash-triggered Voice obtains better service than Best Effort under contention and *at what cost*—without Implementation leakage or invented results.
 
-**Status of this file:** implemented in `chapters/5-chapter.tex` (August 2026); Work Plan relocated to `chapters/6-chapter.tex`. Reviewed against [`scientific-paper-structure.md`](scientific-paper-structure.md).
+**Status of this file:** implemented in `chapters/5-chapter.tex` (August 2026); Conclusion lives in `chapters/6-chapter.tex` (Work Plan deleted). Reviewed against [`scientific-paper-structure.md`](scientific-paper-structure.md).
 
 **Separation authority:** always apply [`scientific-paper-structure.md`](scientific-paper-structure.md). Evaluation demonstrates performance; it must not re-describe modules/NED/`.ini` wiring (Implementation) or re-derive policies/FSM (System Model).
 
@@ -11,8 +11,8 @@
 ## Current state
 
 - Implementation (`chapters/4-chapter.tex`) forwards to Evaluation and owns `tab:impl:parameters`.
-- Legacy Preliminary Results removed from Ch4; Evaluation is a new chapter.
-- Work Plan lives in `chapters/6-chapter.tex` (legacy DQ-WiFi draft; not rewritten in this pass).
+- Legacy Preliminary Results removed from Ch4; Evaluation is a dedicated chapter.
+- Conclusion lives in `chapters/6-chapter.tex` (crash-aware; no Work Plan).
 
 **Primary port source:** SBESC §IV (`../SBESC-2026-Paper/text.tex`).
 
@@ -81,7 +81,7 @@ Seven mandatory points: event-triggered escalation; plain sampling caveat; `ts22
 
 ### Chapter summary (`sec:eval:summary`)
 
-- Conditional takeaway; bridge to Work Plan / Conclusion.
+- Conditional takeaway; bridge to Conclusion.
 
 ---
 

@@ -102,14 +102,14 @@ IPv4 autoconfiguration joins the multicast group \texttt{224.0.0.1} on \texttt{w
 \subsection{Application base}
 \label{sec:impl:appbase}
 
-Both study applications extend \texttt{VeinsInetApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware UDP socket setup~\cite{inet_framework,aguiar2026_veins_qos}.
-The base class opens a UDP socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access.
+Both study applications extend \texttt{VeinsInetApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware \gls{udp} socket setup~\cite{inet_framework,aguiar2026_veins_qos}.
+The base class opens a \gls{udp} socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access.
 Study applications therefore inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
 
 \subsection{Scenario network}
 \label{sec:impl:scenario-ned}
 
-Each active package defines a \texttt{Scenario} network NED that composes:
+Each active package defines a \texttt{Scenario} network \gls{ned} that composes:
 
 \begin{itemize}
   \item \texttt{Ieee80211DimensionalRadioMedium} --- shared radio medium for all nodes;
@@ -146,7 +146,7 @@ The path is identical for Best Effort and Voice except for DSCP marking, classif
 		\textbf{\gls{mac}:} \texttt{V2xIeee80211Mac}; \texttt{plain} uses \gls{dcf}; EDCA uses stock \texttt{Hcf} or \texttt{V2xHcf} \\
 		\midrule
 		$\downarrow$ \\
-		\textbf{\gls{phy}:} \texttt{Ieee80211DimensionalRadio}, free-space path loss, \texttt{IdealObstacleLoss}, static SNIR \\
+		\textbf{\gls{phy}:} \texttt{Ieee80211DimensionalRadio}, free-space path loss, \texttt{IdealObstacleLoss}, static \gls{snir} \\
 		\midrule
 		$\downarrow$ \\
 		\textbf{Reception KPIs:} \texttt{CritPacketSender} on every node (port~9001) records BE/VO RX and delay \\

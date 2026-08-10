@@ -36,7 +36,7 @@ The primary metrics are class-specific end-to-end delay, jitter, multicast reach
 
 End-to-end delay runs from packet creation to reception at each receiving vehicle.
 Mean delays aggregate per-run statistics across receivers, while tail and jitter statistics pool all receivers' per-packet samples, excluding locally looped-back copies.
-The 95th percentile is the main tail metric because rare but long delays dominate crash-alert usefulness; mean absolute jitter summarizes short-term delay variation on the same samples.
+The 95th percentile (\gls{p95}) is the main tail metric because rare but long delays dominate crash-alert usefulness; mean absolute jitter summarizes short-term delay variation on the same samples.
 
 Because every packet is multicast, reception is a fan-out that can exceed one:
 Voice \emph{RX/alert} (equivalently RX per logical transmission in the load ladder) divides received alert copies by logical alert sequences;
@@ -379,4 +379,4 @@ Under heavy density and high load, emergency preemption reduces Voice P95 by abo
 The practical takeaway is therefore conditional: explicit DSCP-to-Voice marking is a reasonable default, whereas adaptive blocking---especially emergency preemption---is justified only as an event-triggered escalation under genuine congestion, with authentication and rate limiting as deployment prerequisites.
 The absolute Voice delays in this synthetic setting remain far below representative platooning budgets~\cite{ts22186}; the contribution is \gls{mac}-level tail shaping under controlled saturation, not a claim of application-level crash-outcome improvement.
 
-The subsequent chapter records the remaining work plan for consolidating these findings into the finished dissertation.
+The subsequent chapter concludes the dissertation by summarizing these findings, stating the conditional practical takeaway, and outlining limitations and future work.

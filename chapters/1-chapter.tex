@@ -12,7 +12,7 @@ Section~\ref{sec:bg:dcf} presents IEEE~802.11 DCF as the non-differentiated base
 Section~\ref{sec:bg:edca} develops EDCA, its statistical nature, and the later QoS amendments that still leave group-addressed traffic poorly served.
 Section~\ref{sec:bg:11p} specializes these mechanisms to IEEE~802.11p \gls{ocb} operation and contrasts \gls{dcc} with event-triggered suppression.
 Section~\ref{sec:bg:dscp} traces the full DSCP-to-air-interface path that the study's classifier implements.
-Section~\ref{sec:bg:sim} reviews the \gls{omnet}/Veins/\gls{inet} and SUMO toolchain.
+Section~\ref{sec:bg:sim} reviews the \gls{omnet}/\gls{veins}/\gls{inet} and SUMO toolchain.
 Section~\ref{sec:bg:summary} summarizes the three background pillars that frame the research problem.
 
 Throughout, the chapter attributes normative force only to Standards-Track documents (notably RFCs~2474, 3246, and 8325) and treats Informational RFCs (2475, 4594, 9119) as architecture, guidelines, or operational analysis.
@@ -26,8 +26,8 @@ No deterministic or worst-case latency claims are made for contention-based IEEE
 Cooperative \gls{its} rely on wireless dissemination of safety-relevant information among nearby vehicles, roadside equipment, and, in some architectures, network backends.
 \gls{v2x} denotes this family of exchanges and subsumes \gls{v2v}, vehicle-to-infrastructure (V2I), vehicle-to-pedestrian (V2P), and vehicle-to-network (V2N) patterns.
 Among the messages that circulate in such systems, two operational classes dominate the design of the lower layers.
-\emph{Periodic awareness} traffic---for example Cooperative Awareness Messages (CAMs) in \gls{etsi} ITS-G5 or \glspl{bsm} in Dedicated Short-Range Communications (DSRC)---is emitted continuously by every equipped station so that neighbors can maintain a local dynamic map.
-\emph{Event-driven safety} traffic---crash notifications, hard-braking warnings, and related Decentralized Environmental Notification Messages (DENMs)---is rare, short-lived, and high-impact: its usefulness collapses if delivery is postponed until after the surrounding vehicles have already reacted, or failed to react, on the basis of their own sensors.
+\emph{Periodic awareness} traffic---for example \glspl{cam} in \gls{etsi} ITS-G5 or \glspl{bsm} in \gls{dsrc}---is emitted continuously by every equipped station so that neighbors can maintain a local dynamic map.
+\emph{Event-driven safety} traffic---crash notifications, hard-braking warnings, and related \glspl{denm}---is rare, short-lived, and high-impact: its usefulness collapses if delivery is postponed until after the surrounding vehicles have already reacted, or failed to react, on the basis of their own sensors.
 
 These two classes compete for the same wireless medium.
 A crash alert that must reach nearby vehicles within a few tens of milliseconds does so precisely when the local channel is most likely to be loaded by periodic awareness traffic and by the ordinary background flows that this dissertation abstracts as Best Effort multicast.
@@ -92,7 +92,7 @@ The contention window starts at $\gls{cwmin}$ and doubles after each unsuccessfu
 
 Two properties of this process are central to the later argument.
 First, \emph{backoff freezing is not an anomaly}: it is part of baseline DCF and becomes the dominant contribution to access delay when the channel is repeatedly busy~\cite{bianchi2000DCF,Continuous_Backoff_Freezing_Li}.
-Second, every station that runs a single DCF queue with the same $\mathrm{CW}_{\min}$ and $\mathrm{CW}_{\max}$ has the same medium-access priority, regardless of the criticality of its traffic~\cite{mangold2003QoS,RFC8325_WiFi_QoS}.
+Second, every station that runs a single DCF queue with the same \gls{cwmin} and \gls{cwmax} has the same medium-access priority, regardless of the criticality of its traffic~\cite{mangold2003QoS,RFC8325_WiFi_QoS}.
 DCF therefore provides no \gls{qos} differentiation whatsoever.
 
 \subsection{Saturation throughput and the cost of contention}
@@ -100,13 +100,13 @@ DCF therefore provides no \gls{qos} differentiation whatsoever.
 
 Bianchi's classical analysis models the per-station backoff process under saturation---every station always has a packet ready to send---as a two-dimensional discrete-time Markov chain whose state is the pair $(\text{backoff stage}, \text{backoff counter})$, as developed by~\textcite{bianchi2000DCF}.
 Under the approximation that each transmission attempt collides with a constant conditional probability \gls{pcol} independent of retransmission history, the chain yields a nonlinear system in $p$ and in the per-slot transmission probability \gls{tau}, with a unique solution.
-From $\tau$ and $p$ one obtains the saturation throughput of the Basic Access and Request-to-Send/Clear-to-Send (RTS/CTS) modes.
+From $\tau$ and $p$ one obtains the saturation throughput of the Basic Access and \gls{rts}/\gls{cts} modes.
 
 The qualitative consequences for this dissertation do not require reproducing the full derivation.
 Three results matter.
 First, saturation throughput is the maximum load the system can carry in stable conditions; beyond that point queues grow and delay becomes unbounded in the offered-load sense~\cite{bianchi2000DCF}.
-Second, under Basic Access---the mode relevant to short safety frames and to group-addressed traffic that cannot use RTS/CTS---throughput degrades as the number of contending stations grows, because collisions waste large channel intervals on full-length frames~\cite{bianchi2000DCF}.
-Third, the contention-window parameters that maximize throughput depend on the network size, yet $\mathrm{CW}_{\min}$ and the maximum backoff stage \gls{mback} are fixed by the standard; in some regimes the resulting throughput is therefore ``significantly lower than the maximum achievable,'' and adaptive tuning of $W$ and $m$ is a natural response~\cite{bianchi2000DCF}.
+Second, under Basic Access---the mode relevant to short safety frames and to group-addressed traffic that cannot use \gls{rts}/\gls{cts}---throughput degrades as the number of contending stations grows, because collisions waste large channel intervals on full-length frames~\cite{bianchi2000DCF}.
+Third, the contention-window parameters that maximize throughput depend on the network size, yet \gls{cwmin} and the maximum backoff stage \gls{mback} are fixed by the standard; in some regimes the resulting throughput is therefore ``significantly lower than the maximum achievable,'' and adaptive tuning of \gls{W} and $m$ is a natural response~\cite{bianchi2000DCF}.
 That observation is the earliest conceptual hook for the adaptive MAC profiles evaluated later: when fixed contention parameters cannot track the operating point, local, load- or event-driven adaptation becomes an engineering alternative.
 
 \subsection{Implications for the \texttt{plain} baseline}
@@ -129,9 +129,9 @@ This dissertation therefore focuses exclusively on EDCA, which is the mechanism 
 \subsection{EDCA access categories and contention parameters}
 \label{sec:bg:edca-mech}
 
-EDCA maintains four \glspl{ac}---Voice (\texttt{AC\_VO}), \gls{vi} (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and Background (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.
-Each category has its own transmit queue and its own set of contention parameters: an \gls{aifsn}, a minimum and maximum contention window ($\mathrm{CW}_{\min}[\mathrm{AC}]$, $\mathrm{CW}_{\max}[\mathrm{AC}]$), and an optional TXOP limit.
-The Arbitration Interframe Space of category $i$ is
+EDCA maintains four \glspl{ac}---Voice (\texttt{AC\_VO}), \gls{vi} (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and \gls{bk} (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.
+Each category has its own transmit queue and its own set of contention parameters: an \gls{aifsn}, a minimum and maximum contention window ($\mathrm{CW}_{\min}[\mathrm{AC}]$, $\mathrm{CW}_{\max}[\mathrm{AC}]$), and an optional \gls{txop} limit.
+The \gls{aifs} of category $i$ is built from the \gls{sifs} as
 \begin{equation}
   \gls{aifs_i} = \gls{sifs_sym} + \gls{aifsn_i}\cdot \gls{slot},
 \end{equation}
@@ -193,7 +193,7 @@ Framing the cost as intentional and measurable is therefore consistent with the 
 \label{sec:bg:adaptive-edca}
 
 Because fixed EDCA parameters cannot track every operating point, a substantial body of work retunes contention parameters in response to observed traffic.
-Romdhani, Ni, and Turletti proposed Adaptive EDCF, which adjusts persistence factors based on estimated collision rates to improve differentiation under load~\cite{romdhani2003AdaptiveEDCF}.
+Romdhani, Ni, and Turletti proposed Adaptive \gls{edcf}, which adjusts persistence factors based on estimated collision rates to improve differentiation under load~\cite{romdhani2003AdaptiveEDCF}.
 Surveys classify such schemes alongside distributed fair scheduling, varying interframe spaces, differentiated frame lengths, admission control, and related MAC enhancements~\cite{ni2004Qiang,Evolution_QoS_Mechanisms}.
 The common theme is continuous, measurement-driven adaptation of the contention process itself.
 
@@ -229,7 +229,7 @@ This section specializes the background to that environment and introduces \gls{
 
 IEEE~802.11p was designed so that vehicles can exchange frames during brief contact intervals without the overhead of joining a BSS~\cite{jiang2008ieee80211p}.
 in \gls{ocb} mode, frames carry a wildcard BSSID; stations neither associate nor authenticate with an access point; and management procedures that assume a BSS are omitted~\cite{IEEE80211}.
-The physical layer typically uses \SI{10}{\mega\hertz} OFDM channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
+The physical layer typically uses \SI{10}{\mega\hertz} \gls{ofdm} channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
 \autoref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
 
 \begin{figure}[htb]
@@ -319,7 +319,7 @@ The Telephony service class is recommended for inelastic, real-time, very-low-de
 The Standard service class must use the Default Forwarding PHB with DSCP~0.
 Crash alerts are not IP telephony.
 They do, however, match the \emph{traffic characteristics and required performance} on which RFC~4594 bases class definitions: inelastic short bursts that tolerate little delay or loss.
-Marking them with DSCP~46 and admitting them to the most aggressive MAC category is therefore the DiffServ-consistent modeling choice for the two-class abstraction, not a claim that production ITS stacks universally use EF for DENM-like messages.
+Marking them with DSCP~46 and admitting them to the most aggressive MAC category is therefore the \gls{diffserv}-consistent modeling choice for the two-class abstraction, not a claim that production ITS stacks universally use EF for \gls{denm}-like messages.
 
 \subsection{Mapping DiffServ to IEEE~802.11}
 \label{sec:bg:rfc8325}
@@ -417,11 +417,11 @@ The Implementation chapter details those modules; the background point is that t
 \label{sec:bg:veins}
 
 Road-traffic mobility and network protocol behavior are not independent: a crash that stops a vehicle changes both the wireless contention neighborhood and the macroscopic traffic pattern, and a protocol that disseminates warnings can in principle alter routing decisions.
-Sommer, German, and Dressler argue that faithful IVC evaluation therefore requires \emph{bidirectional} coupling of a network simulator and a road-traffic microsimulator, and introduce Veins (Vehicles in Network Simulation) as a hybrid framework that joins OMNeT++ to the \gls{sumo} package through the \gls{traci}~\cite{veins_sommer2011}.
-Veins allows the network model to control vehicle entities (for example, stopping a designated crash node) while SUMO continuously updates positions, headings, and neighborhood relations that feed the radio model.
+Sommer, German, and Dressler argue that faithful IVC evaluation therefore requires \emph{bidirectional} coupling of a network simulator and a road-traffic microsimulator, and introduce \gls{veins} as a hybrid framework that joins OMNeT++ to the \gls{sumo} package through the \gls{traci}~\cite{veins_sommer2011}.
+It allows the network model to control vehicle entities (for example, stopping a designated crash node) while SUMO continuously updates positions, headings, and neighborhood relations that feed the radio model.
 
 SUMO itself is an open-source microscopic traffic simulator supporting multi-modal traffic, lane-changing and car-following models, and external coupling interfaces; Alvarez Lopez et al.\ provide the reference publication describing its architecture and validation role in the ITS research ecosystem~\cite{lopez2018sumo}.
-\autoref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; Veins/\gls{inet} execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
+\autoref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; \gls{veins}/\gls{inet} execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
 
 \begin{figure}[htb]
 	\caption{\label{fig:bg:veins}Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
@@ -435,7 +435,7 @@ SUMO itself is an open-source microscopic traffic simulator supporting multi-mod
 \end{figure}
 
 The present experiments use this toolchain on a highway corridor with light (10~vehicles) and heavy (100~vehicles) density packages.
-Physical-layer assumptions---free-space path loss, binary obstacle loss, fixed SNIR threshold---are held constant across MAC policies so that measured differences isolate contention and queueing.
+Physical-layer assumptions---free-space path loss, binary obstacle loss, fixed \gls{snir} threshold---are held constant across MAC policies so that measured differences isolate contention and queueing.
 Those assumptions, and their limitations relative to fading and shadowing models, are stated with the System Model; they are background here only insofar as they explain why a coupled microsimulation, rather than a synthetic random-waypoint model, is the appropriate mobility substrate~\cite{veins_sommer2011}.
 
 % ----------------------------------------------------------------------
