@@ -82,10 +82,7 @@ The contention window starts at $\gls{cwmin}$ and doubles after each unsuccessfu
 \begin{figure}[htb]
 	\caption{\label{fig:bg:dcf-backoff}Timeline of the IEEE~802.11 DCF backoff process, including carrier sensing, DIFS deferral, slotted countdown, and backoff freezing while the medium is busy.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: DCF CSMA/CA backoff timeline]}\\[0.4em]
-		  \textit{Two stations contend after a busy medium. Show DIFS, random backoff countdown, freeze during an overlapping transmission, resume after a further DIFS, and successful transmission with ACK. Annotate $\mathrm{CW}_{\min}$, backoff slots, and the freeze interval.}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=\linewidth]{Figs/dcf_backoff_timeline.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -143,10 +140,7 @@ When two local categories expire their backoff counters in the same slot, an \em
 \begin{figure}[htb]
 	\caption{\label{fig:bg:edca-queues}EDCA architecture: four parallel access-category queues with independent backoff entities, virtual-collision resolution, and the canonical user-priority to access-category mapping.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: EDCA four-queue architecture]}\\[0.4em]
-		  \textit{Show \glspl{msdu} entering four AC queues (VO, VI, BE, BK), each with its own AIFSN/CW/TXOP backoff entity, a virtual-collision resolver favoring higher ACs, and a single transmission onto the shared medium. Annotate the \gls{up}$\rightarrow$AC mapping (UP~6/7$\rightarrow$VO, UP~4/5$\rightarrow$VI, UP~0/3$\rightarrow$BE, UP~1/2$\rightarrow$BK).}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=\linewidth]{Figs/edca_queues.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -235,10 +229,7 @@ The physical layer typically uses \SI{10}{\mega\hertz} \gls{ofdm} channels in th
 \begin{figure}[htb]
 	\caption{\label{fig:bg:ocb}Comparison of infrastructure BSS operation and IEEE~802.11p Outside the Context of a BSS (OCB) vehicular operation. Prioritization in OCB must be realized locally; AP-centric QoS mechanisms do not apply.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: BSS infrastructure Wi-Fi vs.\ 802.11p OCB]}\\[0.4em]
-		  \textit{Left: stations associated to an AP inside a BSS, with uplink/downlink and AP-coordinated services. Right: vehicles in \gls{ocb} mode exchanging direct V2V frames on a shared 5.9~GHz / 10~MHz channel with no association, no AP, and no central scheduler. Annotate ``wildcard BSSID'' and ``distributed contention only.''}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=\linewidth]{Figs/bss_vs_ocb.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -285,10 +276,7 @@ The path is exactly what the study's \texttt{QosClassifier} implements for crash
 \begin{figure}[htb]
 	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: DSCP$\rightarrow$UP$\rightarrow$AC cross-layer path]}\\[0.4em]
-		  \textit{Horizontal flow: Application marks DSCP~0 (BE) or DSCP~46 (EF) $\rightarrow$ IP DiffServ field $\rightarrow$ host DSCP-to-UP classifier $\rightarrow$ 802.11 user priority $\rightarrow$ EDCA AC queue $\rightarrow$ contention on the shared medium. Annotate the RFC~8325 default pitfall (EF$\rightarrow$UP~5$\rightarrow$AC\_VI) versus the study's explicit mapping (EF$\rightarrow$UP~6$\rightarrow$AC\_VO).}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=\linewidth]{Figs/dscp_path.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
