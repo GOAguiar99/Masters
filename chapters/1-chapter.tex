@@ -228,7 +228,7 @@ This section specializes the background to that environment and introduces \gls{
 \label{sec:bg:ocb}
 
 IEEE~802.11p was designed so that vehicles can exchange frames during brief contact intervals without the overhead of joining a BSS~\cite{jiang2008ieee80211p}.
-in \gls{ocb} mode, frames carry a wildcard BSSID; stations neither associate nor authenticate with an access point; and management procedures that assume a BSS are omitted~\cite{IEEE80211}.
+In \gls{ocb} mode, frames carry a wildcard BSSID; stations neither associate nor authenticate with an access point; and management procedures that assume a BSS are omitted~\cite{IEEE80211}.
 The physical layer typically uses \SI{10}{\mega\hertz} \gls{ofdm} channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
 \autoref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
 
@@ -366,7 +366,7 @@ The DSCP$\rightarrow$UP$\rightarrow$AC mechanics carry over unchanged to OCB bec
 
 RFC~9119 analyzes multicast over IEEE~802 wireless media as an Informational operational document~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Three limitations dominate the crash-alert setting.
-First, because there are no ACKs for multicast packets, the transmitter cannot know whether a retransmission is needed; there is consequently no loss-driven backoff on behalf of failed receivers, and packet error rates of 5\% or more are not uncommon~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+First, because there are no ACKs for multicast packets, the transmitter cannot know whether a retransmission is needed; there is consequently no loss-driven backoff on behalf of failed receivers, and packet loss rates of 5\% or more are not uncommon~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Second, multicast and broadcast traffic is generally transmitted at the slowest rate among connected devices---the basic rate---so that every intended receiver can decode the frame; spectral-efficiency techniques such as multi-user MIMO spatial multiplexing are unavailable with more than one intended receiver~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Third, low-rate transmissions occupy the medium longer, consuming airtime that would otherwise be available to other stations and degrading overall capacity~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 

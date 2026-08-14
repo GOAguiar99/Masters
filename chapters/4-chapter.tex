@@ -4,7 +4,7 @@
 \autoref{chap:sysmodel} defined the crash-aware system at a conceptual level: a decentralized IEEE~802.11p highway network, a synthetic two-class \gls{be}/\gls{vo} traffic model, five \gls{mac} policies with a local three-mode controller, and a three-phase crash timeline.
 This chapter maps that model onto the concrete software artifact developed for this dissertation, so that a reader who already understands the design can reproduce the build, follow the packet path, and locate every study-specific module without consulting undocumented source comments.
 
-The realization is an \gls{omnet}~6.1~\cite{varga2008omnetpp} / \gls{inet}~4.5.2~\cite{inet_framework} / Veins~\cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
+The realization is an \gls{omnet}~6.1~\cite{varga2008omnetpp} / \gls{inet}~4.5.4~\cite{inet_framework} / Veins~5.3.1~\cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
 Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
 The chapter is organized as follows.
 Section~\ref{sec:impl:toolchain} pins the toolchain and repository layout.
@@ -30,9 +30,9 @@ Here the same stack is pinned to the versions used for the experiments and narro
 \label{sec:impl:versions}
 
 \gls{omnet}~6.1 provides the discrete-event engine, component model, and \texttt{.ini}/\texttt{.ned} configuration system in which every vehicle node is assembled~\cite{varga2008omnetpp}.
-\gls{inet}~4.5.2 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the Hybrid Coordination Function (\gls{hcf}) into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
+\gls{inet}~4.5.4 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the Hybrid Coordination Function (\gls{hcf}) into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
 Veins couples \gls{omnet}/\gls{inet} to \gls{sumo} through \gls{traci}, so highway mobility, lane discipline, and the crash-node stop command remain consistent with the road microsimulation~\cite{veins_sommer2011,lopez2018sumo}.
-In the artifact tree, \texttt{inet/} and \texttt{veins/} are git submodules consumed as read-only frameworks; the study-authored code lives under \texttt{veins\_qos/}~\cite{aguiar2026_veins_qos}.
+In the artifact tree, \texttt{inet/} and \texttt{veins/} are git submodules consumed as read-only frameworks, pinned to the \gls{inet}~4.5.4 and Veins~5.3.1 releases; the study-authored code lives under \texttt{veins\_qos/}~\cite{aguiar2026_veins_qos}.
 
 \subsection{Repository layout}
 \label{sec:impl:layout}
@@ -510,8 +510,8 @@ Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt
 		  \texttt{sim-time-limit}; identical for every configuration. \\
 		\addlinespace
 		Corridor &
-		  5~km, 3~lanes &
-		  Bidirectional SUMO corridor; mixed car/truck types (EIDM, LC2013); nominal lane speed \SI{120}{\km\per\hour}. \\
+		  5~km, 3+3 lanes &
+		  Straight bidirectional SUMO corridor, three lanes per direction; mixed car/truck types (EIDM, LC2013); nominal lane speed \SI{120}{\km\per\hour}. \\
 		\addlinespace
 		Density &
 		  10~/~100~veh. &
@@ -523,11 +523,11 @@ Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt
 		\addlinespace
 		Radio &
 		  802.11p / ch.~3 &
-		  5.9~GHz, 10~MHz, 20~mW; \texttt{Ieee80211DimensionalRadio}; mode~\texttt{p}. \\
+		  5.9~GHz, 10~MHz, 20~mW; \texttt{Ieee80211DimensionalRadio}; mode~\texttt{p}; data frames at 12~Mbit/s (fastest mandatory mode, \gls{inet} default rate selection). \\
 		\addlinespace
 		Propagation &
 		  FS~+~binary &
-		  Free-space path loss; no fading/shadowing; \texttt{IdealObstacleLoss} + \texttt{highway.obstacles.xml}; SNIR~\SI{4}{\decibel}; sens.\ $-$85~dBm; noise $-$110~dBm. \\
+		  Free-space path loss; no fading/shadowing; \texttt{IdealObstacleLoss} + \texttt{highway.obstacles.xml}; SNIR~\SI{4}{\decibel}; sens.\ $-$85~dBm; noise $-$110~dBm (\gls{inet}~4.5.4 defaults, not overridden). \\
 		\addlinespace
 		Multicast &
 		  \texttt{224.0.0.1} &
@@ -616,7 +616,7 @@ Separating density (package) from offered load (ini overlay) is deliberate: the 
 \subsection{Road network and mobility}
 \label{sec:impl:sumo}
 
-The SUMO network is a bidirectional highway corridor of approximately 5~km with multiple lanes per direction, merge and exit geometry, and mixed car/truck vehicle types under EIDM car-following and LC2013 lane-changing models~\cite{lopez2018sumo}.
+The SUMO network is a straight bidirectional highway corridor of 5~km with three lanes per direction and mixed car/truck vehicle types under EIDM car-following and LC2013 lane-changing models~\cite{lopez2018sumo}.
 Simulation step size is 0.1~s; teleportation on gridlock is disabled (\texttt{time-to-teleport=-1}) so that stopped crash nodes remain in place.
 Veins updates network-node mobility from TraCI; the manager polls on a one-second update interval in the highway ini, while SUMO itself advances at its finer step~\cite{veins_sommer2011}.
 
@@ -633,6 +633,15 @@ Every configuration shares the IEEE~802.11p radio profile summarized in \autoref
         \texttt{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
   \item free-space path loss and a static SNIR threshold, without small-scale fading or shadowing (\autoref{sec:sys:scope}).
 \end{itemize}
+
+Receiver sensitivity ($-$85~dBm), energy detection ($-$85~dBm), the \gls{snir} threshold (\SI{4}{\decibel}), background noise ($-$110~dBm), free-space path loss, and constant-speed propagation are the \gls{inet}~4.5.4 defaults for this radio and medium; they are not overridden in the configuration.
+No rate-control module is configured, so \gls{inet}'s default rate selection transmits data frames---including group-addressed ones---at the fastest mandatory mode of the \SI{10}{\mega\hertz} \gls{ofdm} mode set (12~Mbit/s).
+This differs from production deployments, where group-addressed frames are commonly sent at a basic rate (\autoref{sec:bg:multicast}); the choice is uniform across all five policies.
+
+Two fidelity caveats apply.
+First, the artifact realizes 802.11p-like operation through \gls{inet}'s \texttt{AdhocHost} (no association or authentication, ad hoc management); it approximates \gls{ocb} operation rather than literally implementing \texttt{dot11OCBActivated} behaviour.
+Second, the \gls{edca} parameter set of \autoref{tab:impl:parameters} follows the IEEE~802.11 BSS QoS defaults, whereas IEEE~802.11 specifies a distinct default \gls{edca} parameter set for \gls{ocb} operation with a less aggressive Best Effort category (\gls{aifsn}~6 instead of~3)~\cite{IEEE80211,etsi_en_302663}.
+The configured set therefore makes Best Effort compete harder than an \gls{ocb}-default deployment would, which is conservative for the protection problem studied here.
 
 Because this baseline is identical across policies, cross-policy differences isolate queueing, contention, and local Best Effort suppression.
 
@@ -741,7 +750,6 @@ The code base stays aligned with the minimal System Model of \autoref{sec:sys:sc
 Older packages under \texttt{simulations/veins\_inet\_square/},
 \texttt{veins\_inet\_highway/}, and \texttt{veins\_inet\_light/}
 are retained for development history and must not be mixed with the active light/heavy highway result trees when analysing the dissertation campaigns~\cite{aguiar2026_veins_qos}.
-An offline UPPAAL model of the adaptive controller may exist in the broader artifact tree for optional formal inspection; it is not part of the runtime simulation path described here and is not developed further in this chapter.
 
 Together, the toolchain, host compounds, packet path, applications, classifier, instrumented \gls{mac}, adaptive \gls{hcf}, policy wiring, scenario packages, and instrumentation constitute the concrete realization of the crash-aware System Model.
 \autoref{chap:evaluation} asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
