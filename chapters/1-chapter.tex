@@ -272,6 +272,7 @@ The evaluation deliberately does not enable DCC, so that the protection-versus-c
 Application criticality reaches the wireless MAC only through an explicit cross-layer mapping when IP-layer marking is used.
 This section traces that mapping from the \gls{diffserv}, through the \gls{ef} per-hop behavior and DSCP~46, through the DSCP-to-user-priority-to-access-category path standardized for Wi-Fi, to the multicast limitations that still apply after a correct mapping.
 The path is exactly what the study's \texttt{QosClassifier} implements for crash alerts and is the reason the dissertation carefully distinguishes DSCP~46, the EF per-hop behavior, user priority~6, and \texttt{AC\_VO}: they are related objects on a chain, not synonyms.
+\autoref{fig:bg:dscp-path} summarizes that cross-layer path and the RFC~8325 Voice-mapping pitfall.
 
 \begin{figure}[htb]
 	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
@@ -412,12 +413,9 @@ SUMO itself is an open-source microscopic traffic simulator supporting multi-mod
 \autoref{fig:bg:veins} sketches the closed loop used in this work: SUMO advances vehicle mobility; TraCI exposes state and control; \gls{veins}/\gls{inet} execute the 802.11p stack and the study's QoS modules; and KPIs are recorded from packet timestamps and MAC counters.
 
 \begin{figure}[htb]
-	\caption{\label{fig:bg:veins}Bidirectional coupling of SUMO microscopic mobility and OMNeT++/INET network simulation through Veins and TraCI, including the study-specific traffic and MAC modules.}
+	\caption{\label{fig:bg:veins}Simulation coupling as implemented in the artifact: SUMO is launched through \texttt{veins\_launchd}; \texttt{VeinsInetManager} synchronizes mobility over TraCI and instantiates \texttt{VeinsInetCar} nodes; each car runs \texttt{CritPacketSender} and \texttt{CrashBurstApp} over an INET 802.11p stack. The dashed path is the crash stop/resume command from \texttt{CrashBurstApp} into SUMO via the vehicle TraCI interface.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: Veins--SUMO--INET closed-loop architecture]}\\[0.4em]
-		  \textit{Show SUMO (mobility) $\leftrightarrow$ TraCI $\leftrightarrow$ Veins/OMNeT++ (network), with INET 802.11p PHY/MAC, the study's CritPacketSender / CrashBurstApp / QosClassifier / V2xHcf modules, and KPI logging sinks. Annotate the crash-node stop command flowing from the network model into SUMO.}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=\linewidth]{Figs/veins_sumo_loop.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}

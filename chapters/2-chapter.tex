@@ -10,14 +10,12 @@ Others study \emph{when} traffic is allowed to contend and what ordinary traffic
 A third family regulates offered load \emph{continuously} through adaptive EDCA parameters or \gls{dcc}.
 A fourth transplants \gls{tsn} and \gls{ofdma} ideas from wired or infrastructure Wi-Fi into wireless settings.
 \autoref{fig:rw:taxonomy} situates these families in a design space whose axes are synchronization or infrastructure dependency and always-on versus event-triggered intervention.
+The figure is a schematic positioning aid: markers are placed qualitatively from each work's stated assumptions, not from a numerical score.
 
 \begin{figure}[htb]
-	\caption{\label{fig:rw:taxonomy}Design-space taxonomy of related Medium Access Control approaches according to synchronization or infrastructure dependency and always-on versus event-triggered intervention. This dissertation occupies the local, event-triggered region.}
+	\caption{\label{fig:rw:taxonomy}Schematic design-space taxonomy of related Medium Access Control approaches. Axes contrast local / infrastructure-free operation with synchronization, infrastructure, or cellular machinery, and event-triggered / short-lived intervention with always-on / permanent regulation. Marker positions are qualitative judgments from each work's stated assumptions, not computed scores; this dissertation occupies the local, event-triggered region.}
 	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: design-space taxonomy of related MAC approaches]}\\[0.4em]
-		  \textit{Two-dimensional scatter or quadrant diagram. Horizontal axis: local / infrastructure-free $\leftrightarrow$ requires synchronization, infrastructure, or cellular machinery. Vertical axis: event-triggered / short-lived $\leftrightarrow$ always-on / permanent. Place TSNCtl, CFC-MAC, PRP-MAC, NR-V2X Mode~2, adaptive EDCA, DCC, SkipCCH, wireless TSN/OFDMA, and ``this work'' (local, event-triggered BE suppression) in distinct regions. Annotate the lower-left quadrant as the dissertation's operating point.}
-		  \vspace{1.8cm}}}
+		\includegraphics[width=0.95\linewidth]{Figs/rw_taxonomy.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -148,18 +146,7 @@ Their SkipCCH method reshapes transmission timing so that the MAC avoids those a
 SkipCCH is not a crash-alert protocol: it targets video over multi-channel WAVE, not one-hop multicast warnings on a single channel.
 Its conceptual contribution to this dissertation is the demonstration that \emph{when} traffic is allowed to contend can matter as much as \emph{which} access category contends~\cite{SkipCCH_Garrido}.
 Event-triggered BE suppression is a different reshaping: instead of shifting packet release across channel intervals, it withholds BE channel-access requests while Voice activity associated with a crash is detected.
-\autoref{fig:rw:always-vs-event} contrasts that event-triggered philosophy with always-on congestion loops discussed in Section~\ref{sec:rw:alwayson}.
-
-\begin{figure}[htb]
-	\caption{\label{fig:rw:always-vs-event}Conceptual contrast between always-on aggregate load regulation (adaptive EDCA / DCC) and event-triggered, per-class Best Effort suppression during a crash-alert window.}
-	\begin{center}
-		\fbox{\parbox{0.92\linewidth}{\centering\vspace{1.8cm}
-		  \textbf{[Figure placeholder: always-on load regulation vs event-triggered BE suppression]}\\[0.4em]
-		  \textit{Two timelines over a 70~s run with a crash window at $t\in[30,60]$~s. Top: DCC/adaptive EDCA acting continuously on aggregate load (CBR or collision-driven parameter updates). Bottom: BE suppression armed only during the crash/alert window, with finite block windows and guard intervals; BE resumes afterward. Annotate ``aggregate, permanent'' vs ``per-class, event-triggered.''}
-		  \vspace{1.8cm}}}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
+That philosophy also differs from the always-on congestion loops of adaptive EDCA and DCC discussed in Section~\ref{sec:rw:alwayson}: those mechanisms retune aggregate load continuously, whereas BE suppression is armed only for the crash-alert window and then released.
 
 \subsection{Protection versus cost as a first-class metric}
 \label{sec:rw:cost}
