@@ -21,6 +21,7 @@ Read [AI_CONTEXT.md](AI_CONTEXT.md) before editing chapters or bibliography.
 | Conclusion chapter plan | `context/conclusion-chapter-plan.md` |
 | System Model / Implementation / Evaluation separation | `context/scientific-paper-structure.md` |
 | Chapter alignment audit | `WRITING_ROADMAP.md` |
+| Current dissertation review | `DISSERTATION_REVIEW.md` |
 | Reference PDF workflow | `REF_PAPERS_WORKFLOW.md` |
 
 Build: `./compile.sh` → `build/main.pdf` (persistent, gitignored). `./compile.sh clean` removes artifacts. Sources compile unchanged on Overleaf.

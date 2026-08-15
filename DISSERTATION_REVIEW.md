@@ -4,7 +4,7 @@
 > **Compiled artifact:** `build/main.pdf` (~94 pages, build of 2026-08-14 17:21)
 > **Review date:** 2026-08-14
 > **Scope:** all seven chapters, front matter, bibliography, LaTeX build health, plus independent cross-verification against `../SBESC-2026-Paper/text.tex`, `../SBESC-2026-Paper/DSD2026_REVIEW.md`, and the `../veins-inet-qos/` artifact (OMNeT++ configs, C++ sources, SUMO files, Rust KPI pipeline).
-> **Relation to prior work:** this review supersedes and re-checks the open/deferred items of `REVISION_PLAN.md` (audit of 2026-08-10, branch `revision/final-audit-fixes`) against the current `main`.
+> **Relation to prior work:** this review supersedes the 2026-08-10 final-audit revision plan (removed; formerly `REVISION_PLAN.md` on branch `revision/final-audit-fixes`). Open and deferred items from that audit were re-checked against current `main`.
 
 ---
 
@@ -170,7 +170,7 @@ Mirrors the evidence without overreach; limitations restated as boundary conditi
 
 ---
 
-## 8. Deltas Since the Prior Audit (REVISION_PLAN.md, 2026-08-10)
+## 8. Deltas Since the Prior Audit (2026-08-10)
 
 **Verified fixed:** C3 (URL), C4 (INET 4.5.4 everywhere incl. bib note), C5 (VO MAC drops relabel + `n.a.` for plain + caption note), H1 (÷2 heuristic disclosed), H2 (straight corridor + "3+3 lanes"), H3 (INET-default footnote + 12 Mbit/s rate), H4 (OCB approximation + BSS-vs-OCB caveat), H5 (FSM trigger semantics + extra transitions), H7/L5/L6 (bib repairs, duplicates pruned, umlauts, entry types), M1 (non-monotonic BE-tails caveat), M2 (light low/medium claim softened to "in our runs"), M3 (burst overlap + progressive fleet injection), M4 (mean-of-per-run-P95 wording), M5 (UPPAAL hedge removed), M7 (nine/ten harmonized), M8 (RFC 9119 "loss rate"), M9 (0.17 ↔ ~170 events note), L1, L2, L4 (Master's Dissertation label). C1 (figures) landed after the audit in commits `fbdfcfb` and `b42c85f`.
 
