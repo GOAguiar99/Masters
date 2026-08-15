@@ -26,7 +26,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 | Background | `chapters/1-chapter.tex` | **Done** — 802.11p, DCF, EDCA, DSCP/EF path, multicast limits, DCC contrast, simulation toolchain (plan: `context/background-chapter-plan.md`) | SBESC §II-A + ETFA §Background + `context/reference-notes.md` | (removed) |
 | Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
-| Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.2 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
+| Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.4 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
 | Evaluation | `chapters/5-chapter.tex` | **Done** — light sweep + heavy stress tables, fig_06 CDF, full DSD discussion (plan: `context/evaluation-chapter-plan.md`) | SBESC §IV | (legacy Preliminary Results removed earlier) |
 | Conclusion | `chapters/6-chapter.tex` | **Done** — conditional takeaway (marking as default, blocking as event-triggered escalation); no Work Plan/Schedule (plan: `context/conclusion-chapter-plan.md`) | SBESC §V | DQ-WiFi work-plan phases / timeline |
 
@@ -74,7 +74,7 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 
 | File(s) | Referenced by |
 |---------|---------------|
-| `Topology.png`, `fsm_simple.pdf`, `delay.png`, `delay.pdf` | (orphaned; formerly Ch3) |
+| `Topology.png`, `fsm_simple.pdf`, `delay.png`, `delay.pdf` | removed from `Figs/` (orphaned; formerly Ch3) |
 | `classifier.png`, `mymodel.png`, `upperframe.png`, `lowerframe.png` | (orphaned; formerly Ch4 Implementation) |
 | `noqos.png`, `edca_only.png`, `reservaonly.png`, `both.png`, `carcrashonly.png` | (orphaned; formerly Ch4 Preliminary Results) |
 

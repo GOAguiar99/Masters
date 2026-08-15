@@ -1,0 +1,56 @@
+\documentclass[tikz,border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{siunitx}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Stealth,
+  thick,
+  lbl/.style={font=\scriptsize},
+]
+  % Seed-grouped P95 bars: VO vs BE under plain DCF, heavy high load.
+  % Data: plain_netload_high seeds #0--#2 (ms).
+  \def\barw{0.42}
+  \def\gap{1.55}
+  % y scale: 0..100 ms, 4.2cm
+  \def\ymax{100}
+  \def\h{4.20}
+
+  % axes
+  \draw[thick] (0,0) -- (5.20,0);
+  \draw[thick] (0,0) -- (0,\h);
+  \foreach \y/\lab in {0/0, 25/25, 50/50, 75/75, 100/100} {
+    \draw[thin, black!20] (0,{\y/\ymax*\h}) -- (5.20,{\y/\ymax*\h});
+    \node[lbl, anchor=east] at (-0.08,{\y/\ymax*\h}) {\lab};
+  }
+  \node[lbl, rotate=90] at (-0.72,{\h/2}) {P95 delay (ms)};
+
+  % seed clusters at x = 1.00, 2.55, 4.10
+  % VO fill black!25, BE fill black!70
+  % #0 VO 0.676 BE 0.678
+  % #1 VO 0.678 BE 73.664
+  % #2 VO 2.515 BE 97.759
+  \foreach \i/\vo/\be/\lab in {
+      1.00/0.676/0.678/\#0,
+      2.55/0.678/73.664/\#1,
+      4.10/2.515/97.759/\#2} {
+    \fill[black!22] ({\i-\barw-0.04},0) rectangle ({\i-0.04},{\vo/\ymax*\h});
+    \draw[thick] ({\i-\barw-0.04},0) rectangle ({\i-0.04},{\vo/\ymax*\h});
+    \node[lbl, anchor=south] at ({\i-\barw/2-0.04},{\vo/\ymax*\h+0.06}) {\vo};
+    \fill[black!70] ({\i+0.04},0) rectangle ({\i+\barw+0.04},{\be/\ymax*\h});
+    \draw[thick] ({\i+0.04},0) rectangle ({\i+\barw+0.04},{\be/\ymax*\h});
+    \node[lbl, anchor=south] at ({\i+\barw/2+0.04},{\be/\ymax*\h+0.06}) {\be};
+    \node[lbl, anchor=north] at (\i,-0.12) {seed \lab};
+  }
+
+  % legend
+  \fill[black!22] (0.15,4.55) rectangle (0.45,4.80);
+  \draw[thick] (0.15,4.55) rectangle (0.45,4.80);
+  \node[lbl, anchor=west] at (0.52,4.675) {Voice};
+  \fill[black!70] (1.70,4.55) rectangle (2.00,4.80);
+  \draw[thick] (1.70,4.55) rectangle (2.00,4.80);
+  \node[lbl, anchor=west] at (2.07,4.675) {Best Effort};
+\end{tikzpicture}
+\end{document}

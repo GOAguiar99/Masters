@@ -1,0 +1,10 @@
+{
+  "schema_version": 3,
+  "parser_version": "rust-kpi-dashboard-0.2.0",
+  "built_at_unix_secs": 1779747129,
+  "run_count": 45,
+  "config_count": 15,
+  "source_kind": "raw",
+  "warnings": [],
+  "source_file_count": 90
+}

@@ -145,12 +145,12 @@ When two local categories expire their backoff counters in the same slot, an \em
 	\fonte{Prepared by the author.}
 \end{figure}
 
-\autoref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by \gls{rfc}~8325 for infrastructure WLANs; the numerical defaults used in the present study's INET configuration are stated in the System Model chapter and need not coincide with every published draft-era table~\cite{RFC8325_WiFi_QoS}.
+\autoref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by \gls{rfc}~8325 for infrastructure WLANs; the numerical defaults used in the present study's INET configuration are stated in the Implementation chapter (\autoref{tab:impl:parameters}) and need not coincide with every published draft-era table~\cite{RFC8325_WiFi_QoS}.
 The essential ordering is stable across revisions: \texttt{AC\_VO} is the most aggressive category, followed by \texttt{AC\_VI}, \texttt{AC\_BE}, and \texttt{AC\_BK}.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:bg:edca-params}Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in the System Model.}
+	\caption{\label{tab:bg:edca-params}Representative EDCA differentiation relative to Best Effort, following the UP$\rightarrow$AC and parameter discussion in RFC~8325. Absolute defaults vary by band and standard revision; the study's configured values are given in \autoref{tab:impl:parameters}.}
 	\begin{center}
 		\begin{tabular}{@{}llccc@{}}
 		    \toprule
