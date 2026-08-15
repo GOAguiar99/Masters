@@ -86,33 +86,32 @@ The present dissertation drops \gls{tas}-oriented scheduling, abandons synchroni
 \label{sec:rw:stronger-synth}
 
 \autoref{tab:rw:comparison} summarizes the approaches in this section and the families reviewed later.
+Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study.
 Collectively, TSNCtl, PRP-MAC, CFC-MAC, and NR-V2X Mode~2 demonstrate that tighter contention or resource control can improve safety-oriented delivery metrics, but each relies on synchronization, a coordinating entity, TDMA-style reservations, UAV or roadside assistance, or cellular sidelink machinery~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 None isolates the narrow question of whether a local, standard-compliant EDCA stack---augmented only by explicit DSCP-to-Voice mapping and short-lived BE suppression---can protect a crash-triggered multicast burst and at what cost to ordinary traffic.
 That narrower question is the gap this dissertation fills.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:rw:comparison}Comparative summary of related approaches and this dissertation. Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study.}
+	\caption{\label{tab:rw:comparison}Comparative summary of related approaches and this dissertation.}
 	\begin{center}
-		\small
-  
-  
-		  \setlength{\tabcolsep}{2.5pt}
-		  \begin{tabular}{@{}>{\RaggedRight\arraybackslash}p{2.35cm}>{\RaggedRight\arraybackslash}p{2.35cm}>{\RaggedRight\arraybackslash}p{2.2cm}>{\RaggedRight\arraybackslash}p{1.9cm}>{\RaggedRight\arraybackslash}p{2.35cm}>{\RaggedRight\arraybackslash}p{2.2cm}@{}}
+		\setlength{\tabcolsep}{3pt}
+		\renewcommand{\arraystretch}{1.05}
+		\begin{tabularx}{\linewidth}{@{}*{6}{>{\RaggedRight\arraybackslash}X}@{}}
 		    \toprule
-		    Approach & Key mechanism & Require\-ments & Target traffic & Advantages (claimed) & Relation to this work \\
+		    Approach & Key mechanism & Requirements & Target traffic & Advantages (claimed) & Relation to this work \\
 		    \midrule
 		    TSNCtl\newline\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
 		    PRP-MAC\newline\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
 		    CFC-MAC\newline\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
 		    NR-V2X Mode~2\newline\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy SPS & Different RAT \\
-		    SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \gls{cch}-induced \gls{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
-		    Adaptive EDCF\newline\cite{romdhani2003AdaptiveEDCF} & CW/\-persistence retuning & Continuous measurement & Differen\-tiated ACs & Better differentiation under load & Always-on, aggregate \\
-		    DCC\newline\cite{etsi_dcc_2018} & CBR-driven TPC/\-TRC/\-access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Comple\-mentary \\
+		    SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \gls*{cch}-induced \gls*{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
+		    Adaptive EDCF\newline\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
+		    DCC\newline\cite{etsi_dcc_2018} & CBR-driven TPC/TRC/access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
 		    Wireless TSN / OFDMA\newline\cite{seliem2023wirelesstsn,schneider_trigger_2024} & TAS/TWT/RU scheduling & Wi-Fi~6/NIC mods or sync & Industrial / scheduled & Tighter latency control & Out of OCB scope \\
 		    \textbf{This work} & \textbf{DSCP$\rightarrow$VO + event-triggered BE suppress} & \textbf{Local OCB EDCA only} & \textbf{Crash VO vs BE multicast} & \textbf{Protection--cost frontier} & \textbf{No sync/infra} \\
 		    \bottomrule
-		  \end{tabular}
+		\end{tabularx}
 	\end{center}
 	\fonte{Prepared by the author from the cited works.}
 \end{table}

@@ -44,29 +44,31 @@ Only the active highway packages participate in the dissertation experiment matr
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:layout}Artifact directory layout relevant to the crash-aware implementation.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{4.4cm} X@{}}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.8cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
 			\textbf{Path} & \textbf{Role} \\
 			\midrule
-			veins\_qos/src/traffic/ &
+			\path{veins_qos/src/traffic/} &
 			  Study applications: \texttt{CritPacketSender}, \texttt{CrashBurstApp}. \\
 			\addlinespace
-			veins\_qos/src/qos/ &
+			\path{veins_qos/src/qos/} &
 			  Explicit DSCP-to-user-priority classifier. \\
 			\addlinespace
-			veins\_qos/src/mac/ &
-			  Instrumented IEEE~802.11 \gls{mac}, adaptive \gls{hcf}, and \gls{fsm} controller. \\
+			\path{veins_qos/src/mac/} &
+			  Instrumented IEEE~802.11 \gls*{mac}, adaptive \gls*{hcf}, and \gls*{fsm} controller. \\
 			\addlinespace
-			veins\_qos/src/veins\_inet/ &
-			  Veins$\leftrightarrow$\gls{inet} host, mobility, manager, and UDP application base. \\
+			\path{veins_qos/src/veins_inet/} &
+			  Veins$\leftrightarrow$\gls*{inet} host, mobility, manager, and UDP application base. \\
 			\addlinespace
-			veins\_qos/simulations/veins\_inet\_highway\_\{light,heavy\}/ &
+			\path{veins_qos/simulations/}\newline
+			\path{veins_inet_highway_light/},\newline
+			\path{veins_inet_highway_heavy/} &
 			  Active density packages: SUMO network, obstacles, \texttt{omnetpp.ini}, runners. \\
 			\addlinespace
-			kpi\_dashboard/ &
+			\path{kpi_dashboard/} &
 			  Offline parser of OMNeT++ \texttt{.sca}/\texttt{.vec} result files and figure export. \\
 			\addlinespace
-			inet/, veins/ &
+			\path{inet/}, \path{veins/} &
 			  Framework submodules (read-only). \\
 			\bottomrule
 		\end{tabularx}
@@ -131,27 +133,7 @@ The path is identical for Best Effort and Voice except for DSCP marking, classif
 \begin{figure}[htb]
 	\caption{\label{fig:impl:stack}Implemented cross-layer path from study applications to the shared radio. Adaptive \gls{hcf} modules appear only under the \texttt{edca\_v2x\_vo\_*} policies.}
 	\begin{center}
-	\ABNTEXfontereduzida
-	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
-		\toprule
-		\textbf{Application:} \texttt{CritPacketSender} (\gls{dscp}~0) or \texttt{CrashBurstApp} (\gls{dscp}~46); \texttt{CreationTimeTag}, optional sequence tag \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{UDP / IPv4:} multicast to \texttt{224.0.0.1} on \texttt{wlan0} (Crash destPort~9001; Crit local/dest~9001) \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{Classifier (EDCA policies):} \texttt{QosClassifier} maps \gls{dscp}~46~$\rightarrow$~\gls{up} Voice; others~$\rightarrow$~\gls{up}~0 \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{\gls{mac}:} \texttt{V2xIeee80211Mac}; \texttt{plain} uses \gls{dcf}; EDCA uses stock \texttt{Hcf} or \texttt{V2xHcf} \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{\gls{phy}:} \texttt{Ieee80211DimensionalRadio}, free-space path loss, \texttt{IdealObstacleLoss}, static \gls{snir} \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{Reception KPIs:} \texttt{CritPacketSender} on every node (port~9001) records BE/VO RX and delay \\
-		\bottomrule
-	\end{tabularx}
+		\includegraphics[width=0.95\linewidth]{Figs/impl_stack.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -184,17 +166,17 @@ Both are instantiated on every vehicle (\texttt{numApps = 2}); only the configur
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:crit}Principal parameters and statistics of \texttt{CritPacketSender}.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.6cm} X@{}}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
 			\textbf{Item} & \textbf{Role in the artifact} \\
 			\midrule
-			\texttt{sendInterval}, \texttt{payloadBytes} &
+			\texttt{sendInterval}\newline\texttt{payloadBytes} &
 			  Periodic offered load; overridden by \texttt{\_netload\_*} overlays. \\
 			\addlinespace
 			\texttt{dscp} (default~0) &
 			  Best Effort marking carried as \texttt{DscpReq}. \\
 			\addlinespace
-			\texttt{localPort}/\texttt{destPort} (9001) &
+			\texttt{localPort}/\texttt{destPort}\newline(9001) &
 			  UDP endpoints for BE TX and for all BE/VO RX KPIs. \\
 			\addlinespace
 			\texttt{voDedupWindow} &
@@ -237,27 +219,27 @@ The evaluation prefers logical TX when present so that repeatCount does not infl
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:crash}Principal parameters and statistics of \texttt{CrashBurstApp}.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.6cm} X@{}}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
 			\textbf{Item} & \textbf{Role in the artifact} \\
 			\midrule
 			\texttt{targetNodeIndex} &
 			  Which OMNeT++ node becomes the crash source (default~0). \\
 			\addlinespace
-			\texttt{crashAt}, \texttt{resumeAfter} &
+			\texttt{crashAt}\newline\texttt{resumeAfter} &
 			  Absolute crash start and crash-window duration. \\
 			\addlinespace
-			\texttt{sendInterval}, \texttt{payloadBytes} &
+			\texttt{sendInterval}\newline\texttt{payloadBytes} &
 			  Inter-burst period and payload during the window. \\
 			\addlinespace
-			\texttt{repeatCount}, \texttt{repeatGap}, \texttt{repeatJitter} &
+			\texttt{repeatCount}\newline\texttt{repeatGap}\newline\texttt{repeatJitter} &
 			  Physical repeats of each logical alert. \\
 			\addlinespace
-			\texttt{localPort}~9002 / \texttt{destPort}~9001 &
+			\texttt{localPort}~9002\newline\texttt{destPort}~9001 &
 			  TX on a dedicated local port; RX KPIs collected by Crit on~9001. \\
 			\addlinespace
 			Statistics &
-			  \texttt{voTxPackets} (physical), \texttt{voLogicalTxPackets} (per sequence). \\
+			  \texttt{voTxPackets} (physical),\newline\texttt{voLogicalTxPackets} (per sequence). \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}
@@ -326,27 +308,28 @@ Their semantics match the three-mode controller of \autoref{sec:sys:controller};
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:v2xhcf}Adaptive controller parameters exposed by \texttt{V2xHcf} / \texttt{V2xEdcaFsmController}.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{4.0cm} X@{}}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
 			\textbf{Parameter} & \textbf{Meaning} \\
 			\midrule
-			adaptiveBlocking &
+			\path{adaptiveBlocking} &
 			  Enables Voice-driven Best Effort suppression through the FSM. \\
 			\addlinespace
-			emergencyPreemption &
+			\path{emergencyPreemption} &
 			  When true, newly arriving Best Effort may be dropped and stale Best Effort grants suppressed while protection is active. \\
 			\addlinespace
-			blockDuration &
+			\path{blockDuration} &
 			  Protection-window extension per Voice demand event (local enqueue or overheard Voice frame). \\
 			\addlinespace
-			maxContinuousBlock &
+			\path{maxContinuousBlock} &
 			  Cap on one continuous blocking/sending interval (also mirrored on the FSM). \\
 			\addlinespace
-			voQueueThreshold &
+			\path{voQueueThreshold} &
 			  Local Voice queue depth that can trigger protection from upper traffic. \\
 			\addlinespace
-			FSMController.sendingGuardTimeout &
-			  Short guard that delays return to listening around Voice send transitions. \\
+			\path{FSMController.}\newline
+			\path{sendingGuardTimeout} &
+			  Fallback timer armed on Voice TX start; if TX end does not fire first, leave \emph{sending} according to whether the protection window is still open. \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}
@@ -361,26 +344,36 @@ The controller does not rewrite backoff arithmetic or introduce scheduled gates;
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:impl:hooks}Principal integration hooks of \texttt{V2xHcf} relative to the stock INET \gls{hcf}.}
+	\caption{\label{tab:impl:hooks}Principal integration hooks of \texttt{V2xHcf} relative to the stock INET \gls*{hcf}.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.4cm} X@{}}
+		\setlength{\tabcolsep}{4pt}
+		\begin{tabularx}{\linewidth}{@{}
+			>{\raggedright\arraybackslash}p{2.5cm}
+			>{\raggedright\arraybackslash}X
+			>{\raggedright\arraybackslash}X
+			@{}}
 			\toprule
-			\textbf{Hook} & \textbf{Behaviour in the adaptive policies} \\
+			\textbf{Hook} & \textbf{Trigger} & \textbf{Effect} \\
 			\midrule
 			Voice demand detection &
-			  Local Voice enqueue above \texttt{voQueueThreshold}, or an overheard Voice-classified \gls{mac} frame, calls into the FSM (\texttt{onVoDemandDetected}) and may start or extend a protection window of length \texttt{blockDuration}, capped by \texttt{maxContinuousBlock}. \\
+			  Local Voice enqueue above \path{voQueueThreshold}, or an overheard Voice-classified \gls*{mac} frame. &
+			  Calls \path{onVoDemandDetected}; may start or extend a protection window of length \path{blockDuration}, capped by \path{maxContinuousBlock}. \\
 			\addlinespace
 			Upper-frame gating &
-			  While the FSM reports Best Effort blocked (\emph{blocking} or \emph{sending}), Best Effort channel-access requests are deferred. \\
+			  FSM reports Best Effort blocked (\emph{blocking} or \emph{sending}). &
+			  Best Effort channel-access requests are deferred. \\
 			\addlinespace
 			Own Voice on air &
-			  Start and end of the node's own Voice transmissions drive \texttt{onVoTransmissionStart}/\texttt{End}, moving the FSM through \emph{sending} and applying \texttt{sendingGuardTimeout} before listening resumes. \\
+			  Start and end of the node's own Voice transmissions. &
+			  On TX start, FSM enters \emph{sending}. On TX end (or send-guard timeout), it returns to \emph{blocking} if the window is still open, otherwise to \emph{listening}. \\
 			\addlinespace
 			Emergency preemption &
-			  If \texttt{emergencyPreemption} is true, newly arriving Best Effort frames may be dropped with a congestion reason and stale Best Effort grants suppressed while protection is active. \\
+			  \path{emergencyPreemption} is true and protection is active. &
+			  Newly arriving Best Effort frames may be dropped with a congestion reason; stale Best Effort grants suppressed. \\
 			\addlinespace
 			Instrumentation &
-			  Signals/scalars \texttt{beDroppedWhileBlocked}, \texttt{beGrantSuppressedWhileBlocked}, and \texttt{voProtectionActivation}; FSM vector \texttt{v2xState} with encoding 0~=~listening, 1~=~blocking, 2~=~sending. \\
+			  Controller and FSM events during a run. &
+			  Signals/scalars \path{beDroppedWhileBlocked}, \path{beGrantSuppressedWhileBlocked}, \path{voProtectionActivation}; FSM vector \path{v2xState} (0~=~listening, 1~=~blocking, 2~=~sending). \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}
@@ -399,23 +392,27 @@ Numeric access-control values are collected in \autoref{tab:impl:parameters}; he
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:map}Artifact mapping per stack layer.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+		\begin{tabularx}{\linewidth}{@{}
+			>{\raggedright\arraybackslash}p{1.7cm}
+			>{\raggedright\arraybackslash}X
+			>{\raggedright\arraybackslash}X
+			@{}}
 			\toprule
 			\textbf{Layer} & \textbf{Reused baseline} & \textbf{Introduced modules} \\
 			\midrule
 			App. &
-			  Multicast UDP hooks in \texttt{VeinsInetApplicationBase} &
-			  \texttt{CritPacketSender}, \texttt{CrashBurstApp}; KPI tags and deduplication \\
+			  Multicast UDP hooks in \path{VeinsInetApplicationBase} &
+			  \path{CritPacketSender}, \path{CrashBurstApp}; KPI tags and deduplication \\
 			\addlinespace
-			Net/\gls{qos} &
+			Net/\gls*{qos} &
 			  IPv4 forwarding and transport &
-			  \texttt{QosClassifier} (\gls{dscp}~46~$\rightarrow$ Voice \gls{up}) \\
+			  \path{QosClassifier} (\gls*{dscp}~46~$\rightarrow$ Voice \gls*{up}) \\
 			\addlinespace
-			\gls{mac} &
-			  IEEE~802.11p \gls{dcf}/\gls{edca} queues and channel access &
-			  \texttt{V2xIeee80211Mac}; \texttt{V2xHcf}+\texttt{V2xEdcaFsmController} on adaptive policies \\
+			\gls*{mac} &
+			  IEEE~802.11p \gls*{dcf}/\gls*{edca} queues and channel access &
+			  \path{V2xIeee80211Mac}; \path{V2xHcf}+\path{V2xEdcaFsmController} on adaptive policies \\
 			\addlinespace
-			\gls{phy} &
+			\gls*{phy} &
 			  Dimensional radio, propagation, mobility, TraCI coupling &
 			  None (shared across all policies) \\
 			\bottomrule
@@ -458,18 +455,22 @@ Each adaptive configuration extends \texttt{edca\_only}, replaces \texttt{hcf.ty
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:policyknobs}Adaptive policy knobs as bound in the highway \texttt{omnetpp.ini}.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+		\setlength{\tabcolsep}{3pt}
+		\begin{tabularx}{\linewidth}{@{}l *{5}{>{\centering\arraybackslash}X}@{}}
 			\toprule
-			\textbf{Config} & \textbf{Controller binding} \\
+			\textbf{Config} &
+			\shortstack{\texttt{block}\\[-1pt]\texttt{Duration}} &
+			\shortstack{\texttt{maxContinuous}\\[-1pt]\texttt{Block}} &
+			\shortstack{\texttt{sendingGuard}\\[-1pt]\texttt{Timeout}} &
+			\shortstack{\texttt{voQueue}\\[-1pt]\texttt{Threshold}} &
+			\shortstack{\texttt{emergency}\\[-1pt]\texttt{Preemption}} \\
 			\midrule
-			\texttt{edca\_v2x\_vo\_stable} &
-			  \texttt{blockDuration=15ms}, \texttt{maxContinuousBlock=80ms}, \texttt{sendingGuardTimeout=5ms}, \texttt{voQueueThreshold=2}; \texttt{emergencyPreemption} left false. \\
-			\addlinespace
-			\texttt{edca\_v2x\_vo\_guarded} &
-			  \texttt{blockDuration=4ms}, \texttt{maxContinuousBlock=20ms}, \texttt{sendingGuardTimeout=4ms}, \texttt{voQueueThreshold=3}; preemption false. \\
-			\addlinespace
-			\texttt{edca\_v2x\_vo\_emergency} &
-			  \texttt{emergencyPreemption=true}, \texttt{blockDuration=10ms}, \texttt{maxContinuousBlock=60ms}, \texttt{sendingGuardTimeout=5ms}, \texttt{voQueueThreshold=1}. \\
+			\texttt{stable} &
+			  \SI{15}{\milli\second} & \SI{80}{\milli\second} & \SI{5}{\milli\second} & 2 & false \\
+			\texttt{guarded} &
+			  \SI{4}{\milli\second} & \SI{20}{\milli\second} & \SI{4}{\milli\second} & 3 & false \\
+			\texttt{emergency} &
+			  \SI{10}{\milli\second} & \SI{60}{\milli\second} & \SI{5}{\milli\second} & 1 & true \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}
@@ -490,113 +491,117 @@ It is the numeric counterpart of the System Model in \autoref{chap:sysmodel}: th
 Best Effort inter-arrivals use OMNeT++ \texttt{exponential($\cdot$)} draws with the stated mean; Voice burst periods are fixed, with optional per-repeat jitter.
 Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency} in the first column; the full OMNeT++ configuration names are \texttt{edca\_v2x\_vo\_*}.
 
-\begin{table}[H]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:impl:parameters}Simulation parameters used in the crash-aware Veins/\gls{inet} artifact.}
-	\begin{center}
-	\setlength{\tabcolsep}{3.5pt}
-	\begin{tabularx}{\linewidth}{@{}
-		>{\raggedright\arraybackslash}p{2.6cm}
-		>{\raggedright\arraybackslash}p{2.9cm}
-		>{\raggedright\arraybackslash}X
-		@{}}
-		\toprule
-		\multicolumn{3}{@{}l@{}}{\textbf{Common highway setting}} \\
-		\midrule
-		\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
-		\midrule
-		Sim.\ time &
-		  \SI{70}{\second} &
-		  \texttt{sim-time-limit}; identical for every configuration. \\
-		\addlinespace
-		Corridor &
-		  5~km, 3+3 lanes &
-		  Straight bidirectional SUMO corridor, three lanes per direction; mixed car/truck types (EIDM, LC2013); nominal lane speed \SI{120}{\km\per\hour}. \\
-		\addlinespace
-		Density &
-		  10~/~100~veh. &
-		  Light and heavy packages (\texttt{veins\_inet\_highway\_light}/\texttt{\_heavy}); same \texttt{omnetpp.ini}, different \texttt{highway.rou.xml}. \\
-		\addlinespace
-		Crash &
-		  \SI{30}{\second}--\SI{60}{\second} &
-		  Node index~0 (\texttt{node0\_highway}): TraCI stop, DSCP~46 alerts; BE background continues. \\
-		\addlinespace
-		Radio &
-		  802.11p / ch.~3 &
-		  5.9~GHz, 10~MHz, 20~mW; \texttt{Ieee80211DimensionalRadio}; mode~\texttt{p}; data frames at 12~Mbit/s (fastest mandatory mode, \gls{inet} default rate selection). \\
-		\addlinespace
-		Propagation &
-		  FS~+~binary &
-		  Free-space path loss; no fading/shadowing; \texttt{IdealObstacleLoss} + \texttt{highway.obstacles.xml}; SNIR~\SI{4}{\decibel}; sens.\ $-$85~dBm; noise $-$110~dBm (\gls{inet}~4.5.4 defaults, not overridden). \\
-		\addlinespace
-		Multicast &
-		  \texttt{224.0.0.1} &
-		  On \texttt{wlan0}. Crit ports 9001/9001; Crash local~9002, dest~9001 (VO RX counted in Crit). \\
-		\addlinespace
-		TraCI &
-		  port~9999 &
-		  \texttt{localhost}; \texttt{VeinsInetManager} + \texttt{veins\_launchd}; update~\SI{1}{\second}; SUMO step~\SI{0.1}{\second}. \\
-		\addlinespace
-		Host/\gls{mac} &
-		  \texttt{VeinsInetCar} &
-		  Always \texttt{V2xIeee80211Mac}; adaptive policies replace \texttt{Hcf} with \texttt{V2xHcf}. \\
-		\addlinespace
-		Classifier &
-		  DSCP~46~$\rightarrow$~VO &
-		  \texttt{QosClassifier} on EDCA policies only (\texttt{crashDscp=46}, \texttt{defaultUp=0}); unused under \texttt{plain}. \\
-		\addlinespace
-		Recording &
-		  vec.\ +\ sca. &
-		  \texttt{**.vector-recording}/\texttt{scalar-recording = true}. \\
-		\addlinespace
-		Matrix &
-		  15~/~package &
-		  Five policies $\times$ three loads; $\times$ two densities $=$ 30 named experiments before seeds. \\
-		\midrule
-		\multicolumn{3}{@{}l@{}}{\textbf{Application load profiles (\texttt{\_netload\_*})}} \\
-		\midrule
-		\textbf{Profile} & \textbf{BE (\texttt{app[0]})} & \textbf{VO crash (\texttt{app[1]})} \\
-		\midrule
-		\texttt{low} &
-		  exp.~\SI{500}{\milli\second}, 200~B &
-		  \SI{120}{\milli\second}, 150~B; repeat~3; gap~\SI{20}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
-		\addlinespace
-		\texttt{medium} &
-		  exp.~\SI{250}{\milli\second}, 320~B &
-		  \SI{75}{\milli\second}, 180~B; repeat~4; gap~\SI{15}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
-		\addlinespace
-		\texttt{high} &
-		  exp.~\SI{125}{\milli\second}, 420~B &
-		  \SI{20}{\milli\second}, 260~B; repeat~8; gap~\SI{5}{\milli\second}; jitter~\SI{2}{\milli\second}. \\
-		\midrule
-		\multicolumn{3}{@{}l@{}}{\textbf{\gls{mac} policies (runnable name \texttt{<policy>\_netload\_<profile>})}} \\
-		\midrule
-		\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
-		\midrule
-		\texttt{plain} &
-		  Non-\gls{qos} \gls{dcf} &
-		  Single pending queue~128; no classifier; no \gls{edca}; no adaptive blocking. \\
-		\addlinespace
-		\texttt{edca\_only} &
-		  Stock EDCA &
-		  \texttt{Hcf} + \texttt{QosClassifier}. DSCP~46~$\rightarrow$~\texttt{AC\_VO}, else UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
-		\addlinespace
-		\texttt{stable} &
-		  Sustained VO &
-		  Config \texttt{edca\_v2x\_vo\_stable}. Inherits \texttt{edca\_only}; \texttt{V2xHcf}. Block~\SI{15}{\milli\second}; max cont.~\SI{80}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~2. \\
-		\addlinespace
-		\texttt{guarded} &
-		  Bounded VO &
-		  Config \texttt{edca\_v2x\_vo\_guarded}. Same inheritance. Block~\SI{4}{\milli\second}; max cont.~\SI{20}{\milli\second}; guard~\SI{4}{\milli\second}; VO thr.~3. \\
-		\addlinespace
-		\texttt{emergency} &
-		  Emergency VO &
-		  Config \texttt{edca\_v2x\_vo\_emergency}; \texttt{emergencyPreemption=true}. Block~\SI{10}{\milli\second}; max cont.~\SI{60}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~1; may drop BE. \\
-		\bottomrule
-	\end{tabularx}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
+{\ABNTEXfontereduzida
+\setlength{\tabcolsep}{3.5pt}
+\begin{xltabular}{\linewidth}{@{}
+	>{\raggedright\arraybackslash}p{2.6cm}
+	>{\raggedright\arraybackslash}p{2.9cm}
+	>{\raggedright\arraybackslash}X
+	@{}}
+	\caption{\label{tab:impl:parameters}Simulation parameters used in the crash-aware Veins/\gls*{inet} artifact.}\\
+	\toprule
+	\multicolumn{3}{@{}l@{}}{\textbf{Common highway setting}} \\
+	\midrule
+	\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
+	\midrule
+	\endfirsthead
+	\caption[]{Simulation parameters used in the crash-aware Veins/\gls*{inet} artifact. (continued)}\\
+	\toprule
+	\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
+	\midrule
+	\endhead
+	\bottomrule
+	\endlastfoot
+	Sim.\ time &
+	  \SI{70}{\second} &
+	  \texttt{sim-time-limit}; identical for every configuration. \\
+	\addlinespace
+	Corridor &
+	  5~km, 3+3 lanes &
+	  Straight bidirectional SUMO corridor, three lanes per direction; mixed car/truck types (EIDM, LC2013); nominal lane speed \SI{120}{\km\per\hour}. \\
+	\addlinespace
+	Density &
+	  10~/~100~veh. &
+	  Light and heavy packages (\path{veins_inet_highway_light}/\texttt{\_heavy}); same \texttt{omnetpp.ini}, different \texttt{highway.rou.xml}. \\
+	\addlinespace
+	Crash &
+	  \SI{30}{\second}--\SI{60}{\second} &
+	  Node index~0 (\path{node0_highway}): TraCI stop, DSCP~46 alerts; BE background continues. \\
+	\addlinespace
+	Radio &
+	  802.11p / ch.~3 &
+	  5.9~GHz, 10~MHz, 20~mW; \path{Ieee80211DimensionalRadio}; mode~\texttt{p}; data frames at 12~Mbit/s (fastest mandatory mode, \gls*{inet} default rate selection). \\
+	\addlinespace
+	Propagation &
+	  FS~+~binary &
+	  Free-space path loss; no fading/shadowing; \path{IdealObstacleLoss} + \texttt{highway.obstacles.xml}; SNIR~\SI{4}{\decibel}; sens.\ $-$85~dBm; noise $-$110~dBm (\gls*{inet}~4.5.4 defaults, not overridden). \\
+	\addlinespace
+	Multicast &
+	  \texttt{224.0.0.1} &
+	  On \texttt{wlan0}. Crit ports 9001/9001; Crash local~9002, dest~9001 (VO RX counted in Crit). \\
+	\addlinespace
+	TraCI &
+	  port~9999 &
+	  \texttt{localhost}; \path{VeinsInetManager} + \path{veins_launchd}; update~\SI{1}{\second}; SUMO step~\SI{0.1}{\second}. \\
+	\addlinespace
+	Host/\gls*{mac} &
+	  \path{VeinsInetCar} &
+	  Always \path{V2xIeee80211Mac}; adaptive policies replace \texttt{Hcf} with \path{V2xHcf}. \\
+	\addlinespace
+	Classifier &
+	  DSCP~46~$\rightarrow$~VO &
+	  \path{QosClassifier} on EDCA policies only (\texttt{crashDscp=46}, \texttt{defaultUp=0}); unused under \texttt{plain}. \\
+	\addlinespace
+	Recording &
+	  vec.\ +\ sca. &
+	  \texttt{**.vector-recording}/\texttt{scalar-recording = true}. \\
+	\addlinespace
+	Matrix &
+	  15~/~package &
+	  Five policies $\times$ three loads; $\times$ two densities $=$ 30 named experiments before seeds. \\
+	\midrule
+	\multicolumn{3}{@{}l@{}}{\textbf{Application load profiles (\texttt{\_netload\_*})}} \\
+	\midrule
+	\textbf{Profile} & \textbf{BE (\texttt{app[0]})} & \textbf{VO crash (\texttt{app[1]})} \\
+	\midrule
+	\texttt{low} &
+	  exp.~\SI{500}{\milli\second}, 200~B &
+	  \SI{120}{\milli\second}, 150~B; repeat~3; gap~\SI{20}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
+	\addlinespace
+	\texttt{medium} &
+	  exp.~\SI{250}{\milli\second}, 320~B &
+	  \SI{75}{\milli\second}, 180~B; repeat~4; gap~\SI{15}{\milli\second}; jitter~\SI{5}{\milli\second}. \\
+	\addlinespace
+	\texttt{high} &
+	  exp.~\SI{125}{\milli\second}, 420~B &
+	  \SI{20}{\milli\second}, 260~B; repeat~8; gap~\SI{5}{\milli\second}; jitter~\SI{2}{\milli\second}. \\
+	\midrule
+	\multicolumn{3}{@{}l@{}}{\textbf{\gls*{mac} policies (runnable name \texttt{<policy>\_netload\_<profile>})}} \\
+	\midrule
+	\textbf{Policy} & \textbf{Role} & \textbf{Access-control parameters} \\
+	\midrule
+	\texttt{plain} &
+	  Non-\gls*{qos} \gls*{dcf} &
+	  Single pending queue~128; no classifier; no \gls*{edca}; no adaptive blocking. \\
+	\addlinespace
+	\texttt{edca\_only} &
+	  Stock EDCA &
+	  \texttt{Hcf} + \path{QosClassifier}. DSCP~46~$\rightarrow$~\texttt{AC\_VO}, else UP~0. Queues BK/BE/VI/VO: 128/128/64/32. \gls*{aifsn} 7/3/2/2. \texttt{cwMin} 15/15/7/3. \texttt{cwMax} 1023/1023/15/7. \\
+	\addlinespace
+	\texttt{stable} &
+	  Sustained VO &
+	  Config \path{edca_v2x_vo_stable}. Inherits \texttt{edca\_only}; \path{V2xHcf}. Block~\SI{15}{\milli\second}; max cont.~\SI{80}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~2. \\
+	\addlinespace
+	\texttt{guarded} &
+	  Bounded VO &
+	  Config \path{edca_v2x_vo_guarded}. Same inheritance. Block~\SI{4}{\milli\second}; max cont.~\SI{20}{\milli\second}; guard~\SI{4}{\milli\second}; VO thr.~3. \\
+	\addlinespace
+	\texttt{emergency} &
+	  Emergency VO &
+	  Config \path{edca_v2x_vo_emergency}; \texttt{emergencyPreemption=true}. Block~\SI{10}{\milli\second}; max cont.~\SI{60}{\milli\second}; guard~\SI{5}{\milli\second}; VO thr.~1; may drop BE. \\
+\end{xltabular}
+\fonte{Prepared by the author.}
+}
 
 \subsection{Density packages}
 \label{sec:impl:density}
@@ -690,24 +695,30 @@ These signals are the measurement surface consumed by Evaluation; their statisti
 	\ABNTEXfontereduzida
 	\caption{\label{tab:impl:signals}Study-relevant instrumentation exposed by the artifact.}
 	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
 			\textbf{Source} & \textbf{Recorded quantities} \\
 			\midrule
-			\texttt{CritPacketSender} &
-			  BE TX/RX counts; VO RX counts; BE and VO end-to-end delay vectors with count/mean/min/max scalars. \\
+			\path{CritPacketSender} &
+			  BE TX/RX counts\newline
+			  VO RX counts\newline
+			  BE and VO end-to-end delay vectors with count/mean/min/max scalars \\
 			\addlinespace
-			\texttt{CrashBurstApp} &
-			  Physical VO TX count; logical VO sequence count. \\
+			\path{CrashBurstApp} &
+			  Physical VO TX count\newline
+			  Logical VO sequence count \\
 			\addlinespace
-			\texttt{V2xIeee80211Mac} &
-			  Per-\gls{ac} drop totals; per-reason drop totals (overflow, retry limit, congestion, \ldots). \\
+			\path{V2xIeee80211Mac} &
+			  Per-\gls*{ac} drop totals\newline
+			  Per-reason drop totals (overflow, retry limit, congestion, \ldots) \\
 			\addlinespace
-			\texttt{V2xHcf} &
-			  Best Effort drops while blocked; Best Effort grant suppressions; Voice protection activations. \\
+			\path{V2xHcf} &
+			  Best Effort drops while blocked\newline
+			  Best Effort grant suppressions\newline
+			  Voice protection activations \\
 			\addlinespace
-			\texttt{V2xEdcaFsmController} &
-			  \texttt{v2xState} vector (listening/blocking/sending). \\
+			\path{V2xEdcaFsmController} &
+			  \path{v2xState} vector (listening/blocking/sending) \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}

@@ -70,21 +70,7 @@ That mapping is not automatic in every stack; the Background chapter's DiffServ 
 \begin{figure}[htb]
 	\caption{\label{fig:sys:stack}Conceptual cross-layer path for crash-aware prioritization. Study-specific mechanisms act at Application, Network/\gls{qos}, and \gls{mac}; the shared \gls{phy} baseline is identical across all policies.}
 	\begin{center}
-	\ABNTEXfontereduzida
-	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
-		\toprule
-		\textbf{Application:} periodic \gls{be} background and crash-triggered \gls{vo} alert bursts (\gls{dscp}~0~/~\gls{dscp}~46) \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{Network/\gls{qos}:} explicit DSCP-to-Voice user-priority mapping for crash alerts \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{\gls{mac}:} IEEE~802.11p \gls{edca} (\texttt{AC\_BE}, \texttt{AC\_VO}); optional local adaptive \gls{be} suppression \\
-		\midrule
-		$\downarrow$ \\
-		\textbf{\gls{phy}/channel:} shared decentralized vehicular radio (unchanged across policies) \\
-		\bottomrule
-	\end{tabularx}
+		\includegraphics[width=0.95\linewidth]{Figs/sys_stack.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -114,44 +100,16 @@ The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening},
 \begin{figure}[htb]
 	\caption{\label{fig:sys:fsm}Local adaptive controller modes and transitions for the \texttt{edca\_v2x\_vo\_*} policies.}
 	\begin{center}
-	\ABNTEXfontereduzida
-	\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.4cm} X}
-		\toprule
-		\textbf{Mode} & \textbf{Behaviour} \\
-		\midrule
-		\emph{listening} &
-		  Default mode.
-		  Ordinary \gls{edca} operation; the controller monitors local Voice queue buildup and overheard Voice-marked frames. \\
-		\addlinespace
-		\emph{blocking} &
-		  Entered when the local Voice queue crosses the activation threshold or a Voice-marked frame is overheard.
-		  \gls{be} transmissions are deferred (and under \texttt{emergency}, newly arriving \gls{be} may be dropped) for a finite protection window, bounded by the maximum continuous block. \\
-		\addlinespace
-		\emph{sending} &
-		  Entered while the node's own Voice frames obtain the channel.
-		  \gls{be} suppression remains active; a short send-guard interval must expire before the controller returns to \emph{listening}. \\
-		\bottomrule
-	\end{tabularx}
-
-	\vspace{0.8em}
-	\begin{tabularx}{\linewidth}{>{\centering\arraybackslash}X}
-		\toprule
-		\emph{listening}
-		\;$\xrightarrow{\text{VO threshold crossed}}$\;
-		\emph{blocking}
-		\;$\xrightarrow{\text{own VO on air}}$\;
-		\emph{sending}
-		\;$\xrightarrow{\text{window + guard expire}}$\;
-		\emph{listening} \\
-		\bottomrule
-	\end{tabularx}
+		\includegraphics[width=0.95\linewidth]{Figs/sys_fsm.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
 
 A node leaves \emph{listening} for \emph{blocking} when the local Voice queue crosses the activation threshold or when any Voice-marked frame is overheard---a single overheard alert frame suffices to arm or extend protection; the queue threshold applies only to locally generated Voice traffic.
-It moves to \emph{sending} while its own Voice frames obtain the channel and returns to \emph{listening} once the finite protection window and a short guard interval expire.
-The transition strip in \autoref{fig:sys:fsm} shows the nominal cycle; two further transitions exist in the realization: a node in \emph{listening} moves directly to \emph{sending} when its own Voice frame wins the channel without prior threshold crossing, and a node in \emph{sending} falls back to \emph{blocking} when the send guard expires while the protection window is still open.
+It moves to \emph{sending} when its own Voice frames obtain the channel.
+After the Voice transmission ends---or if the send-guard timer fires first---it returns to \emph{blocking} while the protection window is still open, and to \emph{listening} once that window has expired.
+Nodes that only overhear Voice traffic never enter \emph{sending}: they remain in \emph{blocking} until the window expires.
+\autoref{fig:sys:fsm} also shows a skip from \emph{listening} directly to \emph{sending} when a local Voice frame wins the channel without a prior demand-triggered block.
 Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but lose channel-access eligibility while the controller is blocking or sending.
 Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} transmission opportunities released.
 The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium, open scheduled gates, or provide worst-case latency bounds~\cite{IEEE80211e_2005,kosekszott2012What}.
