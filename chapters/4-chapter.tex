@@ -672,6 +672,9 @@ extends = edca\_v2x\_vo\_emergency, \_netload\_high
 yielding the naming pattern \texttt{<policy>\_netload\_<low|medium|high>}: five policies $\times$ three loads $=$ fifteen named configurations per density package~\cite{aguiar2026_veins_qos}.
 Across both light and heavy packages the unique named experiments therefore total thirty before seed repetitions (seed counts belong to Evaluation).
 
+A sixth overlay family, \texttt{\_hotspot3}, concentrates application load spatially for the hotspot study of \autoref{sec:eval:hotspot}: the three vehicles that enter the corridor immediately after the crash source (nodes 1--3) bulk-upload at a \SI{4}{\milli\second} Poisson mean with 1200~B payloads (\(\approx\)\SI{2.4}{\mega\bit\per\second} each) for the whole run, independently of the crash window.
+Composed as \texttt{<policy>\_hotspot\_<low|medium|high>}, with the overlay listed \emph{before} the \texttt{\_netload\_*} section because OMNeT++ keeps the first matching assignment, it adds fifteen more named configurations to the heavy package.
+
 Batch execution helpers in each package (\texttt{run}, \texttt{run\_matrix.sh}) select profiles such as high-load-only cores or the full fifteen-config matrix; they presuppose a running \texttt{veins\_launchd} on port~9999.
 Building the study library follows the standard OMNeT++ pattern (\texttt{make makefiles \&\& make} under \texttt{veins\_qos/}) with NED paths that include INET, Veins, and \texttt{veins\_inet} sources~\cite{aguiar2026_veins_qos}.
 

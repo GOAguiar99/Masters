@@ -17,6 +17,9 @@ The light-density high-load sweep is the same gating test rather than a Voice-ga
 Bounded adaptive profiles (\texttt{stable}/\texttt{guarded}) leave Voice P95 at 2.08~ms while inflating Best Effort P95 to 49~ms and 9.0~ms; only emergency shortens the Best Effort tail, by preemption rather than by protecting Voice.
 Cross-reading both densities shows an enabling condition that this matrix does not meet: adaptive blocking would help Voice only when removing Best Effort competition actually shortens alert service; under a Poisson 125~ms offer it mainly shifts delay onto ordinary traffic.
 
+The hotspot matrix exercises that enabling condition directly (\autoref{sec:eval:hotspot}): with three crash-adjacent vehicles bulk-uploading about \SI{2.4}{\mega\bit\per\second} each and the dense 20~ms burst profile, emergency preemption recovers Voice service --- $39\%$ lower mean and $21\%$ lower P95 alert age than plain \gls{dcf}, with $30\%$ fewer Voice-attributed collision losses --- at the price of about sixteen thousand explicitly dropped Best Effort frames per run.
+The same overlay at sparser alert cadences (\texttt{medium}/\texttt{low}) restores the null effect, so the enabling conditions are jointly (i) concentrated near-crash airtime and (ii) a burst cadence dense enough to keep protection armed for most of the crash window.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Practical Takeaway}
 \label{sec:conc:takeaway}
@@ -26,8 +29,9 @@ Explicit DSCP-to-Voice mapping remains a reasonable default for crash-marked ale
 Adaptive Best Effort suppression---especially emergency preemption---should be treated as an event-triggered escalation level attached to genuine congestion and genuine alert activity, not as an always-on replacement for ordinary EDCA.
 Deployment would additionally require authentication, rate limiting, and plausibility checks before overheard Voice frames may arm suppression, because the same local trigger that protects a crash can be abused by faulty or malicious Voice traffic (\autoref{chap:evaluation}).
 
-The absolute Voice delays in this synthetic setting remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}.
-The contribution is accordingly \gls{mac}-level cost accounting under a Poisson offer, not a claim that the simulated scenario already improves crash outcomes at the application layer.
+Under a uniform Poisson offer the absolute Voice delays remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}, so alert latency is not the risk there --- the Best Effort cost is.
+Under concentrated hotspot contention the same budget becomes meaningful: plain \gls{dcf}/EDCA reach Voice P95 of 18.5--20~ms, within reach of that bound, while emergency keeps it at 14.6~ms (\autoref{sec:eval:hotspot}).
+The contribution is accordingly regime-aware \gls{mac}-level accounting --- cost when diffuse, benefit when concentrated --- not a claim that the simulated scenario alone guarantees application-level crash outcomes.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Limitations}
@@ -54,7 +58,8 @@ The corridor is a one-hop highway multicast setting with a single crash source: 
 
 \medskip
 \noindent\textbf{Interpretation caveats that affect how results are read.}
-Absolute Voice delays remain far below representative platooning budgets even under plain \gls{dcf} (\autoref{sec:eval:disc:significance})~\cite{ts22186}, so the reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer rather than demonstrated application-level safety benefit, while Best Effort penalties from untimely blocking can still be severe.
+The reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer, where delays remain far below representative platooning budgets~\cite{ts22186} and therefore describe mechanism rather than application-level safety benefit; under hotspot contention the baselines approach that budget (18.5--20~ms P95) and emergency keeps 14.6~ms (\autoref{sec:eval:disc:significance}), so absolute claims remain cell-specific, while Best Effort penalties from untimely blocking can still be severe in either cell.
+Hotspot streaming nodes are placed by injection order rather than by a received-power map (\autoref{sec:eval:disc:limits}), so hotspot gain magnitudes depend on that geometry; placement sweeps belong to future work.
 Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}); only within-class, cross-policy comparisons are controlled.
 Pooled Best Effort averages understate spatially concentrated cost near the crash source (\autoref{sec:eval:disc:spatial}), and unauthenticated Voice frames can arm suppression---a denial-of-service risk bounded by finite windows but not removed without authentication and rate limiting (\autoref{sec:eval:disc:dos}).
 
@@ -69,7 +74,7 @@ Several extensions follow directly from the limitations above and from the Evalu
 \medskip
 \noindent\textbf{Stronger evidence and richer scenarios.}
 Larger seed batches with confidence intervals or significance tests would move the study from qualitative mechanism checks toward statistically supported effect sizes.
-Richer propagation (fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the conditional frontier survives more realistic radio and traffic stress.
+Richer propagation (capture effect, small-scale fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the conditional frontier survives more realistic radio and traffic stress.
 Connecting Voice delay and loss to an application-level safety deadline, crash-avoidance distance, or other outcome metric would address the practical-significance gap left by the present 2.2~ms Voice tails~\cite{ts22186}.
 
 \medskip
@@ -77,10 +82,12 @@ Connecting Voice delay and loss to an application-level safety deadline, crash-a
 Activation-criteria ablations and systematic parameter sweeps would separate which trigger and window settings drive the observed Voice gains.
 Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the event-triggered profiles against established always-on congestion and prioritization families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
 Concurrent alert sources---and the interaction of overlapping protection windows---remain unevaluated.
+A closed-loop arming criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) would let the controller engage emergency suppression only under the coverage conditions where \autoref{tab:eval:hotspot_dose} shows a Voice return.
+Alternative protection timings, including predictive pre-blocking armed from a learned burst cadence, were implemented and ablated at the sparse-burst settings tested here without measurable benefit; timing remains an open axis under concentrated load.
 
 \medskip
 \noindent\textbf{Deployment constraints.}
 Security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source are prerequisites before comparable \gls{mac} aggression could be defended outside a synthetic two-class study.
 Hardware-in-the-loop or testbed validation would further bound how much of the simulated protection-versus-cost frontier transfers to real 802.11p stacks.
 
-In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay, jitter, and Voice-frame loss under heavy congestion, but only as a carefully bounded, event-triggered escalation whose cost to ordinary traffic must be acknowledged and constrained.
+In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay and Voice-frame integrity where near-crash congestion is concentrated and bursts are dense enough to keep protection armed, but only as a carefully bounded, event-triggered escalation whose cost to ordinary traffic must be acknowledged and constrained.

@@ -11,8 +11,10 @@ Numeric bindings for timing, radio, load, and \gls{mac} policies are those of \a
 The chapter is organized as follows.
 Section~\ref{sec:eval:setup} states the experimental matrix and seed budgets.
 Section~\ref{sec:eval:metrics} defines metrics and aggregation.
-Section~\ref{sec:eval:light} presents the light-density gating sweep.
-Section~\ref{sec:eval:heavy} reports heavy-density stress results.
+Section~\ref{sec:eval:headline} states the headline answer and the two enabling conditions up front.
+Section~\ref{sec:eval:light} explains, through the light and heavy uniform-load matrices, why Voice is policy-invariant there.
+Section~\ref{sec:eval:hotspot} presents the hotspot regime where emergency protection recovers Voice service.
+Section~\ref{sec:eval:cost} prices that protection on ordinary Best Effort traffic.
 Section~\ref{sec:eval:discussion} discusses interpretation, practical significance, and limitations.
 Section~\ref{sec:eval:summary} summarizes the conditional takeaway.
 
@@ -24,6 +26,7 @@ All experiments use the consolidated bindings in \autoref{tab:impl:parameters} a
 Both density packages run the full matrix of five \gls{mac} policies and three offered-load profiles (15~configurations) with three OMNeT++ repetitions numbered \texttt{\#0}--\texttt{\#2}.
 Each configuration name follows \texttt{<policy>\_netload\_<low|medium|high>} as documented in \autoref{chap:implementation}.
 Raw \texttt{.sca}/\texttt{.vec} traces remain in the artifact clone (commit \texttt{5b0f584}); the compact per-run \gls{kpi} rows used to build the tables in this chapter are archived with the dissertation sources under \texttt{context/eval-kpis/}.
+A second, 45-run matrix replays the same grid under a hotspot overlay that concentrates Best Effort airtime near the crash source (\autoref{sec:eval:hotspot}); its rows are archived under \texttt{context/eval-kpis/highway\_heavy\_hotspot/}.
 
 Contention is induced by offered load and fleet density rather than by synthetic random-waypoint mobility alone~\cite{veins_sommer2011}.
 Best Effort inter-arrivals are Poisson: each vehicle redraws an exponential interval with the configured mean before every packet (\SI{500}{\milli\second}/\SI{250}{\milli\second}/\SI{125}{\milli\second} at low/medium/high).
@@ -58,8 +61,33 @@ Headline delay, jitter, and reach tables also report the minimum--maximum range 
 Both densities use three seeds; \emph{no significance tests are reported}.
 The numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes~\cite{aguiar2026_veins_qos}.
 
+The chapter is summarized, before the detailed matrices, by the headline section below; readers who need the short version may read \autoref{sec:eval:headline} and \autoref{sec:eval:summary} only.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Light-Density Sensitivity Sweep}
+\section{Voice Protection Under Load: The Headline Answer}
+\label{sec:eval:headline}
+
+Does crash-triggered Voice traffic obtain better wireless service than ordinary Best Effort under contention?
+The answer from the full matrix is conditional, and the condition is the contribution: emergency preemption \emph{does} recover Voice service, but only when (i) near-crash airtime is concentrated in a few senders, and (ii) the alert burst cadence is dense enough to keep protection armed for most of the crash window.
+
+\autoref{fig:eval:hotspot_dose} compresses that answer into one view.
+Under hotspot contention (three bulk-uploading neighbors of the crash, \autoref{sec:eval:hotspot}), dense 20~ms bursts at \texttt{high} load see Voice P95 fall from 18.5~ms under plain \gls{dcf} to 14.6~ms under emergency ($-21\%$; mean: $-39\%$).
+The same overlay at sparser alert cadences (\texttt{medium}, \texttt{low}) leaves emergency neutral or slightly harmful.
+And under a uniform Poisson offer with no concentrated sender, \autoref{sec:eval:light} shows the complementary null result: every policy keeps Voice alert age within $0.08$~ms of plain \gls{dcf} at heavy high load, because the contention is diffuse and no suppression has a target.
+Protection therefore behaves as an event-triggered escalation whose gain is set by channel state and burst cadence, not as an always-on Voice accelerator.
+
+Sections~\ref{sec:eval:light}--\autoref{sec:eval:hotspot} substantiate these claims with the full matrices, and \autoref{sec:eval:cost} prices them: the same emergency preemption that buys the Voice tail trades away Best Effort queueing discipline, and bounded blocking without dropping (\texttt{stable}, \texttt{guarded}) buys nothing in either regime.
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:hotspot_dose}Voice P95 delay across offered-load profiles under hotspot load (100~vehicles), plain versus emergency (three-seed means). Protection differentiates only at \texttt{high}, where dense bursts keep Best Effort suppression armed for most of the crash window; the hotspot condition itself is defined in \autoref{sec:eval:hotspot}.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_09_hotspot_vo_p95_by_load_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Uniform Load: Why Voice Is Policy-Invariant}
 \label{sec:eval:light}
 
 The light-density sweep tests whether crash-aware protection is beneficial before the channel becomes saturated.
@@ -132,14 +160,8 @@ EDCA alone is indistinguishable from plain \gls{dcf} at this density.
 \texttt{emergency} does not improve Voice, but it keeps Best Effort P95 at 0.37~ms by dropping stale Best Effort work instead of queueing it---the only policy whose Best Effort tail is \emph{shorter} than plain, at the cost of more \gls{mac} drops (\autoref{sec:eval:heavy:mac}).
 The sweep is therefore a gating test: adaptive blocking without dropping is risky when protection windows can open under low channel stress.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Heavy-Density Stress Results}
-\label{sec:eval:heavy}
-
-The heavy-density package stresses the shared medium with one hundred vehicles on the same corridor and load matrix.
-The tables below expand the dashboard \gls{kpi} summary beyond the page-limited conference version: class-specific delay and jitter, Voice loss and reach, per-access-category drop attribution, and load ladders for normalized \gls{mac} loss and Voice reception.
-Three figures carry the visual story that matters most for crash alerts---the high-load P95 priority gap (\autoref{fig:eval:p95_gap_heavy}), the Voice delay CDF (\autoref{fig:eval:vo_cdf}), and high-load drop attribution (\autoref{fig:eval:drop_attr}).
-Controller activity is shown beside the corresponding table (\autoref{fig:eval:ctrl}).
+The heavy-density package stresses the shared medium with one hundred vehicles on the same corridor and load matrix, and it reads the same way as the light sweep, only louder: Voice service stays policy-invariant and the loss mechanism explains why.
+The subsections below collect that mechanistic evidence --- class-specific delay and jitter (\autoref{sec:eval:heavy:qos}), Voice loss with its drop attribution (\autoref{sec:eval:heavy:mac}), and reach invariance (\autoref{tab:eval:heavy_vo_rx}) --- while the policy cost these profiles impose on Best Effort is mapped separately in \autoref{sec:eval:cost}.
 
 \subsection{QoS separation under congestion}
 \label{sec:eval:heavy:qos}
@@ -260,41 +282,122 @@ Crash usefulness also depends on whether Voice frames are lost.
 	\fonte{Prepared by the author.}
 \end{figure}
 
+Under \texttt{plain}, the single \gls{dcf} queue reports all loss as unclassified.
+Once EDCA classification is enabled, \autoref{tab:eval:heavy_drop_attr} and \autoref{fig:eval:drop_attr} show that most classified drops fall on Best Effort, while Voice-attributed drops sit near $3.7\times10^{3}$ for every QoS-enabled policy---they do not separate emergency from EDCA.
+The same Voice-attributed drop counts appear in \autoref{tab:eval:heavy_vo_loss} alongside reach and Best Effort overflow: overflow is zero throughout, so the old saturation signature is absent.
+\texttt{stable} and \texttt{guarded} raise total \gls{mac} loss from $16\times10^{3}$ to about $20\times10^{3}$ by deferring Best Effort until more frames collide or miss.
+\texttt{emergency} combines the highest Voice-protection count with about $2.5\times10^{3}$ explicit Best Effort drops while keeping aggregate loss close to the \gls{dcf} baseline, so its cost appears as controlled preemption rather than overflow (the controller action counts are tabulated in \autoref{sec:eval:cost}).
+
 \begin{table}[H]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_ctrl}Adaptive-controller actions at heavy-density high load (three-run means; Voice-protection and Best Effort-drop columns in thousands, $\times 10^{3}$; Best Effort hold is a raw event count). The \texttt{emergency} hold entry is about 12 grant-suppression events.}
+	\caption{\label{tab:eval:heavy_vo_rx}Voice reception ratio (RX per logical transmission) across strategy and offered load (heavy density, three-run means). Fan-out is about 9.95 receivers per alert for every policy and load; the policy effect is Best Effort delay and drop shaping rather than fan-out collapse.}
 	\begin{center}
 		\small
 		\setlength{\tabcolsep}{5pt}
 		\begin{tabular}{@{}lrrr@{}}
 			\toprule
-			\textbf{Policy} &
-			\textbf{VO protection} &
-			\textbf{BE drop while blocked} &
-			\textbf{BE hold} \\
+			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
 			\midrule
-			Stable    & 115  & 0  & 0 \\
-			Guarded   & 115  & 0  & 0 \\
-			Emergency & 127 & 2.53 & 12 \\
+			Plain     & 9.945 & 9.953 & 9.954 \\
+			EDCA      & 9.945 & 9.953 & 9.954 \\
+			Stable    & 9.948 & 9.953 & 9.954 \\
+			Guarded   & 9.947 & 9.953 & 9.954 \\
+			Emergency & 9.945 & 9.953 & 9.954 \\
 			\bottomrule
 		\end{tabular}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{table}
 
-\begin{figure}[htb]
-	\caption{\label{fig:eval:ctrl}Adaptive-controller actions by offered load, heavy density. Emergency combines Voice-protection activations with explicit Best Effort drops; \texttt{stable} and \texttt{guarded} mainly accumulate protection windows without preemption.}
+\autoref{tab:eval:heavy_vo_rx} is the last mechanistic piece: Voice fan-out is about ten receivers per alert for every policy and load, so nothing a policy does at this uniform offer changes either how many alerts arrive or how many collide --- Voice protection is inert here because its only lever, local Best Effort suppression, does not address either limit.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hotspot Load: Where Protection Regains a Voice Effect}
+\label{sec:eval:hotspot}
+
+The null Voice effect of \autoref{sec:eval:light} has a structural cause: under a uniform Poisson offer, the contention that Voice faces is diffuse --- one hundred equiprobable senders each contribute about $1/100$ of the near-crash collision opportunities, so suppressing a node's own Best Effort queue for tens of milliseconds removes a negligible share of ambient airtime, and can only fire after a first copy was decoded.
+The contraposition is testable --- if offered airtime is instead \emph{concentrated} in a few neighbors of the crash, suppression acquires a target and the Voice effect should reappear.
+
+The hotspot overlay \texttt{\_hotspot3} (\autoref{sec:impl:matrix}) implements exactly that regime: the three vehicles entering the corridor right behind the crash node bulk-upload about \SI{2.4}{\mega\bit\per\second} each for the whole run, roughly tripling aggregate Best Effort transmissions per run from $22\times10^{3}$ to $72\times10^{3}$.
+The crash source, the alert window, and every metric definition are unchanged; the matrix is five policies $\times$ three loads $\times$ three seeds named \texttt{<policy>\_hotspot\_<profile>}.
+
+\autoref{tab:eval:hotspot} and \autoref{fig:eval:hotspot_delay} give the high-load cell.
+Under hotspot contention the baselines finally degrade: plain \gls{dcf} and plain EDCA reach Voice P95 of 18.5--20~ms, up from 2.2~ms without the hotspot.
+Emergency preemption holds the same tail at 14.6~ms and the Voice mean at 2.78~ms --- $-39\%$ against plain and $-38\%$ against EDCA on the mean, $-21\%/ -27\%$ on P95 --- and Voice-attributed collision losses fall from $25.2\times10^{3}$ to $17.8\times10^{3}$ ($-30\%$ versus EDCA), consistently across all three seeds (P95 ranges do not overlap the baselines').
+The mechanism is visible in the counters: emergency's blocked duty cycle becomes near-continuous under dense bursts (sixteen thousand Best Effort frames dropped while blocked plus about one thousand suppressed grants), so the hot queues never refill the arena during the window.
+Multicast reach, limited by highway geometry, stays at about ten receivers per alert for every policy: protection buys latency and integrity, not fan-out.
+
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:hotspot}Hotspot high-load Voice protection results (100~vehicles, hotspot nodes 1--3 streaming 1200~B, three-run means). \emph{VO \gls{mac} drops} are Voice-attributed incorrectly-received counts summed over nodes; \emph{\gls{be} from crash} is the same-sender Best Effort mean delay; \emph{\gls{be} dropped blocked} counts emergency preemptions.}
 	\begin{center}
-		\includegraphics[width=0.95\linewidth]{Figs/fig_07_v2x_control_actions_by_load_highway_heavy.pdf}
+		\scriptsize
+		\setlength{\tabcolsep}{3.5pt}
+		\resizebox{\linewidth}{!}{%
+		\begin{tabular}{@{}lrrrrrr@{}}
+			\toprule
+			\textbf{Policy} &
+			\textbf{VO mean (ms)} &
+			\textbf{VO P95 (ms)} &
+			\textbf{VO RX/alert} &
+			\textbf{VO MAC drops ($\times 10^{3}$)} &
+			\textbf{\gls{be} from crash (ms)} &
+			\textbf{\gls{be} dropped blocked ($\times 10^{3}$)} \\
+			\midrule
+			Plain     & 4.540 & \shortstack{18.45\\[-1pt]{\scriptsize [16.1--19.9]}} & 9.670 & n.a. & 1.548 & 0 \\
+			EDCA      & 4.448 & \shortstack{19.96\\[-1pt]{\scriptsize [18.7--20.7]}} & 9.624 & 25.2 & 1453 (starvation) & 0 \\
+			Stable    & 4.608 & \shortstack{21.04\\[-1pt]{\scriptsize [18.8--22.8]}} & 9.636 & 25.4 & 1386 (starvation) & 0 \\
+			Guarded   & 4.439 & \shortstack{20.04\\[-1pt]{\scriptsize [19.8--20.4]}} & 9.689 & 25.1 & 981 (starvation) & 0 \\
+			Emergency & \textbf{2.781} & \textbf{\shortstack{14.56\\[-1pt]{\scriptsize [11.8--16.0]}}} & \textbf{9.835} & \textbf{17.8} & 3.335 & 16.1 \\
+			\bottomrule
+		\end{tabular}%
+		}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:hotspot_delay}Voice mean and P95 delay by policy at \texttt{hotspot\_high} (100~vehicles). Only emergency, whose preemption keeps hot Best Effort queues out of the collision arena, compresses the tail that hotspot contention inflates.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_08_hotspot_vo_delay_by_policy_highway_heavy.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
 
-Under \texttt{plain}, the single \gls{dcf} queue reports all loss as unclassified.
-Once EDCA classification is enabled, \autoref{tab:eval:heavy_drop_attr} and \autoref{fig:eval:drop_attr} show that most classified drops fall on Best Effort, while Voice-attributed drops sit near $3.7\times10^{3}$ for every QoS-enabled policy---they do not separate emergency from EDCA.
-The same Voice-attributed drop counts appear in \autoref{tab:eval:heavy_vo_loss} alongside reach and Best Effort overflow: overflow is zero throughout, so the old saturation signature is absent.
-\texttt{stable} and \texttt{guarded} raise total \gls{mac} loss from $16\times10^{3}$ to about $20\times10^{3}$ by deferring Best Effort until more frames collide or miss.
-\texttt{emergency} combines the highest Voice-protection count with about $2.5\times10^{3}$ explicit Best Effort drops (\autoref{tab:eval:heavy_ctrl}, \autoref{fig:eval:ctrl}) while keeping aggregate loss close to the \gls{dcf} baseline, so its cost appears as controlled preemption rather than overflow.
+The gain is, however, conditional on burst density (\autoref{tab:eval:hotspot_dose}, \autoref{fig:eval:hotspot_dose}).
+At \texttt{hotspot\_high} the alert stream (20~ms period, eight copies) keeps protection armed for most of the window; at \texttt{medium} (75~ms, four copies) and \texttt{low} (120~ms, three copies) the blocked duty cycle falls to a third or less, hot traffic refills the gaps between blocks, and emergency becomes neutral-to-harmful on the Voice mean ($+10\%$ and $+16\%$ respectively).
+Protection therefore buys Voice only when two conditions hold simultaneously: concentrated near-crash contention, and an alert cadence dense enough to cover it.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:hotspot_dose}Dose response of emergency against plain under hotspot load (three-run means). Voice gains appear only where the burst cadence keeps protection armed for most of the crash window.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}llrr@{}}
+			\toprule
+			\textbf{Load} & \textbf{Burst profile} & \textbf{$\Delta$ VO mean} & \textbf{$\Delta$ VO P95} \\
+			\midrule
+			\texttt{high}   & 20~ms $\times$ 8 copies & $-39\%$ & $-21\%$ \\
+			\texttt{medium} & 75~ms $\times$ 4 copies & $+10\%$ & $+5\%$ \\
+			\texttt{low}    & 120~ms $\times$ 3 copies & $+16\%$ & $+0\%$ \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+Two further observations complete the cell.
+Under EDCA, \texttt{stable}, and \texttt{guarded}, hotspot contention starves the crash node's own Best Effort queue: delivered Best Effort packets from that sender average $0.98$--$1.45$~\si{\second} of queueing delay, versus 3.3~ms under emergency and 1.5~ms under plain --- preemption happens to double as a starvation cure for the alerted node (\autoref{tab:eval:hotspot}).
+And \texttt{stable}/\texttt{guarded}'s bounded blocking, already harmful to Best Effort without hotspot, does not convert hotspot stress into Voice service either: their Voice P95 tracks EDCA's, confirming that \emph{dropping}, not deferring, is the load-shedding step that matters under concentrated contention.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The Best Effort Cost of Protection}
+\label{sec:eval:cost}
+
+The uniform-load sections established what protection does \emph{not} buy: Voice service.
+This section prices what it \emph{costs} on ordinary Best Effort traffic, under the same uniform matrix --- the hotspot cell reuses the same accounting and is priced in \autoref{tab:eval:hotspot}.
 
 \subsection{Load and density as enabling conditions}
 \label{sec:eval:heavy:ladder}
@@ -348,28 +451,7 @@ The same Voice-attributed drop counts appear in \autoref{tab:eval:heavy_vo_loss}
 		\end{tabular}
 	\end{center}
 	\fonte{Prepared by the author.}
-\end{table}
-
-\begin{table}[H]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_vo_rx}Voice reception ratio (RX per logical transmission) across strategy and offered load (heavy density, three-run means). Fan-out is about 9.95 receivers per alert for every policy and load; the policy effect is Best Effort delay and drop shaping rather than fan-out collapse.}
-	\begin{center}
-		\small
-		\setlength{\tabcolsep}{5pt}
-		\begin{tabular}{@{}lrrr@{}}
-			\toprule
-			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
-			\midrule
-			Plain     & 9.945 & 9.953 & 9.954 \\
-			EDCA      & 9.945 & 9.953 & 9.954 \\
-			Stable    & 9.948 & 9.953 & 9.954 \\
-			Guarded   & 9.947 & 9.953 & 9.954 \\
-			Emergency & 9.945 & 9.953 & 9.954 \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
+	\end{table}
 
 \autoref{tab:eval:heavy_p95} explains \emph{when} the policy ladder taxes Best Effort.
 Voice P95 tracks the burst profile, not the \gls{mac}: about 4.6--4.9~ms at \texttt{low}/\texttt{medium} (20~ms and 15~ms repeat gaps) and about 2.2~ms at \texttt{high} (5~ms gap), with no policy separation.
@@ -381,6 +463,40 @@ Fleet Best Effort shows the same ranking, with \texttt{stable} reaching 30~ms P9
 Cross-reading \autoref{tab:eval:light} and \autoref{tab:eval:heavy_p95} shows that protection windows do not shorten Voice alert age at this Poisson offer; they mainly shift delay onto Best Effort, unless emergency converts the backlog into drops.
 The adaptive profiles are therefore event-triggered cost mechanisms rather than Voice-tail wins at the loads exercised here.
 
+\begin{table}[H]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:heavy_ctrl}Adaptive-controller actions at heavy-density high load (three-run means; Voice-protection and Best Effort-drop columns in thousands, $\times 10^{3}$; Best Effort hold is a raw event count). The \texttt{emergency} hold entry is about 12 grant-suppression events.}
+	\begin{center}
+		\small
+		\setlength{\tabcolsep}{5pt}
+		\begin{tabular}{@{}lrrr@{}}
+			\toprule
+			\textbf{Policy} &
+			\textbf{VO protection} &
+			\textbf{BE drop while blocked} &
+			\textbf{BE hold} \\
+			\midrule
+			Stable    & 115  & 0  & 0 \\
+			Guarded   & 115  & 0  & 0 \\
+			Emergency & 127 & 2.53 & 12 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:ctrl}Adaptive-controller actions by offered load, heavy density. Emergency combines Voice-protection activations with explicit Best Effort drops; \texttt{stable} and \texttt{guarded} mainly accumulate protection windows without preemption.}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth]{Figs/fig_07_v2x_control_actions_by_load_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
+Bounded blocking without preemption is the expensive way to protect nobody: \texttt{stable} and \texttt{guarded} accumulate about $1.1\times10^{5}$ protection activations per run with zero preemption counters, taxing Best Effort through deferral until frames collide or queue (the 30~ms and 3.9~ms high-load tails in \autoref{tab:eval:heavy_p95}).
+Emergency pays a visible bill instead --- about $2.5\times10^{3}$ Best Effort frames dropped while blocked plus twelve suppressed grants (\autoref{tab:eval:heavy_ctrl}, \autoref{fig:eval:ctrl}) --- and in return keeps the fleet tail at 0.37~ms and the crash-sender slice at 0.44~ms, below plain \gls{dcf}.
+In words: deferral buys delay; dropping buys silence; and only dropping ever shows up as Voice service once a target exists (\autoref{sec:eval:hotspot}).
+
 \section{Discussion}
 \label{sec:eval:discussion}
 
@@ -389,70 +505,52 @@ The adaptive profiles are therefore event-triggered cost mechanisms rather than 
 
 The light-density sweep and the heavy-density load ladder jointly show that adaptive blocking is harmful when armed without Voice-limited congestion: \texttt{stable} and \texttt{guarded} inflate Best Effort delay while Voice alert age stays put.
 In other words, the mechanism should be treated as an escalation level attached to genuine channel stress, not as an always-on replacement for ordinary EDCA marking~\cite{IEEE80211e_2005,aguiar2026_veins_qos}.
-Explicit DSCP-to-Voice mapping remains a reasonable default; bounded or emergency suppression should be reserved for periods when Best Effort competition is actually material to alert delivery---a regime this Poisson 125~ms matrix does not reach.
+Explicit DSCP-to-Voice mapping remains a reasonable default; bounded or emergency suppression should be reserved for periods when Best Effort competition is actually material to alert delivery---a regime the uniform Poisson matrix does not reach but the hotspot matrix does (\autoref{sec:eval:hotspot}), which is exactly where emergency preemption flips sign from pure cost to measured Voice benefit (\autoref{tab:eval:hotspot}).
 
-\subsection{Why Best Effort and Voice delays differ under plain DCF}
+\subsection{Reading the baseline correctly}
 \label{sec:eval:disc:plain}
 
-Under \texttt{plain}, both classes receive identical per-frame \gls{mac} treatment (one \gls{dcf} queue, no classifier), yet \autoref{tab:eval:heavy_qos} shows different per-class statistics because the classes are sampled differently.
-\autoref{tab:eval:plain_process} records the two processes: Best Effort pools one hundred senders over the whole~\SI{70}{\second} run with 420~B payloads, whereas Voice originates from a single stationary crash node during the~\SI{30}{\second} alert window with 260~B payloads and is timed from the logical burst start.
-\autoref{fig:eval:plain_class_p95} makes the consequence visible seed by seed at \texttt{plain\_netload\_high}: Voice P95 is 2.23--2.29~ms on every seed, fleet Best Effort P95 is 0.51~ms, and crash-node Best Effort P95 is 0.62--0.65~ms.
-The Voice--Best Effort gap is therefore alert age versus a single-shot CBR (the first successful Voice copy often waits one 5~ms repeat), not evidence that the single \gls{dcf} queue differentiates access categories.
-Seeds no longer split into an uncongested draw and two saturated draws: Poisson redraws keep Best Effort offer at about 22~thousand transmissions on every run.
-Cross-class comparisons within one policy therefore describe two different traffic processes; the crash-node Best Effort slice is the controlled same-sender check, and cross-policy comparisons within one class remain the policy measurement.
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:plain_process}Traffic processes under heavy-density \texttt{plain\_netload\_high}. Both classes share one \gls{dcf} queue; only the generation process differs.}
-	\begin{center}
-		\small
-		\begin{tabular}{@{}lrrr@{}}
-			\toprule
-			\textbf{Class} & \textbf{Senders} & \textbf{Active window} & \textbf{Payload} \\
-			\midrule
-			Best Effort & 100 & \SI{70}{\second} (whole run) & 420~B \\
-			Voice & 1 (crash node) & \SI{30}{\second} alert window & 260~B \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-\begin{figure}[htb]
-	\caption{\label{fig:eval:plain_class_p95}Voice, fleet Best Effort, and crash-node Best Effort P95 delay under \texttt{plain\_netload\_high} (heavy density), shown per seed. Voice is alert age; crash-node Best Effort matches fleet Best Effort, as a single \gls{dcf} queue requires.}
-	\begin{center}
-		\includegraphics[width=0.92\linewidth]{Figs/plain_class_p95.pdf}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{figure}
-
-\subsection{Why Voice reach exceeds Best Effort reach}
+Two measurement traps deserve a single caution, because both are artifacts of aggregation rather than policy effects.
+First, under \texttt{plain} both classes receive identical per-frame \gls{mac} treatment, yet \autoref{tab:eval:heavy_qos} shows a Voice--Best Effort delay gap (Voice P95 $\approx$ 2.2~ms versus fleet Best Effort 0.51~ms): the gap reflects different traffic processes, not a differentiating \gls{dcf} queue.
+Best Effort pools one hundred senders over the whole~\SI{70}{\second} run, while Voice originates from one stopped crash node inside a~\SI{30}{\second} window and is timed from the logical burst start, so its first accepted copy typically waits one repeat gap.
+Second, Voice RX/alert (9.95) exceeds Best Effort RX/TX (8.06 under \texttt{plain}) for structural reasons: Voice divides received copies by logical alert sequences whereas Best Effort divides by physical transmissions, and the stopped crash node sits in a denser neighborhood than the moving fleet average (\autoref{tab:eval:heavy_vo_rx}).
 \label{sec:eval:disc:reach}
+Cross-class comparisons within one policy therefore describe different traffic processes; the crash-node Best Effort slice is the controlled same-sender check, and cross-policy comparisons within one class remain the policy measurement.
+Seeds also stay controlled: Poisson redraws keep Best Effort offer at about 22~thousand transmissions on every run, so seeds no longer split into an uncongested draw and two saturated draws.
 
-Voice RX/alert (9.95 under every policy) is higher than Best Effort RX/TX (8.06 under \texttt{plain}) for reasons that are not policy effects.
-The denominators differ: Voice divides received copies by logical alert sequences, whereas Best Effort divides received copies by physical packet transmissions.
-The crash node is stopped in a denser neighborhood than the moving fleet average, and Best Effort averages include the early sparse-injection phase before all one hundred vehicles have entered the corridor.
-Those geometry and counting differences---not a hidden class bias in \texttt{plain} \gls{dcf}---explain why Voice fan-out sits near ten while Best Effort sits near eight.
-
-\subsection{Practical significance of the observed Voice gains}
+\subsection{Regime-conditional significance of the Voice effects}
 \label{sec:eval:disc:significance}
 
-The absolute Voice delays are small: even the plain baseline keeps Voice P95 near 2.2~ms at \texttt{netload\_high}, well below representative V2X latency budgets such as the~\SI{25}{\milli\second} end-to-end bound for cooperative platooning in \gls{threegpp} TS~22.186~\cite{ts22186}.
-The study therefore does not report a Voice-tail reduction to claim; it reports the Best Effort cost of arming protection when the channel is not Voice-limited.
-Under a heavier offer the same contention that \texttt{stable} already produces as 30~ms Best Effort tails could act on alert traffic as well; the present matrix claims \gls{mac}-level cost accounting under a honest Poisson load, not improved crash outcomes.
+Under the uniform matrix the honest statement is that no Voice-tail reduction exists to claim: plain keeps Voice P95 near 2.2~ms at \texttt{netload\_high}, far below representative V2X latency budgets such as the~\SI{25}{\milli\second} end-to-end bound for cooperative platooning in \gls{threegpp} TS~22.186~\cite{ts22186}, and every alternative policy sits within tens of microseconds of it.
+The hotspot study of \autoref{sec:eval:hotspot} shows the sign flip: when near-crash airtime is concentrated and bursts are dense, emergency preemption \emph{does} lower Voice delay on paper ($-39\%$ mean, $-21\%$ P95, $-30\%$ Voice-attributed collision losses versus \gls{edca} alone), with absolute P95 of 14.6~ms that re-enters the platooning budget band.
+Three seeds per cell keep this a mechanism check rather than an effect-size estimate (\autoref{sec:eval:disc:limits}), but the boundary itself is the take-home: the same preemption is a cost center under uniform load and a Voice lever under concentrated load, so the stakes of the escalation question are regime-dependent, not stylistic.
 
-\subsection{Protection cost and the coarse Best Effort class}
+\subsection{Protection cost, class granularity, and spatial fairness}
 \label{sec:eval:disc:cost}
 
 The clearest cost signal is that bounded protection makes Best Effort service worse than plain \gls{dcf} at high load (Best Effort P95 from 0.51~ms to 30~ms under \texttt{stable} and 3.9~ms under \texttt{guarded}), and \texttt{emergency} converts part of the backlog into explicit loss (about $2.5\times10^{3}$ Best Effort drops while blocked) while keeping the fleet Best Effort tail at 0.37~ms.
 Because the model treats \emph{all} Best Effort traffic as suppressible, these penalties are a worst-case bound for the two-class abstraction (\autoref{sec:sys:scope}): in a real stack, traffic outside the current crash alert may still be safety relevant, so a binary Voice/Best Effort split can underestimate preemption harm.
 Deployments would need finer-grained classes before comparable \gls{mac} aggression, and the trade-off is defensible only for genuinely critical, short-lived flows such as the alert window studied here.
 
-\subsection{Fairness of the Best Effort penalty}
 \label{sec:eval:disc:spatial}
-
-The reported Best Effort statistics pool all vehicles, but the penalty is unlikely to be uniform: protection is armed locally by overheard Voice frames, so vehicles near the crash source defer or drop Best Effort traffic while distant vehicles continue unaffected (\autoref{sec:sys:controller}).
+Nor is the penalty likely to be uniform across vehicles: protection is armed locally by overheard Voice frames, so vehicles near the crash source defer or drop Best Effort traffic while distant vehicles continue unaffected (\autoref{sec:sys:controller}).
 The Best Effort cost is thus spatially concentrated around the event---arguably desirable for a crash---but pooled averages understate the worst-affected vehicles; per-vehicle fairness is left as future work.
+
+\subsection{Preemption as a starvation cure under concentrated contention}
+\label{sec:eval:disc:starvation}
+
+The hotspot campaign surfaced a side effect not anticipated by the design: under concentrated contention, \gls{edca}-family queues starve the very node they should serve first.
+At \texttt{hotspot\_high}, the crash node's own Best Effort packets that eventually reach receivers average $0.98$--$1.45$~\si{\second} of queueing delay under \gls{edca}, \texttt{stable}, and \texttt{guarded}, because the Best Effort access category rarely wins the local arbitration against continuous hotspot demand.
+Emergency preemption drops that backlog while blocked, and the surviving Best Effort stream averages 3.3~ms --- closer to plain \gls{dcf} (1.5~ms) than to any deferring profile (\autoref{tab:eval:hotspot}).
+Dropping is therefore not only the mechanism that buys Voice service under a hot neighbor; it is also what keeps the alerted sender's own ordinary traffic responsive when the channel would otherwise be permanently lost to it.
+
+\subsection{Burst cadence as an online arming trigger}
+\label{sec:eval:disc:trigger}
+
+The dose-response curve of \autoref{tab:eval:hotspot_dose} implies a measurable online signal for deciding when protection is worth its cost.
+With a 20~ms burst period and 8-copy trains, block re-arming keeps the \gls{fsm} controller busy for most of the crash window, and preemption delivers its Voice gains; at 75~ms and 120~ms periods the blocked duty cycle falls to roughly one third or less, hot Best Effort refills the gaps, and the policy turns neutral-to-harmful.
+An implementation could therefore arm emergency suppression only while recent alert cadence times the bounded block window (\autoref{tab:impl:parameters}) saturates the available blocking budget, releasing it otherwise: the controller already tracks exactly these quantities via its activation counter and \texttt{maxContinuousBlock} bookkeeping, so the trigger is an instrumentation problem, not a new measurement.
+This closes the escalation design loop that \autoref{sec:eval:disc:escalation} opened, and is the concrete form of ``genuine congestion'' the deployment rules of \autoref{sec:eval:summary} require.
 
 \subsection{Denial-of-service risk of Voice-triggered suppression}
 \label{sec:eval:disc:dos}
@@ -470,17 +568,18 @@ Results do not predict absolute performance under richer propagation or congesti
 The configured \gls{edca} parameters follow the IEEE~802.11 BSS QoS defaults rather than the distinct \gls{ocb} default set, and group-addressed frames use \gls{inet}'s default fastest-mandatory-mode rate selection rather than a basic-rate policy (\autoref{sec:impl:radio}); both choices are uniform across policies but may shift absolute values relative to deployed 802.11p stacks.
 The \texttt{high} crash-burst profile is a deliberate stress case rather than a standardized alert schedule, and no application-level safety deadline is evaluated.
 The three adaptive profiles are fixed design points whose triggers are not individually ablated, although their spread of block windows (4--15~ms) and Voice thresholds (1--3 packets) acts as a coarse sensitivity ladder; a systematic parameter sweep is future work.
+The hotspot cells (\autoref{sec:eval:hotspot}) place the streaming nodes by injection order rather than by a received-power map, so the exact gain magnitudes depend on that geometry; the sign of the effect --- and its absence at sparser burst cadences --- is the claim, not the decimals.
 Within that scope the comparison remains internally fair: all configurations share the same \gls{phy} stack, mobility trace, and load matrix, isolating \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Chapter Summary}
 \label{sec:eval:summary}
 
-The evaluation compared five \gls{mac} policies on the same highway matrix and found a protection-\emph{cost} frontier rather than a Voice-tail race.
-With Poisson Best Effort arrivals, Voice P95 alert age is about 2.2~ms under every policy at heavy high load; EDCA does not beat plain \gls{dcf} on that metric, and emergency's 2.21~ms versus 2.24~ms is not a material gain.
-The policy contrast is Best Effort: \texttt{stable} raises fleet P95 from 0.51~ms to 30~ms, \texttt{guarded} to 3.9~ms, and emergency keeps 0.37~ms by dropping competing frames while recording about $2.5\times10^{3}$ explicit Best Effort drops.
-Under light contention the same ranking appears, with no Voice improvement.
-The practical takeaway is therefore conditional: explicit DSCP-to-Voice marking is a reasonable default, whereas adaptive blocking---especially emergency preemption---is justified only as an event-triggered escalation under genuine congestion, with authentication and rate limiting as deployment prerequisites.
-The absolute Voice delays in this synthetic setting remain far below representative platooning budgets~\cite{ts22186}; the contribution is honest \gls{mac}-level cost accounting under a Poisson offer, not a claim of application-level crash-outcome improvement.
+The evaluation compared five \gls{mac} policies on the same highway matrix and found a regime-conditional answer rather than a universal Voice-tail race.
+The headline result is positive but bounded: emergency preemption recovers Voice service \emph{only} when near-crash airtime is concentrated in a few senders \emph{and} bursts are dense enough to keep protection armed --- at \texttt{hotspot\_high} it cuts Voice mean alert age by $39\%$ and P95 by $21\%$ relative to plain \gls{dcf}, while the same overlay at sparser cadences, and uniform Poisson load at any cadence, leaves every policy within a few tens of microseconds of the baseline (Voice P95 $\approx$ 2.2~ms at heavy \texttt{netload\_high}).
+The flat sections explain the boundary mechanistically: Voice loss is receiver-side collision corruption, reach is geometry-limited at about ten receivers per alert, and diffuse one-hundred-sender contention gives node-local suppression no target.
+The cost side is equally clear: bounded blocking without dropping (\texttt{stable}, \texttt{guarded}) only taxes Best Effort (fleet P95 up to 30~ms and 3.9~ms), while emergency converts the backlog into about $2.5\times10^{3}$ explicit drops and keeps both fleet and crash-sender tails below plain.
+The practical takeaway is therefore conditional: explicit DSCP-to-Voice marking is a reasonable default; adaptive blocking---especially emergency preemption---is justified as an event-triggered escalation where near-crash congestion is concentrated, with authentication and rate limiting as deployment prerequisites.
+The absolute Voice delays in this synthetic setting remain far below representative platooning budgets~\cite{ts22186}.
 
 The subsequent chapter concludes the dissertation by summarizing these findings, stating the conditional practical takeaway, and outlining limitations and future work.
