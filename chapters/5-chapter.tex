@@ -94,38 +94,12 @@ The light-density sweep tests whether crash-aware protection is beneficial befor
 Voice P95 is set mainly by the crash-burst profile, not by the \gls{mac} policy: about 4.7~ms at \texttt{low}/\texttt{medium} (repeat gaps of 20~ms and 15~ms) and about 2.08~ms at \texttt{high} (5~ms gap), with seed ranges of a few hundred microseconds across all five policies.
 The discriminative case is therefore Best Effort cost at \texttt{high} load with ten contending nodes.
 
-\autoref{tab:eval:light_abs} reports the corresponding high-load delays in milliseconds (three-seed means and ranges).
-\autoref{tab:eval:light} restates the same cells as percentages relative to \texttt{plain\_netload\_high}.
-Positive percentages indicate degradation relative to that baseline; negative values indicate improvement.
+\autoref{tab:eval:light} reports the high-load cells as changes relative to \texttt{plain\_netload\_high}: positive percentages indicate degradation relative to that baseline, negative values indicate improvement, and the plain absolute baselines are recorded in its caption.
 \autoref{fig:eval:p95_gap_light} shows the Best Effort versus Voice P95 gap at the same density.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:light_abs}Absolute light-density high-load delay (ms; 10~vehicles, three-seed means with min--max range). These cells are the denominators of \autoref{tab:eval:light}.}
-	\begin{center}
-		\scriptsize
-		\setlength{\tabcolsep}{4pt}
-		\begin{tabular}{@{}lcccc@{}}
-			\toprule
-			& \multicolumn{2}{c}{\textbf{\gls{vo}}} &
-			  \multicolumn{2}{c}{\textbf{\gls{be}}} \\
-			\cmidrule(lr){2-3}\cmidrule(lr){4-5}
-			\textbf{Policy} & \textbf{Mean} & \textbf{P95} & \textbf{Mean} & \textbf{P95} \\
-			\midrule
-			Plain     & \shortstack{0.786\\[-1pt]{\scriptsize [0.770--0.795]}} & \shortstack{2.078\\[-1pt]{\scriptsize [2.073--2.085]}} & \shortstack{0.383\\[-1pt]{\scriptsize [0.381--0.385]}} & \shortstack{0.437\\[-1pt]{\scriptsize [0.378--0.477]}} \\
-			EDCA      & \shortstack{0.796\\[-1pt]{\scriptsize [0.751--0.821]}} & \shortstack{2.077\\[-1pt]{\scriptsize [2.056--2.105]}} & \shortstack{0.383\\[-1pt]{\scriptsize [0.382--0.387]}} & \shortstack{0.419\\[-1pt]{\scriptsize [0.369--0.489]}} \\
-			Stable    & \shortstack{0.793\\[-1pt]{\scriptsize [0.764--0.811]}} & \shortstack{2.089\\[-1pt]{\scriptsize [2.071--2.101]}} & \shortstack{6.333\\[-1pt]{\scriptsize [5.128--8.050]}} & \shortstack{48.653\\[-1pt]{\scriptsize [41.923--56.010]}} \\
-			Guarded   & \shortstack{0.776\\[-1pt]{\scriptsize [0.766--0.786]}} & \shortstack{2.050\\[-1pt]{\scriptsize [2.037--2.062]}} & \shortstack{1.570\\[-1pt]{\scriptsize [1.334--1.818]}} & \shortstack{8.954\\[-1pt]{\scriptsize [7.936--9.834]}} \\
-			Emergency & \shortstack{0.805\\[-1pt]{\scriptsize [0.787--0.817]}} & \shortstack{2.082\\[-1pt]{\scriptsize [2.068--2.094]}} & \shortstack{0.489\\[-1pt]{\scriptsize [0.394--0.676]}} & \shortstack{0.369\\[-1pt]{\scriptsize [0.369--0.369]}} \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:light}Normalized light-density high-load results relative to the \texttt{plain\_netload\_high} baselines in \autoref{tab:eval:light_abs} (10~vehicles, three seeds). Positive percentages indicate degradation; negative values indicate improvement.}
+	\caption{\label{tab:eval:light}Normalized light-density high-load delay changes relative to the \texttt{plain\_netload\_high} baseline (10~vehicles, three-seed means). Positive percentages indicate degradation; negative values indicate improvement. Plain baselines (ms): Voice mean 0.786, Voice P95 2.078 (range 2.073--2.085), Best Effort mean 0.383, Best Effort P95 0.437 (range 0.378--0.477); per-policy seed spreads of a few hundred microseconds on the Voice rows are summarized in the text.}
 	\begin{center}
 		\setlength{\tabcolsep}{5pt}
 		\begin{tabular}{@{}lrrrr@{}}
@@ -154,14 +128,14 @@ Positive percentages indicate degradation relative to that baseline; negative va
 	\fonte{Prepared by the author.}
 \end{figure}
 
-\autoref{tab:eval:light_abs}, \autoref{tab:eval:light}, and \autoref{fig:eval:p95_gap_light} reveal a consistent pattern: Voice alert age does not move with the policy, while untimely protection inflates Best Effort.
+\autoref{tab:eval:light} and \autoref{fig:eval:p95_gap_light} reveal a consistent pattern: Voice alert age does not move with the policy, while untimely protection inflates Best Effort.
 EDCA alone is indistinguishable from plain \gls{dcf} at this density.
 \texttt{stable} raises Best Effort P95 from 0.44~ms to 49~ms; \texttt{guarded} to 9.0~ms.
 \texttt{emergency} does not improve Voice, but it keeps Best Effort P95 at 0.37~ms by dropping stale Best Effort work instead of queueing it---the only policy whose Best Effort tail is \emph{shorter} than plain, at the cost of more \gls{mac} drops (\autoref{sec:eval:heavy:mac}).
 The sweep is therefore a gating test: adaptive blocking without dropping is risky when protection windows can open under low channel stress.
 
 The heavy-density package stresses the shared medium with one hundred vehicles on the same corridor and load matrix, and it reads the same way as the light sweep, only louder: Voice service stays policy-invariant and the loss mechanism explains why.
-The subsections below collect that mechanistic evidence --- class-specific delay and jitter (\autoref{sec:eval:heavy:qos}), Voice loss with its drop attribution (\autoref{sec:eval:heavy:mac}), and reach invariance (\autoref{tab:eval:heavy_vo_rx}) --- while the policy cost these profiles impose on Best Effort is mapped separately in \autoref{sec:eval:cost}.
+The subsections below collect that mechanistic evidence --- class-specific delay and jitter (\autoref{tab:eval:heavy_qos}, \autoref{fig:eval:p95_gap_heavy}, \autoref{fig:eval:vo_cdf}), Voice loss with its drop attribution (\autoref{sec:eval:heavy:mac}), and reach invariance (9.95 receivers per alert for every policy and load) --- while the policy cost these profiles impose on Best Effort is mapped separately in \autoref{sec:eval:cost}.
 
 \subsection{QoS separation under congestion}
 \label{sec:eval:heavy:qos}
@@ -222,36 +196,12 @@ The two ratios are not interchangeable: Voice divides received alert copies by l
 \label{sec:eval:heavy:mac}
 
 Crash usefulness also depends on whether Voice frames are lost.
-\autoref{tab:eval:heavy_vo_loss} isolates Voice-side loss and reach together with Best Effort queue overflow; \autoref{tab:eval:heavy_drop_attr} attributes aggregate \gls{mac} drops to Best Effort, Voice, or unclassified counters (dashboard drop-attribution export); \autoref{tab:eval:heavy_ctrl} records controller activity for the adaptive profiles.
+\autoref{tab:eval:heavy_drop_attr} attributes aggregate \gls{mac} drops to Best Effort, Voice, or unclassified counters (dashboard drop-attribution export): its Voice column is the Voice-side loss measure of this subsection (lower is better for crash dissemination), and Best Effort queue overflow is zero in every cell.
+\autoref{fig:eval:drop_attr} plots the same attribution as stacked shares; \autoref{tab:eval:heavy_ctrl} records controller activity for the adaptive profiles.
 
 \begin{table}[H]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_vo_loss}Heavy-density high-load Voice loss and Best Effort overflow (100~vehicles, three-run means; counts in thousands, $\times 10^{3}$). \emph{VO MAC drops} counts Voice-attributed \gls{mac}-layer drops over all nodes (\autoref{sec:eval:metrics}); lower is better for crash dissemination. Under \texttt{plain}, access-category attribution is unavailable (no classifier), so the Voice-drop and Best Effort overflow columns are not applicable.}
-	\begin{center}
-		\small
-		\setlength{\tabcolsep}{5pt}
-		\begin{tabular}{@{}lrrrr@{}}
-			\toprule
-			\textbf{Policy} &
-			\textbf{VO MAC drops} &
-			\textbf{VO RX/alert} &
-			\textbf{Total MAC drops} &
-			\textbf{BE queue overflow} \\
-			\midrule
-			Plain     & n.a.  & 9.954 & 16.2 & n.a. \\
-			EDCA      & 3.7 & 9.954 & 15.6 & 0  \\
-			Stable    & 3.8 & 9.954 & 19.6 & 0  \\
-			Guarded   & 3.8 & 9.954 & 19.8 & 0  \\
-			Emergency & 3.7 & 9.954 & 16.0 & 0  \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-\begin{table}[H]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_drop_attr}Heavy-density high-load \gls{mac} drop attribution by access category (100~vehicles, three-run means; counts in thousands, $\times 10^{3}$). Under EDCA and the adaptive profiles, Voice contributes only a small share of total loss, and that Voice share does not separate the policies. Under \texttt{plain}, Best Effort and Voice columns are not applicable because all loss is unclassified.}
+	\caption{\label{tab:eval:heavy_drop_attr}Heavy-density high-load \gls{mac} loss by access category (100~vehicles, three-run means; counts in thousands, $\times 10^{3}$): aggregated drop counters attributed to Best Effort, Voice, or unclassified queues (\autoref{sec:eval:metrics}). Under EDCA and the adaptive profiles, Voice contributes only a small share of total loss, and that Voice share does not separate the policies. Under \texttt{plain}, access-category attribution is unavailable (no classifier), so Best Effort and Voice columns are not applicable. Best Effort queue overflow is zero in every cell (not applicable under \texttt{plain}).}
 	\begin{center}
 		\small
 		\setlength{\tabcolsep}{5pt}
@@ -284,32 +234,11 @@ Crash usefulness also depends on whether Voice frames are lost.
 
 Under \texttt{plain}, the single \gls{dcf} queue reports all loss as unclassified.
 Once EDCA classification is enabled, \autoref{tab:eval:heavy_drop_attr} and \autoref{fig:eval:drop_attr} show that most classified drops fall on Best Effort, while Voice-attributed drops sit near $3.7\times10^{3}$ for every QoS-enabled policy---they do not separate emergency from EDCA.
-The same Voice-attributed drop counts appear in \autoref{tab:eval:heavy_vo_loss} alongside reach and Best Effort overflow: overflow is zero throughout, so the old saturation signature is absent.
+Best Effort queue overflow is zero throughout the matrix---not applicable under \texttt{plain}---so the old queue-saturation signature is absent from these runs, and the read alongside the reach column of \autoref{tab:eval:heavy_qos} is complete: class-specific loss, fan-out, and queue health move as one.
 \texttt{stable} and \texttt{guarded} raise total \gls{mac} loss from $16\times10^{3}$ to about $20\times10^{3}$ by deferring Best Effort until more frames collide or miss.
 \texttt{emergency} combines the highest Voice-protection count with about $2.5\times10^{3}$ explicit Best Effort drops while keeping aggregate loss close to the \gls{dcf} baseline, so its cost appears as controlled preemption rather than overflow (the controller action counts are tabulated in \autoref{sec:eval:cost}).
 
-\begin{table}[H]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_vo_rx}Voice reception ratio (RX per logical transmission) across strategy and offered load (heavy density, three-run means). Fan-out is about 9.95 receivers per alert for every policy and load; the policy effect is Best Effort delay and drop shaping rather than fan-out collapse.}
-	\begin{center}
-		\small
-		\setlength{\tabcolsep}{5pt}
-		\begin{tabular}{@{}lrrr@{}}
-			\toprule
-			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
-			\midrule
-			Plain     & 9.945 & 9.953 & 9.954 \\
-			EDCA      & 9.945 & 9.953 & 9.954 \\
-			Stable    & 9.948 & 9.953 & 9.954 \\
-			Guarded   & 9.947 & 9.953 & 9.954 \\
-			Emergency & 9.945 & 9.953 & 9.954 \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
-
-\autoref{tab:eval:heavy_vo_rx} is the last mechanistic piece: Voice fan-out is about ten receivers per alert for every policy and load, so nothing a policy does at this uniform offer changes either how many alerts arrive or how many collide --- Voice protection is inert here because its only lever, local Best Effort suppression, does not address either limit.
+Voice fan-out is the last mechanistic piece: about ten receivers per alert (RX/alert $\approx 9.95$) for every policy and every offered load, so nothing a policy does at this uniform offer changes either how many alerts arrive or how many collide --- Voice protection is inert here because its only lever, local Best Effort suppression, does not address either limit.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,7 +326,7 @@ And \texttt{stable}/\texttt{guarded}'s bounded blocking, already harmful to Best
 \label{sec:eval:cost}
 
 The uniform-load sections established what protection does \emph{not} buy: Voice service.
-This section prices what it \emph{costs} on ordinary Best Effort traffic, under the same uniform matrix --- the hotspot cell reuses the same accounting and is priced in \autoref{tab:eval:hotspot}.
+This section prices what it \emph{costs} on ordinary Best Effort traffic, under the same uniform matrix: the full delay-tail ladder with its seed ranges appears in \autoref{tab:eval:heavy_p95}, and the hotspot cell reuses the same accounting in \autoref{tab:eval:hotspot}.
 
 \subsection{Load and density as enabling conditions}
 \label{sec:eval:heavy:ladder}
@@ -432,34 +361,14 @@ This section prices what it \emph{costs} on ordinary Best Effort traffic, under 
 	\fonte{Prepared by the author.}
 \end{table}
 
-\begin{table}[H]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:eval:heavy_drop_rate}Normalized \gls{mac} drop rate (drops per application transmission) across strategy and offered load (heavy density, three-run means). High-load cells match the aggregate loss intensity behind \autoref{tab:eval:heavy_drop_attr}.}
-	\begin{center}
-		\small
-		\setlength{\tabcolsep}{5pt}
-		\begin{tabular}{@{}lrrr@{}}
-			\toprule
-			\textbf{Policy} & \textbf{low} & \textbf{medium} & \textbf{high} \\
-			\midrule
-			Plain     & 0.062 & 0.159 & 0.473 \\
-			EDCA      & 0.062 & 0.154 & 0.459 \\
-			Stable    & 0.098 & 0.326 & 0.573 \\
-			Guarded   & 0.054 & 0.162 & 0.577 \\
-			Emergency & 0.081 & 0.198 & 0.469 \\
-			\bottomrule
-		\end{tabular}
-	\end{center}
-	\fonte{Prepared by the author.}
-	\end{table}
-
 \autoref{tab:eval:heavy_p95} explains \emph{when} the policy ladder taxes Best Effort.
 Voice P95 tracks the burst profile, not the \gls{mac}: about 4.6--4.9~ms at \texttt{low}/\texttt{medium} (20~ms and 15~ms repeat gaps) and about 2.2~ms at \texttt{high} (5~ms gap), with no policy separation.
 The crash-node Best Effort row is the fair same-sender comparison: under \texttt{plain} it sits at 0.63~ms beside the fleet Best Effort P95 of 0.51~ms, as a single \gls{dcf} queue requires.
 \texttt{stable} inflates that crash-node tail to 14~ms at high load and already to 0.71~ms at low load; \texttt{guarded} to 3.9~ms; emergency keeps it at 0.44~ms by dropping competing frames.
 Fleet Best Effort shows the same ranking, with \texttt{stable} reaching 30~ms P95 at high load.
-\autoref{tab:eval:heavy_drop_rate} remains modest (0.05--0.20 at low/medium, 0.46--0.58 at high) and never exceeds one drop per transmission; overflow is absent.
-\autoref{tab:eval:heavy_vo_rx} confirms that Voice fan-out is 9.95 across the matrix, so the policy effect is Best Effort delay and explicit preemption, not multicast reach.
+The normalized \gls{mac} drop rate (drops per application transmission) stays modest---0.05--0.20 at \texttt{low}/\texttt{medium} and 0.46--0.58 at \texttt{high}, with the high-load cells matching the aggregate loss intensity of \autoref{tab:eval:heavy_drop_attr}---and never exceeds one drop per transmission; queue overflow is absent.
+\autoref{tab:eval:heavy_ctrl} and \autoref{fig:eval:ctrl} itemize the controller actions behind those counters.
+Voice fan-out, finally, stays at 9.95 receivers per alert across the matrix, so the policy effect is Best Effort delay and explicit preemption, not multicast reach.
 Cross-reading \autoref{tab:eval:light} and \autoref{tab:eval:heavy_p95} shows that protection windows do not shorten Voice alert age at this Poisson offer; they mainly shift delay onto Best Effort, unless emergency converts the backlog into drops.
 The adaptive profiles are therefore event-triggered cost mechanisms rather than Voice-tail wins at the loads exercised here.
 
@@ -513,7 +422,7 @@ Explicit DSCP-to-Voice mapping remains a reasonable default; bounded or emergenc
 Two measurement traps deserve a single caution, because both are artifacts of aggregation rather than policy effects.
 First, under \texttt{plain} both classes receive identical per-frame \gls{mac} treatment, yet \autoref{tab:eval:heavy_qos} shows a Voice--Best Effort delay gap (Voice P95 $\approx$ 2.2~ms versus fleet Best Effort 0.51~ms): the gap reflects different traffic processes, not a differentiating \gls{dcf} queue.
 Best Effort pools one hundred senders over the whole~\SI{70}{\second} run, while Voice originates from one stopped crash node inside a~\SI{30}{\second} window and is timed from the logical burst start, so its first accepted copy typically waits one repeat gap.
-Second, Voice RX/alert (9.95) exceeds Best Effort RX/TX (8.06 under \texttt{plain}) for structural reasons: Voice divides received copies by logical alert sequences whereas Best Effort divides by physical transmissions, and the stopped crash node sits in a denser neighborhood than the moving fleet average (\autoref{tab:eval:heavy_vo_rx}).
+Second, Voice RX/alert (9.95) exceeds Best Effort RX/TX (8.06 under \texttt{plain}) for structural reasons: Voice divides received copies by logical alert sequences whereas Best Effort divides by physical transmissions, and the stopped crash node sits in a denser neighborhood than the moving fleet average (the RX columns of \autoref{tab:eval:heavy_qos}).
 \label{sec:eval:disc:reach}
 Cross-class comparisons within one policy therefore describe different traffic processes; the crash-node Best Effort slice is the controlled same-sender check, and cross-policy comparisons within one class remain the policy measurement.
 Seeds also stay controlled: Poisson redraws keep Best Effort offer at about 22~thousand transmissions on every run, so seeds no longer split into an uncongested draw and two saturated draws.
