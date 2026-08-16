@@ -21,7 +21,9 @@ Read [AI_CONTEXT.md](AI_CONTEXT.md) before editing chapters or bibliography.
 | Conclusion chapter plan | `context/conclusion-chapter-plan.md` |
 | System Model / Implementation / Evaluation separation | `context/scientific-paper-structure.md` |
 | Chapter alignment audit | `WRITING_ROADMAP.md` |
-| Current dissertation review | `DISSERTATION_REVIEW.md` |
+| Current dissertation review | `REVIEW_2026-08-16.md` (`DISSERTATION_REVIEW.md` = superseded pre-fix review) |
+| Evaluation notes (why campaigns changed) | `EVAL_MEASUREMENT_REVIEW.md`, `EVAL_HOTSPOT_VO_PROTECTION.md` |
+| KPI evidence archive | `context/eval-kpis/` (artifact pinned to tag `dissertation-2026-08` = `da0d616`) |
 | Reference PDF workflow | `REF_PAPERS_WORKFLOW.md` |
 
 Build: `./compile.sh` → `build/main.pdf` (persistent, gitignored). `./compile.sh clean` removes artifacts. Sources compile unchanged on Overleaf.

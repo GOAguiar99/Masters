@@ -27,7 +27,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 | Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
 | Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.4 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
-| Evaluation | `chapters/5-chapter.tex` | **Done** — light sweep + heavy stress tables, fig_06 CDF, full DSD discussion (plan: `context/evaluation-chapter-plan.md`) | SBESC §IV | (legacy Preliminary Results removed earlier) |
+| Evaluation | `chapters/5-chapter.tex` | **Done** — regime-conditional: uniform-load invariance (light+heavy) + hotspot VO gain + BE cost; fig_01/05/06/07/08/09 (plan: `context/evaluation-chapter-plan.md`) | post-fix KPI archive `context/eval-kpis/` | (legacy Preliminary Results removed earlier; supersedes SBESC §IV numbers) |
 | Conclusion | `chapters/6-chapter.tex` | **Done** — conditional takeaway (marking as default, blocking as event-triggered escalation); no Work Plan/Schedule (plan: `context/conclusion-chapter-plan.md`) | SBESC §V | DQ-WiFi work-plan phases / timeline |
 
 ## SBESC-only discussion material to absorb (post-DSD-review)
@@ -58,7 +58,7 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 - Topology: 5 km highway, 3 lanes/direction, 120 km/h, SUMO/TraCI
 - Radio: IEEE 802.11p, 5.9 GHz, channel 3, 10 MHz, 20 mW; free-space path loss, binary obstacle loss, −85 dBm sensitivity, 4 dB SNIR
 - Load profiles: low BE 500 ms/200 B, VO 120 ms/150 B ×3; medium BE 250 ms/320 B, VO 75 ms/180 B ×4; high BE 125 ms/420 B, VO 20 ms/260 B ×8
-- Light: 10 vehicles, 5 seeds; Heavy: 100 vehicles, 3 seeds
+- Light: 10 vehicles, 3 seeds; Heavy: 100 vehicles, 3 seeds (hotspot overlay: heavy only, 3 seeds)
 
 ## Figures in `Figs/`
 
@@ -66,27 +66,33 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 
 | File | Use |
 |------|-----|
-| `system_model_architecture.pdf` | System model (Ch3; also ETFA) |
-| `event_timeline_cropped.pdf` | Crash timeline (Ch3; SBESC Fig. 1) |
-| `fig_06_vo_delay_cdf_high_load_highway_heavy.pdf` | VO delay CDF, heavy/high load (SBESC Fig. 2; PDF, Overleaf-ready) |
+| `system_model_architecture.pdf` | System model (Ch4; also ETFA) |
+| `event_timeline_cropped.pdf` | Crash timeline (Ch4; SBESC Fig. 1) |
+| `fig_01_p95_delay_priority_gap_highway_{light,heavy}.pdf` | BE vs VO P95 gap, high load (Ch6; post-fix campaign) |
+| `fig_05_mac_drop_attribution_high_load_highway_heavy.pdf` | MAC drop attribution, heavy/high (Ch6) |
+| `fig_06_vo_delay_cdf_high_load_highway_heavy.pdf` | VO delay CDF, heavy/high (Ch6; post-fix campaign) |
+| `fig_07_v2x_control_actions_by_load_highway_heavy.pdf` | Controller actions by load, heavy (Ch6) |
+| `fig_08_hotspot_vo_delay_by_policy_highway_heavy.pdf` | Hotspot VO mean/P95 by policy (Ch6) |
+| `fig_09_hotspot_vo_p95_by_load_highway_heavy.pdf` | Hotspot VO P95 dose-response (Ch6) |
+| `plain_class_p95.{tex,pdf}` | Removed 2026-08-16 (measurement-review figure; never referenced) |
 
 ### Legacy (delete when the referencing chapter is rewritten)
 
-| File(s) | Referenced by |
-|---------|---------------|
-| `Topology.png`, `fsm_simple.pdf`, `delay.png`, `delay.pdf` | removed from `Figs/` (orphaned; formerly Ch3) |
-| `classifier.png`, `mymodel.png`, `upperframe.png`, `lowerframe.png` | (orphaned; formerly Ch4 Implementation) |
-| `noqos.png`, `edca_only.png`, `reservaonly.png`, `both.png`, `carcrashonly.png` | (orphaned; formerly Ch4 Preliminary Results) |
+All legacy raster figures were removed 2026-08-16: `fsm_simple.pdf`, `delay.pdf`,
+`Topology.png`, `delay.png`, `classifier.png`, `mymodel.png`, `upperframe.png`,
+`lowerframe.png`, `noqos.png`, `edca_only.png`, `reservaonly.png`, `both.png`,
+`carcrashonly.png`, `plain_class_p95.{tex,pdf}` (verified unreferenced in all LaTeX
+sources before removal).
 
 ## Suggested writing order
 
-1. ~~Abstract + Resumo (beforetext)~~ — done (leads with ~49% VO P95 reduction and protection-versus-cost frontier)
+1. ~~Abstract + Resumo (beforetext)~~ — done (regime-conditional headline: VO flat ~2.2 ms under uniform Poisson; emergency −39%/−21% VO gain under hotspot dense bursts; protection-versus-cost frontier)
 2. ~~Introduction (Ch0)~~ — done (SBESC §I + research question, scope, objectives)
 3. ~~Background (Ch1)~~ — done (full rewrite; figure placeholders pending artwork)
 4. ~~Related Work (Ch2)~~ — done (stronger MACs, dynamics, adaptive EDCA/DCC, short TSN/OFDMA)
 5. ~~System Model (Ch3)~~ — done (SBESC §III-A/B + ETFA System Model structure)
 6. ~~Implementation (Ch4)~~ — done (SBESC §III-C + code module map)
-7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (SBESC §IV + seven DSD discussion points)
+7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (regime-conditional structure: headline → uniform-load invariance → hotspot gain → BE cost → eight discussion subsections)
 8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
 

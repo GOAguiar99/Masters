@@ -1,5 +1,16 @@
 # Dissertation Review & Evaluation
 
+> ⚠️ **SUPERSEDED (2026-08-16).** This review documents the **pre-measurement-fix** campaign
+> (VO P95 0.896 → 0.461 ms, −49%). The dissertation has since been rebuilt on the
+> measurement-fix campaign (`5b0f584`) plus the hotspot campaign (`da0d616`): Voice is
+> policy-invariant under uniform Poisson load (P95 ≈ 2.2 ms), and emergency preemption
+> recovers Voice service only under concentrated hotspot contention. **All "verified"
+> numbers below are stale.** See `REVIEW_2026-08-16.md` for the current review,
+> `EVAL_MEASUREMENT_REVIEW.md` for why the campaign was rerun, and
+> `EVAL_HOTSPOT_VO_PROTECTION.md` for the hotspot evidence.
+
+---
+
 > **Document under review:** *Crash-Aware Traffic Prioritization in Vehicular Wi-Fi Networks* — UFSC Master's Dissertation
 > **Compiled artifact:** `build/main.pdf` (~94 pages, build of 2026-08-14 17:21)
 > **Review date:** 2026-08-14

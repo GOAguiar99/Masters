@@ -14,12 +14,16 @@ crash-node Best Effort delay slice. It replaces the 2026-05 export.
 |---------|----------|---------------------------|---------|------|
 | `highway_light` | 10 | `#0`–`#2` | 5 policies × 3 loads | 45 |
 | `highway_heavy` | 100 | `#0`–`#2` | 5 policies × 3 loads | 45 |
+| `highway_heavy_hotspot` | 100 | `#0`–`#2` | 5 policies × 3 loads, `_hotspot3` overlay | 45 |
 
 Parser: `rust-kpi-dashboard-0.2.1`, cache schema 3.
 
 Configuration names follow `<policy>_netload_<low|medium|high>` with policies
 `plain`, `edca_only`, `edca_v2x_vo_stable`, `edca_v2x_vo_guarded`,
-`edca_v2x_vo_emergency`.
+`edca_v2x_vo_emergency`. The hotspot package uses
+`<policy>_hotspot_<low|medium|high>`: the `_hotspot3` overlay (nodes 1–3,
+`exponential(4ms)`, 1200 B) is composed before the `_netload_*` overlay
+(OMNeT++ keeps the first matching assignment).
 
 ## Files
 
@@ -38,7 +42,11 @@ dissertation repository:
 - `veins_qos/simulations/veins_inet_highway_heavy/results/`
 
 Artifact: <https://github.com/GOAguiar99/veins-inet-qos>  
-Pinned commit used for this archive: `5b0f584` (`fix/measurement-poisson-vo-clock`).
+Pinned for all three archives: **tag `dissertation-2026-08`** (annotated, pushed) =
+commit `da0d616` (branch `fix/measurement-poisson-vo-clock`), which contains the
+measurement-fix campaign commit `5b0f584` as ancestor plus the hotspot configuration
+commits (`abf1922`…`0cbc984`). Later commits on the branch touched only docs and
+`.gitignore`, so `da0d616` reproduces both matrices.
 
 Rebuild the cache from raw traces with:
 

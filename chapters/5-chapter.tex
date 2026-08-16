@@ -25,7 +25,7 @@ Section~\ref{sec:eval:summary} summarizes the conditional takeaway.
 All experiments use the consolidated bindings in \autoref{tab:impl:parameters} and the reproducibility scripts in the public artifact~\cite{aguiar2026_veins_qos}.
 Both density packages run the full matrix of five \gls{mac} policies and three offered-load profiles (15~configurations) with three OMNeT++ repetitions numbered \texttt{\#0}--\texttt{\#2}.
 Each configuration name follows \texttt{<policy>\_netload\_<low|medium|high>} as documented in \autoref{chap:implementation}.
-Raw \texttt{.sca}/\texttt{.vec} traces remain in the artifact clone (commit \texttt{5b0f584}); the compact per-run \gls{kpi} rows used to build the tables in this chapter are archived with the dissertation sources under \texttt{context/eval-kpis/}.
+Raw \texttt{.sca}/\texttt{.vec} traces remain in the artifact clone (tag \texttt{dissertation-2026-08}, commit \texttt{da0d616}); the compact per-run \gls{kpi} rows used to build the tables in this chapter are archived with the dissertation sources under \texttt{context/eval-kpis/}.
 A second, 45-run matrix replays the same grid under a hotspot overlay that concentrates Best Effort airtime near the crash source (\autoref{sec:eval:hotspot}); its rows are archived under \texttt{context/eval-kpis/highway\_heavy\_hotspot/}.
 
 Contention is induced by offered load and fleet density rather than by synthetic random-waypoint mobility alone~\cite{veins_sommer2011}.
@@ -522,7 +522,7 @@ Seeds also stay controlled: Poisson redraws keep Best Effort offer at about 22~t
 \label{sec:eval:disc:significance}
 
 Under the uniform matrix the honest statement is that no Voice-tail reduction exists to claim: plain keeps Voice P95 near 2.2~ms at \texttt{netload\_high}, far below representative V2X latency budgets such as the~\SI{25}{\milli\second} end-to-end bound for cooperative platooning in \gls{threegpp} TS~22.186~\cite{ts22186}, and every alternative policy sits within tens of microseconds of it.
-The hotspot study of \autoref{sec:eval:hotspot} shows the sign flip: when near-crash airtime is concentrated and bursts are dense, emergency preemption \emph{does} lower Voice delay on paper ($-39\%$ mean, $-21\%$ P95, $-30\%$ Voice-attributed collision losses versus \gls{edca} alone), with absolute P95 of 14.6~ms that re-enters the platooning budget band.
+The hotspot study of \autoref{sec:eval:hotspot} shows the sign flip: when near-crash airtime is concentrated and bursts are dense, emergency preemption \emph{does} lower Voice delay on paper ($-39\%$ mean and $-21\%$ P95 versus plain \gls{dcf}; $-30\%$ Voice-attributed collision losses versus \gls{edca} alone), with absolute P95 of 14.6~ms that re-enters the platooning budget band.
 Three seeds per cell keep this a mechanism check rather than an effect-size estimate (\autoref{sec:eval:disc:limits}), but the boundary itself is the take-home: the same preemption is a cost center under uniform load and a Voice lever under concentrated load, so the stakes of the escalation question are regime-dependent, not stylistic.
 
 \subsection{Protection cost, class granularity, and spatial fairness}

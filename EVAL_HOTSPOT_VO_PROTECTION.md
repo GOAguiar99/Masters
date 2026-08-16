@@ -48,8 +48,6 @@ export of `fig_01` (bar-pixel decoding), not from raw traces.
 
 - Matrices: light (10 veh) × {high, stress}; heavy (100 veh) × {low, medium, high,
   stress=exp(25ms)/420B}; 5 policies × 3 seeds each — 96 runs total.
-- Multi-crasher: 4 VO sources (nodes 0/25/50/75), overlapping bursts, saturated BE
-  (36 runs, configs `*_multivo_high`, `*_multivo_burstgap`).
 - Predictive protection (`predictiveBlocking`): learn per-source cadence and
   pre-block BE before predicted bursts (code added as `9a92dc1`).
 - Result: VO mean/P95/delivery were policy-invariant in all cells (delivery
@@ -76,7 +74,10 @@ Runnable configs: `{plain, edca_only, edca_v2x_vo_{stable,guarded,emergency}}_ho
 |---|---|---|---|---|---|
 | plain_hotspot_high | 4.54 | 18.45 | (not classified) | 9.67 | 1.5 |
 | edca_only_hotspot_high | 4.45 | 19.96 | 25.2k | 9.62 | 1453 (AC_BE starvation) |
-| **edca_v2x_vo_emergency_hotspot_high** | **2.78 (−39%)** | **14.76 (−23%)** | **17.6k (−30%)** | 9.83 | 3.3 |
+| **edca_v2x_vo_emergency_hotspot_high** | **2.78 (−39%)** | **14.56 (−21%)** | **17.8k (−30%)** | 9.83 | 3.3 |
+
+(Values reconciled 2026-08-16 against `context/eval-kpis/highway_heavy_hotspot/`;
+the archived summary is authoritative wherever this note's prose differs.)
 
 Per-seed consistency (VO P95, ms): plain [16.1, 19.4, 19.9], edca [20.5, 20.7,
 18.7], emergency [11.8, 16.0, 15.9] — emergency wins in every seed.
@@ -125,7 +126,7 @@ VO mean 0.952-0.998 ms and VO rx/alert 9.954 for all five policies.
 ## 4. Interpretation
 
 1. The uniform-load invariance (P2) held in every cell tested, including past
-   channel-collapse load and 4 concurrent alert sources.
+   channel-collapse load.
 2. The reappearance prediction (P1) is **confirmed**: under hotspot load the
    emergency mode recovers ~40% of VO mean delay and ~23% of VO P95, and cuts
    collision losses (incorrectRx) by ~30% — with results consistent per seed.
@@ -152,5 +153,5 @@ VO mean 0.952-0.998 ms and VO rx/alert 9.954 for all five policies.
 - Commands: `./run -u Cmdenv -c <config> -r 0-2 --repeat=3` from that directory,
   with `veins_launchd` on port 9999; branch + commits listed above.
 - Raw traces: `veins_inet_highway_heavy/results/*hotspot*.sca/.vec` (this machine);
-  multi-crasher evidence: `results/*multivo*`; natural matrices: rest of `results/`.
+  natural matrices: rest of `results/`.
 - Dashboard (live): `http://localhost:8050` (light+heavy), 8051 (stress).

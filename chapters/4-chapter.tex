@@ -262,6 +262,7 @@ The resulting \texttt{UserPriorityReq} selects the corresponding \gls{edca} acce
 The classifier is installed only under EDCA policies:
 
 \begin{quote}
+\footnotesize
 \ttfamily
 *.node[*].wlan[*].classifier.typename = "veins\_qos.qos.QosClassifier"\\
 *.node[*].wlan[*].classifier.crashDscp = 46\\
@@ -282,6 +283,7 @@ All active configurations replace the stock IEEE~802.11 \gls{mac} typename with 
 \texttt{veins\_qos.mac.V2xIeee80211Mac} extends INET's \texttt{Ieee80211Mac} and is selected globally:
 
 \begin{quote}
+\footnotesize
 \ttfamily *.node[*].wlan[*].mac.typename = "veins\_qos.mac.V2xIeee80211Mac"
 \end{quote}
 
@@ -608,7 +610,7 @@ Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt
 \label{sec:impl:density}
 
 The dissertation experiments use two parallel packages under
-\texttt{veins\_qos/simulations/}~\cite{aguiar2026_veins_qos}:
+\path{veins_qos/simulations/}~\cite{aguiar2026_veins_qos}:
 
 \begin{itemize}
   \item \texttt{veins\_inet\_highway\_light} --- light-density corridor with 10~vehicles;
@@ -635,8 +637,8 @@ Every configuration shares the IEEE~802.11p radio profile summarized in \autoref
   \item operation mode \texttt{p}, band 5.9~GHz, channel~3, bandwidth 10~MHz, transmit power 20~mW;
   \item radio typename \texttt{Ieee80211DimensionalRadio};
   \item antenna mobility attached to the vehicle mobility module with a fixed longitudinal/height offset;
-  \item obstacle loss typename \texttt{IdealObstacleLoss}, configured from
-        \texttt{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
+  \item obstacle loss typename \path{IdealObstacleLoss}, configured from
+        \path{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
   \item free-space path loss and a static SNIR threshold, without small-scale fading or shadowing (\autoref{sec:sys:scope}).
 \end{itemize}
 
@@ -764,8 +766,8 @@ The code base stays aligned with the minimal System Model of \autoref{sec:sys:sc
   \item no small-scale fading, shadowing, or graded obstacle attenuation beyond binary \texttt{IdealObstacleLoss}~\cite{inet_ideal_obstacle_loss}.
 \end{itemize}
 
-Older packages under \texttt{simulations/veins\_inet\_square/},
-\texttt{veins\_inet\_highway/}, and \texttt{veins\_inet\_light/}
+Older packages under \path{simulations/veins_inet_square/},
+\path{veins_inet_highway/}, and \path{veins_inet_light/}
 are retained for development history and must not be mixed with the active light/heavy highway result trees when analysing the dissertation campaigns~\cite{aguiar2026_veins_qos}.
 
 Together, the toolchain, host compounds, packet path, applications, classifier, instrumented \gls{mac}, adaptive \gls{hcf}, policy wiring, scenario packages, and instrumentation constitute the concrete realization of the crash-aware System Model.
