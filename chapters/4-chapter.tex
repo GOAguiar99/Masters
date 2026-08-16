@@ -488,7 +488,8 @@ Legacy configuration names from earlier prototypes (for example Friendly/Protect
 
 \autoref{tab:impl:parameters} collects the concrete timing, topology, radio, application, classifier, and \gls{mac} bindings used by the active highway artifact.
 It is the numeric counterpart of the System Model in \autoref{chap:sysmodel}: the conceptual roles of the five policies and the crash timeline are defined there; the values that instantiate them in this study are recorded here~\cite{aguiar2026_veins_qos}.
-Best Effort inter-arrivals use OMNeT++ \texttt{exponential($\cdot$)} draws with the stated mean; Voice burst periods are fixed, with optional per-repeat jitter.
+Best Effort inter-arrivals are Poisson: OMNeT++ \texttt{exponential($\cdot$)} is marked \texttt{volatile} and redrawn independently before every packet, so the mean is a rate rather than a per-vehicle constant period.
+Voice burst periods are fixed, with optional per-repeat jitter.
 Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency} in the first column; the full OMNeT++ configuration names are \texttt{edca\_v2x\_vo\_*}.
 
 {\ABNTEXfontereduzida
@@ -726,7 +727,9 @@ These signals are the measurement surface consumed by Evaluation; their statisti
 \end{table}
 
 End-to-end delay is computed at receivers as simulation time minus \texttt{CreationTimeTag}.
-For crash frames the creation stamp is the actual send instant of each physical repeat, so delay reflects channel and queueing latency rather than logical inter-burst spacing~\cite{aguiar2026_veins_qos}.
+Best Effort stamps creation at each physical send.
+Crash Voice stamps creation at the logical burst start (\texttt{logicalCreationTime}), so the Voice delay sample is alert age---the time from the first attempt of that sequence until a receiver's first accepted copy---rather than the air time of a later physical repeat~\cite{aguiar2026_veins_qos}.
+Receivers also record a crash-node Best Effort slice (\texttt{beEndToEndDelayFromCrash}) for packets whose source is the designated crash vehicle, so Voice can be compared with Best Effort from the same sender.
 
 \subsection{Offline analysis tooling}
 \label{sec:impl:kpi}

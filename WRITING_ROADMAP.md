@@ -90,18 +90,19 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
 
-## Headline results (heavy density, high load, 3-run means)
+## Headline results (heavy density, high load, 3-run means; measurement-fix campaign `5b0f584`)
 
-| Policy | VO mean / P95 / jitter (ms) | BE mean / P95 (ms) | VO RX/alert | BE RX/TX |
-|--------|-----------------------------|--------------------|-------------|----------|
-| plain | 0.575 / 1.290 / 0.321 | 27.6 / 57.4 | 9.07 | 6.15 |
-| edca_only | 0.433 / 0.896 / 0.193 | 54.8 / 155.9 | 9.90 | 6.15 |
-| stable | 0.469 / 1.155 / 0.261 | 59.4 / 144.3 | 9.83 | 5.53 |
-| guarded | 0.443 / 0.960 / 0.207 | 74.9 / 174.4 | 9.78 | 3.64 |
-| emergency | **0.282 / 0.461 / 0.047** | 60.7 / 98.7 | 9.91 | 5.02 |
+| Policy | VO mean / P95 / jitter (ms) | BE mean / P95 (ms) | crash BE P95 (ms) | VO RX/alert | BE RX/TX |
+|--------|-----------------------------|--------------------|-------------------|-------------|----------|
+| plain | 0.991 / 2.249 / 1.024 | 0.387 / 0.511 | 0.631 | 9.95 | 8.06 |
+| edca_only | 0.994 / 2.242 / 1.018 | 0.389 / 0.524 | 0.772 | 9.95 | 8.09 |
+| stable | 0.988 / 2.245 / 1.026 | 3.696 / 30.491 | 13.763 | 9.95 | 7.61 |
+| guarded | 0.998 / 2.241 / 1.029 | 0.896 / 3.889 | 3.865 | 9.95 | 7.66 |
+| emergency | 0.952 / 2.211 / 0.979 | 0.432 / **0.369** | **0.435** | 9.95 | 6.93 |
 
-- Emergency ≈ **−49% VO P95 vs EDCA** (0.896 → 0.461 ms)
-- MAC drops (×10³): plain 281, edca 251, stable 340, guarded **485**, emergency 273 (with 22×10³ explicit BE drops)
-- Light density, high load vs plain: emergency VO P95 **−37.6%**; EDCA/stable/guarded slightly *worse* VO; all inflate BE delay by orders of magnitude
+- Voice P95 is ~2.2 ms on every policy (alert age; 5 ms repeat gap). No −49% Voice win.
+- Policy contrast is Best Effort cost: stable 30 ms fleet P95, guarded 3.9 ms, emergency 0.37 ms via preemption.
+- MAC drops (×10³): plain 16.2, edca 15.6, stable 19.6, guarded 19.8, emergency 16.0 (2.53×10³ explicit BE drops). Overflow is zero.
+- Light density, high load vs plain: Voice P95 unchanged (~2.08 ms); stable BE P95 +11044%; emergency BE P95 −15.5%.
 
-Do not cite results not present in the simulation artifact or the SBESC/ETFA papers.
+Do not cite results not present in the simulation artifact or the SBESC/ETFA papers. Conference papers still report the pre-fix campaign.

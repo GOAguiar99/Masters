@@ -44,7 +44,7 @@ This dissertation makes the following primary contributions:
 \begin{enumerate}
 	\item A lightweight adaptive MAC controller built solely from standard mechanisms---explicit DSCP~46-to-Voice mapping plus a local three-mode extension of EDCA---applied to a crash-triggered two-class traffic model in which ordinary vehicular multicast traffic remains Best Effort while a designated crash node injects temporary Voice alert bursts.
 	\item An open-source Veins/\gls{inet} simulation artifact \cite{aguiar2026_veins_qos} comparing a plain IEEE~802.11p DCF baseline, an EDCA baseline with explicit mapping, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) across density and load matrices.
-	\item Engineering guidance on \emph{when} adaptive suppression should be enabled: under heavy congestion, emergency preemption compresses crash-alert tail delay beyond explicit EDCA (approximately $-49\%$ in the 95th-percentile Voice delay) at the cost of much higher BE delay and explicit BE losses, whereas at light contention bounded suppression mainly penalizes BE---supporting event-triggered escalation rather than always-on suppression.
+	\item Engineering guidance on \emph{when} adaptive suppression should be enabled: at the Poisson loads exercised here, Voice alert age does not separate the five \gls{mac} policies (about 2.2~ms P95), while bounded blocking inflates Best Effort delay (\texttt{stable}: 0.51~ms to 30~ms P95) and emergency converts backlog into explicit Best Effort drops---supporting event-triggered escalation rather than always-on suppression.
 \end{enumerate}
 
 \section{Document Structure}

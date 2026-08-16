@@ -9,13 +9,13 @@ The evaluation is simulation-only and mechanism-oriented: it isolates statistica
 \section{Main Findings}
 \label{sec:conc:findings}
 
-Under heavy density and high offered load---the regime that exposes the strongest separation---emergency preemption is the clearest Voice winner among the five policies.
-Relative to EDCA alone, it reduces Voice P95 from 0.90~ms to 0.46~ms (about 49\%), collapses Voice jitter to 0.047~ms, and records the fewest Voice-attributed \gls{mac} drops among the QoS-enabled policies ($15\times10^{3}$ versus $18$--$21\times10^{3}$).
-Those Voice gains are not free: Best Effort P95 rises from 57~ms under plain \gls{dcf} to 99~ms under emergency, and part of the deferred backlog is converted into explicit Best Effort drops while protection is armed~\cite{aguiar2026_veins_qos}.
+Under heavy density and high offered load, Voice 95th-percentile alert age is about 2.2~ms under every policy: EDCA does not beat plain \gls{dcf}, and emergency's 2.21~ms versus 2.24~ms is not a material Voice-tail win.
+The policy contrast is Best Effort cost.
+\texttt{stable} raises fleet Best Effort P95 from 0.51~ms under plain \gls{dcf} to 30~ms; \texttt{guarded} to 3.9~ms; emergency keeps 0.37~ms by dropping competing frames (about $2.5\times10^{3}$ Best Effort drops while blocked)~\cite{aguiar2026_veins_qos}.
 
-The light-density high-load sweep is a gating test rather than a Voice-gain story.
-Bounded adaptive profiles (\texttt{stable}/\texttt{guarded}) and EDCA alone slightly degrade crash-alert delay while inflating Best Effort delay by orders of magnitude; only \texttt{emergency} improves the Voice tail ($-37.6\%$ Voice P95 relative to plain).
-Cross-reading both densities shows an enabling condition: adaptive blocking helps when Voice queueing and channel occupancy are high enough that removing Best Effort competition shortens Voice service; under mild stress it mainly shifts delay onto ordinary traffic that did not need protection.
+The light-density high-load sweep is the same gating test rather than a Voice-gain story.
+Bounded adaptive profiles (\texttt{stable}/\texttt{guarded}) leave Voice P95 at 2.08~ms while inflating Best Effort P95 to 49~ms and 9.0~ms; only emergency shortens the Best Effort tail, by preemption rather than by protecting Voice.
+Cross-reading both densities shows an enabling condition that this matrix does not meet: adaptive blocking would help Voice only when removing Best Effort competition actually shortens alert service; under a Poisson 125~ms offer it mainly shifts delay onto ordinary traffic.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Practical Takeaway}
@@ -27,7 +27,7 @@ Adaptive Best Effort suppression---especially emergency preemption---should be t
 Deployment would additionally require authentication, rate limiting, and plausibility checks before overheard Voice frames may arm suppression, because the same local trigger that protects a crash can be abused by faulty or malicious Voice traffic (\autoref{chap:evaluation}).
 
 The absolute Voice delays in this synthetic setting remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}.
-The contribution is accordingly \gls{mac}-level tail shaping and Voice-loss reduction under controlled saturation, not a claim that the simulated scenario already improves crash outcomes at the application layer.
+The contribution is accordingly \gls{mac}-level cost accounting under a Poisson offer, not a claim that the simulated scenario already improves crash outcomes at the application layer.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Limitations}
@@ -37,7 +37,7 @@ The study's limits are those already argued in the Evaluation discussion (\autor
 
 \noindent\textbf{Simulation scope and statistical strength.}
 The evaluation is simulation-only, with no testbed or hardware validation, so claims remain tied to the configured Veins/\gls{inet} model~\cite{aguiar2026_veins_qos}.
-Heavy-density \glspl{kpi} average three seeds and report the min--max range on headline delay tables, still without confidence intervals or significance tests, and light-density results use five seeds under the same reporting rule; the numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes.
+Heavy-density \glspl{kpi} average three seeds and report the min--max range on headline delay tables, still without confidence intervals or significance tests, and light-density results use the same three-seed rule; the numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes.
 All observed prioritization is statistical contention shaping, not deterministic real-time communication~\cite{kosekszott2012What}.
 
 \medskip
@@ -54,7 +54,7 @@ The corridor is a one-hop highway multicast setting with a single crash source: 
 
 \medskip
 \noindent\textbf{Interpretation caveats that affect how results are read.}
-Absolute Voice delays remain far below representative platooning budgets even under plain \gls{dcf} (\autoref{sec:eval:disc:significance})~\cite{ts22186}, so the reported sub-millisecond Voice gains quantify \gls{mac}-level headroom rather than demonstrated application-level safety benefit, while Best Effort penalties can be severe.
+Absolute Voice delays remain far below representative platooning budgets even under plain \gls{dcf} (\autoref{sec:eval:disc:significance})~\cite{ts22186}, so the reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer rather than demonstrated application-level safety benefit, while Best Effort penalties from untimely blocking can still be severe.
 Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}); only within-class, cross-policy comparisons are controlled.
 Pooled Best Effort averages understate spatially concentrated cost near the crash source (\autoref{sec:eval:disc:spatial}), and unauthenticated Voice frames can arm suppression---a denial-of-service risk bounded by finite windows but not removed without authentication and rate limiting (\autoref{sec:eval:disc:dos}).
 
@@ -70,7 +70,7 @@ Several extensions follow directly from the limitations above and from the Evalu
 \noindent\textbf{Stronger evidence and richer scenarios.}
 Larger seed batches with confidence intervals or significance tests would move the study from qualitative mechanism checks toward statistically supported effect sizes.
 Richer propagation (fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the conditional frontier survives more realistic radio and traffic stress.
-Connecting Voice delay and loss to an application-level safety deadline, crash-avoidance distance, or other outcome metric would address the practical-significance gap left by the present sub-millisecond Voice tails~\cite{ts22186}.
+Connecting Voice delay and loss to an application-level safety deadline, crash-avoidance distance, or other outcome metric would address the practical-significance gap left by the present 2.2~ms Voice tails~\cite{ts22186}.
 
 \medskip
 \noindent\textbf{Baselines, parameters, and concurrency.}
