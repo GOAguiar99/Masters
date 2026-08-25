@@ -53,7 +53,7 @@ The model instantiates this process with low, medium, and high offered-load prof
 
 Crash-alert dissemination is an event-driven overlay on that background.
 One designated vehicle becomes the crash source at the configured crash time and begins emitting alert messages marked with \gls{dscp}~46, the Expedited Forwarding codepoint used in this study as the crash marker~\cite{RFC3246_EF_PHB,RFC4594_DiffServ_Service_Classes}.
-Each logical alert may be repeated a configurable number of times, with configurable spacing and jitter, to represent short warning bursts.
+Each logical alert may be repeated a configurable number of times, with configurable spacing and jitter, to represent short warning bursts; such application-level repetition of safety messages is the reliability mechanism on which robust broadcast schemes for vehicular networks are built~\cite{Robust_Broadcast_Ma,Reliable_Broadcast_Farnoud,Cooperative_Broadcast_Yoo}.
 Importantly, the crash-alert flow is \emph{superimposed} on the background flow rather than replacing it: the crash source continues to contribute ordinary \gls{be} traffic while simultaneously injecting urgent alerts.
 After the crash window ends, alerts cease and the network returns to \gls{be}-only operation, as detailed in \autoref{sec:sys:event}.
 

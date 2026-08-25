@@ -363,6 +363,11 @@ This section prices what it \emph{costs} on ordinary Best Effort traffic, under 
 
 \autoref{tab:eval:heavy_p95} explains \emph{when} the policy ladder taxes Best Effort.
 Voice P95 tracks the burst profile, not the \gls{mac}: about 4.6--4.9~ms at \texttt{low}/\texttt{medium} (20~ms and 15~ms repeat gaps) and about 2.2~ms at \texttt{high} (5~ms gap), with no policy separation.
+The arithmetic behind that floor is short enough to state.
+If the first successful physical copy of a burst is copy~$k$, the measured alert age equals $k$ inter-copy gaps plus airtime, $k\cdot g + \delta$, with $\delta \approx \SIrange{0.2}{0.7}{\milli\second}$---the repetition-diversity model used by reliable broadcast schemes for vehicular safety messages~\cite{Robust_Broadcast_Ma,Reliable_Broadcast_Farnoud}.
+The tail of the age distribution is therefore \emph{quantized} to multiples of the gap: contention does not set the quanta, it only shifts probability mass between them, raising the share of bursts that need a second copy as the offer grows.
+The P95 ladder of \autoref{tab:eval:heavy_p95} shows precisely this: $4.6 \approx 0.23\,g$ at \texttt{low} ($g = \SI{20}{\milli\second}$), $4.8 \approx 0.32\,g$ at \texttt{medium} ($g = \SI{15}{\milli\second}$), and $2.2 \approx 0.45\,g$ at \texttt{high} ($g = \SI{5}{\milli\second}$).
+The coefficient rises with contention while the quantum itself shrinks fourfold, which is why the Voice tail is lowest where the offer is densest---and why no \gls{mac} policy moves the tail under the uniform Poisson offer.
 The crash-node Best Effort row is the fair same-sender comparison: under \texttt{plain} it sits at 0.63~ms beside the fleet Best Effort P95 of 0.51~ms, as a single \gls{dcf} queue requires.
 \texttt{stable} inflates that crash-node tail to 14~ms at high load and already to 0.71~ms at low load; \texttt{guarded} to 3.9~ms; emergency keeps it at 0.44~ms by dropping competing frames.
 Fleet Best Effort shows the same ranking, with \texttt{stable} reaching 30~ms P95 at high load.
