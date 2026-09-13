@@ -160,7 +160,7 @@ Contention is therefore induced mainly by multicast load and fleet density, so t
 
 Finally, the model makes no deterministic or worst-case latency claims.
 \gls{edca} and all five policies provide statistical service only~\cite{kosekszott2012What,mangold2003QoS}.
-Any quantitative statements about Voice or Best Effort delay belong to the evaluation, not to closed-form bounds derived from this chapter.
+Quantitative Voice or Best Effort delay statements belong to the evaluation, not to closed-form bounds from this chapter.
 
-Together, the network, traffic, \gls{qos}, event, and scope definitions constitute the crash-aware system studied in the remainder of this dissertation.
-\autoref{chap:implementation} maps the model onto a concrete software realization and records the numeric parameter bindings used in the artifact; the evaluation then asks whether crash-triggered Voice traffic obtains better wireless service than ordinary Best Effort under contention, and what cost that protection imposes on ordinary traffic.
+Together, these definitions constitute the crash-aware system studied below.
+\autoref{chap:implementation} maps them onto the software artifact and its parameter bindings; \autoref{chap:evaluation} then measures Voice service under contention and the Best Effort cost of that protection.
