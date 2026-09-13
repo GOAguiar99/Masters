@@ -9,16 +9,13 @@ The evaluation is simulation-only and mechanism-oriented: it isolates statistica
 \section{Main Findings}
 \label{sec:conc:findings}
 
-Under heavy density and high offered load, Voice 95th-percentile alert age is about 2.2~ms under every policy: EDCA does not beat plain \gls{dcf}, and emergency's 2.21~ms versus 2.24~ms is not a material Voice-tail win.
-The policy contrast is Best Effort cost.
-\texttt{stable} raises fleet Best Effort P95 from 0.51~ms under plain \gls{dcf} to 30~ms; \texttt{guarded} to 3.9~ms; emergency keeps 0.37~ms by dropping competing frames (about $2.5\times10^{3}$ Best Effort drops while blocked)~\cite{aguiar2026_veins_qos}.
-
-The light-density high-load sweep is the same gating test rather than a Voice-gain story.
-Bounded adaptive profiles (\texttt{stable}/\texttt{guarded}) leave Voice P95 at 2.08~ms while inflating Best Effort P95 to 49~ms and 9.0~ms; only emergency shortens the Best Effort tail, by preemption rather than by protecting Voice.
-Cross-reading both densities shows an enabling condition that this matrix does not meet: adaptive blocking would help Voice only when removing Best Effort competition actually shortens alert service; under a Poisson 125~ms offer it mainly shifts delay onto ordinary traffic.
-
-The hotspot matrix exercises that enabling condition directly (\autoref{sec:eval:hotspot}): with three crash-adjacent vehicles bulk-uploading about \SI{2.4}{\mega\bit\per\second} each and the dense 20~ms burst profile, emergency preemption recovers Voice service --- $39\%$ lower mean and $21\%$ lower P95 alert age than plain \gls{dcf}, with $30\%$ fewer Voice-attributed collision losses --- at the price of about sixteen thousand explicitly dropped Best Effort frames per run.
+The primary positive result is the hotspot cell (\autoref{tab:eval:glance}, \autoref{sec:eval:hotspot}): with three crash-adjacent vehicles bulk-uploading about \SI{2.4}{\mega\bit\per\second} each and the dense 20~ms burst profile, emergency preemption recovers Voice service --- $39\%$ lower mean and $21\%$ lower P95 alert age than plain \gls{dcf}, with $30\%$ fewer Voice-attributed collision losses --- at the price of about sixteen thousand explicitly dropped Best Effort frames per run.
 The same overlay at sparser alert cadences (\texttt{medium}/\texttt{low}) restores the null effect, so the enabling conditions are jointly (i) concentrated near-crash airtime and (ii) a burst cadence dense enough to keep protection armed for most of the crash window.
+
+The uniform Poisson matrix is the scientific null against that win.
+Under heavy density and high offered load, Voice 95th-percentile alert age is about 2.2~ms under every policy: EDCA does not beat plain \gls{dcf}, and emergency's 2.21~ms versus 2.24~ms is not a material Voice-tail win.
+The policy contrast there is Best Effort cost: \texttt{stable} raises fleet Best Effort P95 from 0.51~ms under plain \gls{dcf} to 30~ms; \texttt{guarded} to 3.9~ms; emergency keeps 0.37~ms by dropping competing frames (about $2.5\times10^{3}$ Best Effort drops while blocked)~\cite{aguiar2026_veins_qos}.
+The light-density high-load sweep is the same gating test at smaller magnitude: bounded adaptive profiles leave Voice flat while inflating Best Effort P95.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Practical Takeaway}

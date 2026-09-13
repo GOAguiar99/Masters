@@ -55,11 +55,11 @@ Keep label `\label{chap:evaluation}`.
 ### Opening
 
 - Research question; protection-versus-cost; point to Implementation for how experiments are built.
-- Roadmap: Setup → Metrics → Light → Heavy → Discussion → Summary.
+- Roadmap: Setup → Metrics → Headline → Hotspot (primary) → Uniform null → Cost → Discussion → Summary.
 
 ### Experimental Setup (`sec:eval:setup`)
 
-- Light 10 veh / 5 seeds; heavy 100 veh / 3 seeds; 5×3 matrix.
+- Light 10 veh / 3 seeds; heavy 100 veh / 3 seeds; 5×3 matrix + hotspot overlay (15×3 = 45 seeded runs).
 - Cross-ref `tab:impl:parameters`; artifact cite; high-load stress quantification from SBESC.
 
 ### Metrics and Aggregation (`sec:eval:metrics`)
@@ -67,17 +67,30 @@ Keep label `\label{chap:evaluation}`.
 - E2E delay, P95, jitter; VO RX/alert; BE RX/TX; MAC drops; controller actions.
 - Arithmetic means over seeds; no CIs / no significance tests.
 
-### Light-Density Sensitivity Sweep (`sec:eval:light`)
+### Headline (`sec:eval:headline`)
 
-- Gating test; normalized table vs `plain_netload_high`.
+- Conditional claim once; **tab:eval:glance** map; regime contrast **fig_10** only (dose fig_09 lives under hotspot).
+- Early caveat: 2.2 ms is the high-load 5 ms gap; low/medium quantize to ~4.6–4.9 ms.
+- Relative-% vs plain unless noted; VO MAC-drop % vs EDCA.
 
-### Heavy-Density Stress Results (`sec:eval:heavy`)
+### Hotspot primary (`sec:eval:hotspot`)
 
-- QoS separation table; VO CDF (`Figs/fig_06_…`); MAC/controller panel; P95 ladder across loads.
+- `hotspot_high` win table + **fig_08**; dose table + **fig_09**; mechanism (preemption, starvation, dropping vs deferring).
+- Scale bridge 22k→72k BE TX; VO drops ~3.7k→~25k before policy separation.
+
+### Uniform null (`sec:eval:light`)
+
+- Short contrast: light table (VO % + absolute BE P95 ms); heavy QoS table + dual-panel **fig_01**.
+- No VO CDF / drop-attr floats; drop-attr reduced to one prose sentence.
+
+### Cost (`sec:eval:cost`)
+
+- Hotspot pricing first (**fig_04**); uniform controller / BE ladder as short coda (**fig_07**).
+- `tab:eval:heavy_p95` is **BE-only** (fleet + crash-node); VO rows removed.
 
 ### Discussion (`sec:eval:discussion`)
 
-Seven mandatory points: event-triggered escalation; plain sampling caveat; `ts22186` framing; coarse BE class; spatial BE unfairness; DoS risk; limitations.
+Seven mandatory points; cross-ref hotspot/tables instead of re-quoting −39%/−21%/2.2 ms every subsection.
 
 ### Chapter summary (`sec:eval:summary`)
 
@@ -90,23 +103,29 @@ Seven mandatory points: event-triggered escalation; plain sampling caveat; `ts22
 **Kept figures (delay/jitter + VO-loss focus):**
 | Float | Source |
 |-------|--------|
-| Heavy P95 gap | `Figs/fig_01_p95_delay_priority_gap_highway_heavy.pdf` |
-| VO delay CDF | `Figs/fig_06_vo_delay_cdf_high_load_highway_heavy.pdf` |
-| Drop attribution | `Figs/fig_05_mac_drop_attribution_high_load_highway_heavy.pdf` |
+| Heavy P95 gap (uniform null) | `Figs/fig_01_p95_delay_priority_gap_highway_heavy.pdf` |
+| Hotspot VO by policy | `Figs/fig_08_hotspot_vo_delay_by_policy_highway_heavy.pdf` |
+| Hotspot VO P95 by load | `Figs/fig_09_hotspot_vo_p95_by_load_highway_heavy.pdf` |
+| Regime contrast (netload vs hotspot) | `Figs/fig_10_regime_vo_p95_contrast_highway_heavy.pdf` |
+| VO gain vs BE cost | `Figs/fig_04_vo_gain_vs_be_cost_highway_heavy.pdf` |
+| V2X control load sweep | `Figs/fig_07_v2x_control_actions_by_load_highway_heavy.pdf` |
+
+Uncited after 2026-09 focus pass: fig_05 drop-attribution, fig_06 VO CDF (invariance already in tables + fig_01).
+
 
 **Tables:**
 | Float | Source |
 |-------|--------|
-| Light normalized | SBESC `tab:light_high_vs_plain` |
-| Heavy delay/jitter/RX | SBESC panel (a) |
-| Heavy VO loss | SBESC panel (b) VO incomplete / BE qdrop / totals |
-| Heavy drop attribution BE/VO/unclassified | dashboard fig_05 (totals match SBESC) |
-| Heavy controller actions | SBESC panel (b) |
-| Heavy P95 ladder | SBESC `tab:heavy_high_load_p95` |
-| Heavy drop rate × load | dashboard fig_02 cell values |
-| Heavy VO RX × load | dashboard fig_03 cell values |
+| Results at a glance | `tab:eval:glance` (headline map) |
+| Light gating (VO % + absolute BE P95) | SBESC light high vs plain |
+| Heavy delay/jitter/RX | SBESC panel (a) / `tab:eval:heavy_qos` |
+| Hotspot win + dose | `tab:eval:hotspot`, `tab:eval:hotspot_dose` |
+| Heavy BE P95 ladder (BE-only) | `tab:eval:heavy_p95` (VO rows removed 2026-09 clarity) |
+| Heavy controller actions | SBESC panel (b) / `tab:eval:heavy_ctrl` |
 
-Trimmed figures (available in `Figs/` but not cited): light fig_01, fig_02–04, fig_07.
+Removed from chapter (prose only): `tab:eval:heavy_drop_attr` — VO drops ~3.7×10³, no policy separation.
+
+Trimmed / optional: audit heatmaps fig_02–03; light fig_05–07 when counters are empty.
 
 ---
 

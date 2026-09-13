@@ -27,7 +27,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 | Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
 | Implementation | `chapters/4-chapter.tex` | **Done** — OMNeT++ 6.1 / INET 4.5.4 / Veins modules, `V2xHcf`/`V2xEdcaFsmController`, artifact mapping table (plan: `context/implementation-chapter-plan.md`) | SBESC §III-C | (removed) |
-| Evaluation | `chapters/5-chapter.tex` | **Done** — regime-conditional: uniform-load invariance (light+heavy) + hotspot VO gain + BE cost; fig_01/05/06/07/08/09 (plan: `context/evaluation-chapter-plan.md`) | post-fix KPI archive `context/eval-kpis/` | (legacy Preliminary Results removed earlier; supersedes SBESC §IV numbers) |
+| Evaluation | `chapters/5-chapter.tex` | **Done** — hotspot_high primary; glance map; uniform short null; BE-only heavy P95 ladder; fig_01/04/07/08/09/10 (plan: `context/evaluation-chapter-plan.md`) | post-fix KPI archive `context/eval-kpis/` | (legacy Preliminary Results removed earlier; supersedes SBESC §IV numbers) |
 | Conclusion | `chapters/6-chapter.tex` | **Done** — conditional takeaway (marking as default, blocking as event-triggered escalation); no Work Plan/Schedule (plan: `context/conclusion-chapter-plan.md`) | SBESC §V | DQ-WiFi work-plan phases / timeline |
 
 ## SBESC-only discussion material to absorb (post-DSD-review)
@@ -68,12 +68,13 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 |------|-----|
 | `system_model_architecture.pdf` | System model (Ch4; also ETFA) |
 | `event_timeline_cropped.pdf` | Crash timeline (Ch4; SBESC Fig. 1) |
-| `fig_01_p95_delay_priority_gap_highway_{light,heavy}.pdf` | BE vs VO P95 gap, high load (Ch6; post-fix campaign) |
-| `fig_05_mac_drop_attribution_high_load_highway_heavy.pdf` | MAC drop attribution, heavy/high (Ch6) |
-| `fig_06_vo_delay_cdf_high_load_highway_heavy.pdf` | VO delay CDF, heavy/high (Ch6; post-fix campaign) |
-| `fig_07_v2x_control_actions_by_load_highway_heavy.pdf` | Controller actions by load, heavy (Ch6) |
-| `fig_08_hotspot_vo_delay_by_policy_highway_heavy.pdf` | Hotspot VO mean/P95 by policy (Ch6) |
-| `fig_09_hotspot_vo_p95_by_load_highway_heavy.pdf` | Hotspot VO P95 dose-response (Ch6) |
+| `fig_01_p95_delay_priority_gap_highway_heavy.pdf` | Dual-panel VO/BE P95 at high load, heavy density (uniform null; light density as table) |
+| `fig_04_vo_gain_vs_be_cost_highway_heavy.pdf` | VO gain vs BE cost tradeoff (hotspot-first cost section) |
+| `fig_07_v2x_control_actions_by_load_highway_heavy.pdf` | Controller actions by load, heavy (uniform cost coda) |
+| `fig_08_hotspot_vo_delay_by_policy_highway_heavy.pdf` | Hotspot VO mean/P95 by policy (primary results) |
+| `fig_09_hotspot_vo_p95_by_load_highway_heavy.pdf` | Hotspot VO P95 dose-response |
+| `fig_10_regime_vo_p95_contrast_highway_heavy.pdf` | Regime contrast netload vs hotspot (headline) |
+| `fig_05_…` / `fig_06_…` | On disk; uncited after 2026-09 focus (drop-attr / VO CDF) |
 | `plain_class_p95.{tex,pdf}` | Removed 2026-08-16 (measurement-review figure; never referenced) |
 
 ### Legacy (delete when the referencing chapter is rewritten)
@@ -92,7 +93,7 @@ sources before removal).
 4. ~~Related Work (Ch2)~~ — done (stronger MACs, dynamics, adaptive EDCA/DCC, short TSN/OFDMA)
 5. ~~System Model (Ch3)~~ — done (SBESC §III-A/B + ETFA System Model structure)
 6. ~~Implementation (Ch4)~~ — done (SBESC §III-C + code module map)
-7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (regime-conditional structure: headline → uniform-load invariance → hotspot gain → BE cost → eight discussion subsections)
+7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (glance map + headline → hotspot_high primary → short uniform null → hotspot-first cost; fig_01/04/07/08/09/10; drop-attr table removed; heavy_p95 BE-only)
 8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
 
