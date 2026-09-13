@@ -26,7 +26,7 @@ Explicit DSCP-to-Voice mapping remains a reasonable default for crash-marked ale
 Adaptive Best Effort suppression---especially emergency preemption---should be treated as an event-triggered escalation level attached to genuine congestion and genuine alert activity, not as an always-on replacement for ordinary EDCA.
 Deployment would additionally require authentication, rate limiting, and plausibility checks before overheard Voice frames may arm suppression, because the same local trigger that protects a crash can be abused by faulty or malicious Voice traffic (\autoref{chap:evaluation}).
 
-Under a uniform Poisson offer the absolute Voice delays remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}, so alert latency is not the risk there --- the Best Effort cost is.
+Under a uniform Poisson offer the absolute Voice delays remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186} --- and most of the small residual is the alert generator's own dispatch jitter rather than channel access (\autoref{sec:eval:light}) --- so alert latency is not the risk there; the Best Effort cost is.
 Under concentrated hotspot contention the same budget becomes meaningful: plain \gls{dcf}/EDCA reach Voice P95 of 18.5--20~ms, within reach of that bound, while emergency keeps it at 14.6~ms (\autoref{sec:eval:hotspot}).
 The contribution is accordingly regime-aware \gls{mac}-level accounting --- cost when diffuse, benefit when concentrated --- not a claim that the simulated scenario alone guarantees application-level crash outcomes.
 
@@ -55,7 +55,7 @@ The corridor is a one-hop highway multicast setting with a single crash source: 
 
 \medskip
 \noindent\textbf{Interpretation caveats that affect how results are read.}
-The reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer, where delays remain far below representative platooning budgets~\cite{ts22186} and therefore describe mechanism rather than application-level safety benefit; under hotspot contention the baselines approach that budget (18.5--20~ms P95) and emergency keeps 14.6~ms (\autoref{sec:eval:disc:significance}), so absolute claims remain cell-specific, while Best Effort penalties from untimely blocking can still be severe in either cell.
+The reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer and is dominated by the alert generator's per-copy dispatch jitter rather than by medium access, so it is a floor no \gls{mac} policy could have lowered; delays there remain far below representative platooning budgets~\cite{ts22186} and therefore describe mechanism rather than application-level safety benefit; under hotspot contention the baselines approach that budget (18.5--20~ms P95) and emergency keeps 14.6~ms (\autoref{sec:eval:disc:significance}), so absolute claims remain cell-specific, while Best Effort penalties from untimely blocking can still be severe in either cell.
 Hotspot streaming nodes are placed by injection order rather than by a received-power map (\autoref{sec:eval:disc:limits}), so hotspot gain magnitudes depend on that geometry; placement sweeps belong to future work.
 Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}); only within-class, cross-policy comparisons are controlled.
 Pooled Best Effort averages understate spatially concentrated cost near the crash source (\autoref{sec:eval:disc:spatial}), and unauthenticated Voice frames can arm suppression---a denial-of-service risk bounded by finite windows but not removed without authentication and rate limiting (\autoref{sec:eval:disc:dos}).
@@ -80,7 +80,7 @@ Activation-criteria ablations and systematic parameter sweeps would separate whi
 Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the event-triggered profiles against established always-on congestion and prioritization families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
 Concurrent alert sources---and the interaction of overlapping protection windows---remain unevaluated.
 A closed-loop arming criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) would let the controller engage emergency suppression only under the coverage conditions where \autoref{tab:eval:hotspot_dose} shows a Voice return.
-Alternative protection timings, including predictive pre-blocking armed from a learned burst cadence, were implemented and ablated at the sparse-burst settings tested here without measurable benefit; timing remains an open axis under concentrated load.
+Alternative protection timings, including predictive pre-blocking armed from a learned burst cadence, were explored during development but showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled ablation; timing remains an open axis under concentrated load.
 
 \medskip
 \noindent\textbf{Deployment constraints.}

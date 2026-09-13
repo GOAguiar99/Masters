@@ -26,6 +26,9 @@ build/
 # Private reference PDF library (local context only)
 ref_papers/
 
+# Python caches from scripts/
+__pycache__/
+
 # Editor / OS
 *.swp
 *~

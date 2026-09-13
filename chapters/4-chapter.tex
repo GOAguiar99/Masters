@@ -4,7 +4,7 @@
 \autoref{chap:sysmodel} defined the crash-aware system at a conceptual level: a decentralized IEEE~802.11p highway network, a synthetic two-class \gls{be}/\gls{vo} traffic model, five \gls{mac} policies with a local three-mode controller, and a three-phase crash timeline.
 This chapter maps that model onto the concrete software artifact developed for this dissertation, so that a reader who already understands the design can reproduce the build, follow the packet path, and locate every study-specific module without consulting undocumented source comments.
 
-The realization is an \gls{omnet}~6.1~\cite{varga2008omnetpp} / \gls{inet}~4.5.4~\cite{inet_framework} / Veins~5.3.1~\cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
+The realization is an \gls{omnet}~6.1 \cite{varga2008omnetpp} / \gls{inet}~4.5.4 \cite{inet_framework} / Veins~5.3.1 \cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
 Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
 The chapter is organized as follows.
 Section~\ref{sec:impl:toolchain} pins the toolchain and repository layout.
@@ -30,7 +30,7 @@ Here the same stack is pinned to the versions used for the experiments and narro
 \label{sec:impl:versions}
 
 \gls{omnet}~6.1 provides the discrete-event engine, component model, and \texttt{.ini}/\texttt{.ned} configuration system in which every vehicle node is assembled~\cite{varga2008omnetpp}.
-\gls{inet}~4.5.4 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the Hybrid Coordination Function (\gls{hcf}) into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
+\gls{inet}~4.5.4 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the \gls{hcf} into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
 Veins couples \gls{omnet}/\gls{inet} to \gls{sumo} through \gls{traci}, so highway mobility, lane discipline, and the crash-node stop command remain consistent with the road microsimulation~\cite{veins_sommer2011,lopez2018sumo}.
 In the artifact tree, \texttt{inet/} and \texttt{veins/} are git submodules consumed as read-only frameworks, pinned to the \gls{inet}~4.5.4 and Veins~5.3.1 releases; the study-authored code lives under \texttt{veins\_qos/}~\cite{aguiar2026_veins_qos}.
 
@@ -131,7 +131,7 @@ This compound is the OMNeT++ \texttt{network} selected by every runnable configu
 The path is identical for Best Effort and Voice except for DSCP marking, classifier mapping, and---under adaptive policies---\gls{hcf}-level Best Effort gating.
 
 \begin{figure}[htb]
-	\caption{\label{fig:impl:stack}Implemented cross-layer path from study applications to the shared radio. Adaptive \gls{hcf} modules appear only under the \texttt{edca\_v2x\_vo\_*} policies.}
+	\caption{\label{fig:impl:stack}Implemented cross-layer path from study applications to the shared radio. Adaptive \glsentryshort{hcf} modules appear only under the \texttt{edca\_v2x\_vo\_*} policies.}
 	\begin{center}
 		\includegraphics[width=0.95\linewidth]{Figs/impl_stack.pdf}
 	\end{center}
@@ -208,6 +208,10 @@ At absolute simulation time \texttt{crashAt} (30~s in the highway packages), the
   \item begins emitting Voice bursts marked with DSCP~46, each logical sequence comprising \texttt{repeatCount} physical packets spaced by \texttt{repeatGap} with optional \texttt{repeatJitter}.
 \end{enumerate}
 
+Copy~$i$ of a sequence is scheduled at $\max(0,\; i\cdot\texttt{repeatGap} + U(-J,\,J))$ after the logical burst time, where $J$ is \texttt{repeatJitter}.
+The jitter therefore applies to the \emph{first} copy as well as to later repeats, so even an alert delivered on its first transmission carries a dispatch offset whose 95th percentile is $0.9\,J$.
+Because the same logical burst time is the origin of the alert-age metric (\autoref{sec:impl:signals}), this offset is a lower bound on measured Voice delay that no \gls{mac} policy can remove; \autoref{sec:eval:light} quantifies its effect on the reported Voice tails.
+
 After \texttt{resumeAfter} (30~s), Voice transmission stops and TraCI restores normal speed control (\texttt{setSpeed(-1)}).
 The crash source continues to run \texttt{CritPacketSender} throughout, so alerts are superimposed on ongoing Best Effort traffic rather than replacing it (\autoref{sec:sys:traffic}).
 
@@ -233,7 +237,7 @@ The evaluation prefers logical TX when present so that repeatCount does not infl
 			  Inter-burst period and payload during the window. \\
 			\addlinespace
 			\texttt{repeatCount}\newline\texttt{repeatGap}\newline\texttt{repeatJitter} &
-			  Physical repeats of each logical alert. \\
+			  Physical repeats of each logical alert. Jitter is drawn per copy, including the first, so every copy carries a dispatch offset relative to the logical burst time. \\
 			\addlinespace
 			\texttt{localPort}~9002\newline\texttt{destPort}~9001 &
 			  TX on a dedicated local port; RX KPIs collected by Crit on~9001. \\
@@ -308,7 +312,7 @@ Their semantics match the three-mode controller of \autoref{sec:sys:controller};
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:impl:v2xhcf}Adaptive controller parameters exposed by \texttt{V2xHcf} / \texttt{V2xEdcaFsmController}.}
+	\caption[Adaptive controller parameters exposed by \texttt{V2xHcf}]{\label{tab:impl:v2xhcf}Adaptive controller parameters exposed by \texttt{V2xHcf} / \texttt{V2xEdcaFsmController}.}
 	\begin{center}
 		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X@{}}
 			\toprule
@@ -346,7 +350,7 @@ The controller does not rewrite backoff arithmetic or introduce scheduled gates;
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
-	\caption{\label{tab:impl:hooks}Principal integration hooks of \texttt{V2xHcf} relative to the stock INET \gls*{hcf}.}
+	\caption{\label{tab:impl:hooks}Principal integration hooks of \texttt{V2xHcf} relative to the stock INET \glsentryshort{hcf}.}
 	\begin{center}
 		\setlength{\tabcolsep}{4pt}
 		\begin{tabularx}{\linewidth}{@{}
@@ -440,12 +444,13 @@ DSCP markings still travel with IP packets for KPI classification at receivers, 
   \item \texttt{mac.hcf.typename = "Hcf"} (stock INET);
   \item \texttt{QosClassifier} as above;
   \item pending-queue capacities BK/BE/VI/VO = 128/128/64/32 (\texttt{edcaf[0..3]});
-  \item MSDU aggregation policy cleared (\texttt{msduAggregationPolicy.typename = ""});
+  \item \glsentryshort{msdu} aggregation policy cleared (\texttt{msduAggregationPolicy.typename = ""});
   \item \gls{aifsn} BK/BE/VI/VO = 7/3/2/2;
   \item \texttt{cwMin}/\texttt{cwMax} BK/BE = 15--1023, VI = 7--15, VO = 3--7.
 \end{itemize}
 
 INET indexes \texttt{edcaf[0]=BK}, \texttt{[1]=BE}, \texttt{[2]=VI}, \texttt{[3]=VO}; the active applications exercise only BE and VO, so VI/BK queues exist but remain empty under the two-class traffic model.
+Clearing the aggregation policy disables \gls{msdu} aggregation, so each application packet maps to exactly one transmitted frame and MAC-level counters stay comparable across policies.
 
 \subsection{Adaptive profiles}
 \label{sec:impl:adaptive}
@@ -501,14 +506,14 @@ Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt
 	>{\raggedright\arraybackslash}p{2.9cm}
 	>{\raggedright\arraybackslash}X
 	@{}}
-	\caption{\label{tab:impl:parameters}Simulation parameters used in the crash-aware Veins/\gls*{inet} artifact.}\\
+	\caption{\label{tab:impl:parameters}Simulation parameters used in the crash-aware Veins/\glsentryshort{inet} artifact.}\\
 	\toprule
 	\multicolumn{3}{@{}l@{}}{\textbf{Common highway setting}} \\
 	\midrule
 	\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
 	\midrule
 	\endfirsthead
-	\caption[]{Simulation parameters used in the crash-aware Veins/\gls*{inet} artifact. (continued)}\\
+	\caption[]{Simulation parameters used in the crash-aware Veins/\glsentryshort{inet} artifact. (continued)}\\
 	\toprule
 	\textbf{Parameter} & \textbf{Value} & \textbf{Notes} \\
 	\midrule
@@ -637,8 +642,8 @@ Every configuration shares the IEEE~802.11p radio profile summarized in \autoref
   \item operation mode \texttt{p}, band 5.9~GHz, channel~3, bandwidth 10~MHz, transmit power 20~mW;
   \item radio typename \texttt{Ieee80211DimensionalRadio};
   \item antenna mobility attached to the vehicle mobility module with a fixed longitudinal/height offset;
-  \item obstacle loss typename \path{IdealObstacleLoss}, configured from
-        \path{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
+  \item obstacle loss typename \path{IdealObstacleLoss},\newline
+        configured from \path{highway.obstacles.xml}~\cite{inet_ideal_obstacle_loss};
   \item free-space path loss and a static SNIR threshold, without small-scale fading or shadowing (\autoref{sec:sys:scope}).
 \end{itemize}
 
@@ -734,6 +739,7 @@ These signals are the measurement surface consumed by Evaluation; their statisti
 End-to-end delay is computed at receivers as simulation time minus \texttt{CreationTimeTag}.
 Best Effort stamps creation at each physical send.
 Crash Voice stamps creation at the logical burst start (\texttt{logicalCreationTime}), so the Voice delay sample is alert age---the time from the first attempt of that sequence until a receiver's first accepted copy---rather than the air time of a later physical repeat~\cite{aguiar2026_veins_qos}.
+Alert age consequently includes the per-copy dispatch jitter described in \autoref{sec:impl:crash}, which is the intended semantics (the alert is only as timely as the application makes it) but must be kept in mind when absolute Voice delays are read.
 Receivers also record a crash-node Best Effort slice (\texttt{beEndToEndDelayFromCrash}) for packets whose source is the designated crash vehicle, so Voice can be compared with Best Effort from the same sender.
 
 \subsection{Offline analysis tooling}

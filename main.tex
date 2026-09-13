@@ -193,7 +193,9 @@
 \DeclareDelimFormat{multinamedelim}{\addsemicolon\allowbreak\space}
 \DeclareDelimFormat{finalnamedelim}{\addsemicolon\allowbreak\space}
 \DeclareDelimFormat{nameyeardelim}{\addcomma\allowbreak\space}
-\DeclareDelimFormat{andothersdelim}{\addcomma\allowbreak\space}
+% ABNT prints "SOBRENOME et al." with no comma before "et al."; keep only the
+% break opportunity that the redefinition above was introduced for.
+\DeclareDelimFormat{andothersdelim}{\allowbreak\space}
 \setlength{\emergencystretch}{3em}
 % ---
 
@@ -204,10 +206,11 @@
 % ---
 
 \newacronym[user1=\emph{Projeto de Parceria de 3ª Geração}]{threegpp}{3GPP}{3rd Generation Partnership Project}
-\newacronym[user1=\emph{categoria de acesso}]{ac}{AC}{Access Category}
+\newacronym[user1=\emph{categoria de acesso},longplural={Access Categories}]{ac}{AC}{Access Category}
 \newacronym[user1=\emph{confirmação de recebimento}]{ack}{ACK}{Acknowledgment}
 \newacronym[user1=\emph{espaço entre quadros de arbitragem}]{aifs}{AIFS}{Arbitration Interframe Space}
 \newacronym[user1=\emph{número do espaço entre quadros de arbitragem}]{aifsn}{AIFSN}{Arbitration Interframe Space Number}
+\newacronym[user1=\emph{ponto de acesso}]{ap}{AP}{Access Point}
 \newacronym[user1=\emph{melhor esforço}]{be}{BE}{Best Effort}
 \newacronym[user1=\emph{retirada exponencial binária}]{beb}{BEB}{Binary Exponential Backoff}
 \newacronym[user1=\emph{categoria background}]{bk}{BK}{Background}
@@ -243,6 +246,7 @@
 \newacronym[user1=\emph{comunicação entre veículos}]{ivc}{IVC}{Inter-Vehicle Communication}
 \newacronym[user1=\emph{indicador-chave de desempenho}]{kpi}{KPI}{Key Performance Indicator}
 \newacronym[user1=\emph{controle de acesso ao meio}]{mac}{MAC}{Medium Access Control}
+\newacronym[user1=\emph{múltiplas entradas e múltiplas saídas}]{mimo}{MIMO}{Multiple-Input Multiple-Output}
 \newacronym[user1=\emph{unidade de dados de serviço MAC}]{msdu}{MSDU}{MAC Service Data Unit}
 \newacronym[user1=\emph{descrição de rede do OMNeT++}]{ned}{NED}{Network Description}
 \newacronym[user1=\emph{fora do contexto de um BSS}]{ocb}{OCB}{Outside the Context of a BSS}
@@ -312,6 +316,7 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Var}{\operatorname{Var}}
 
+
 \usepackage{todonotes}
 
 \pdfminorversion=7
@@ -351,6 +356,9 @@
 % ----------------------------------------------------------
 % ELEMENTOS TEXTUAIS
 % ----------------------------------------------------------
+% Reset acronym first-use flags so that the lists of figures/tables in the
+% front matter do not consume the first expansion of a term in the body.
+\glsresetall
 \textual
 
 % ---

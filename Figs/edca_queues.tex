@@ -27,13 +27,13 @@
   \node[queue] (qBK) at (3.15,0.75) {\textbf{AC\_BK}\\[-1pt]{\scriptsize\itshape queue}};
 
   % Backoff entities
-  \node[backoff] (boVO) at (6.15,4.05)
+  \node[backoff] (boVO) at (7.45,4.05)
     {Backoff entity\\[-1pt]{\scriptsize AIFSN$_{\mathrm{VO}}$, CW, TXOP}};
-  \node[backoff] (boVI) at (6.15,2.95)
+  \node[backoff] (boVI) at (7.45,2.95)
     {Backoff entity\\[-1pt]{\scriptsize AIFSN$_{\mathrm{VI}}$, CW, TXOP}};
-  \node[backoff] (boBE) at (6.15,1.85)
+  \node[backoff] (boBE) at (7.45,1.85)
     {Backoff entity\\[-1pt]{\scriptsize AIFSN$_{\mathrm{BE}}$, CW, TXOP}};
-  \node[backoff] (boBK) at (6.15,0.75)
+  \node[backoff] (boBK) at (7.45,0.75)
     {Backoff entity\\[-1pt]{\scriptsize AIFSN$_{\mathrm{BK}}$, CW, TXOP}};
 
   % Fan-out MSDU → queues
@@ -50,7 +50,7 @@
   \draw[arr] (qBK) -- (boBK);
 
   % Virtual collision resolver
-  \node[stage, minimum width=2.35cm, minimum height=1.60cm] (vcr) at (9.30,2.40)
+  \node[stage, minimum width=2.35cm, minimum height=1.60cm] (vcr) at (10.60,2.40)
     {Virtual\\[-1pt]collision\\[-1pt]resolver\\[-2pt]
      {\scriptsize\itshape higher AC wins}};
 
@@ -60,7 +60,7 @@
   \draw[arr] (boBK.east) -- ++(0.30,0) |- ($(vcr.west)+(0,-0.48)$);
 
   % Shared medium
-  \node[sink] (tx) at (12.00,2.40) {TX onto\\[-1pt]shared medium};
+  \node[sink] (tx) at (13.30,2.40) {TX onto\\[-1pt]shared medium};
   \draw[arr] (vcr) -- (tx);
 
   % Brace: priority order
@@ -77,7 +77,7 @@
     UP 0, 3 $\;\rightarrow\;$ AC\_BE\qquad
     UP 1, 2 $\;\rightarrow\;$ AC\_BK};
 
-  \node[lbl, anchor=west, align=left] at (7.55,-0.70) {%
+  \node[lbl, anchor=west, align=left] at (8.85,-0.70) {%
     On virtual collision, the lower AC treats the\\
     event as an external collision (CW doubles).};
 \end{tikzpicture}

@@ -104,8 +104,8 @@ That narrower question is the gap this dissertation fills.
 		    TSNCtl\newline\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
 		    PRP-MAC\newline\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
 		    CFC-MAC\newline\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
-		    NR-V2X Mode~2\newline\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy SPS & Different RAT \\
-		    SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \gls*{cch}-induced \gls*{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
+		    NR-V2X Mode~2\newline\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy \gls*{sps} & Different radio access technology \\
+		    SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \glsentryshort{cch}-induced \glsentryshort{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
 		    Adaptive EDCF\newline\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
 		    DCC\newline\cite{etsi_dcc_2018} & CBR-driven TPC/TRC/access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
 		    Wireless TSN / OFDMA\newline\cite{seliem2023wirelesstsn,schneider_trigger_2024} & TAS/TWT/RU scheduling & Wi-Fi~6/NIC mods or sync & Industrial / scheduled & Tighter latency control & Out of OCB scope \\
@@ -139,7 +139,7 @@ A mechanism that only remaps DSCP to Voice still contends through random backoff
 \subsection{Reshaping when traffic may contend}
 \label{sec:rw:skipcch}
 
-Garrido Abenza et al.\ study video delivery over \gls{wave} multi-channel operation and show that the IEEE~1609.4 Control Channel / Service Channel alternation can accumulate packets during the Control Channel interval and release them as a burst at the start of the Service Channel interval, inflating contention and loss~\cite{SkipCCH_Garrido,ieee1609_4}.
+Garrido Abenza et al.\ study video delivery over \gls{wave} multi-channel operation and show that the IEEE~1609.4 \gls{cch} / \gls{sch} alternation can accumulate packets during the \glsentryshort{cch} interval and release them as a burst at the start of the \glsentryshort{sch} interval, inflating contention and loss~\cite{SkipCCH_Garrido,ieee1609_4}.
 Their SkipCCH method reshapes transmission timing so that the MAC avoids those artificial bursts, improving reconstructed video quality and reducing starvation of lower-priority access categories under QoS operation~\cite{SkipCCH_Garrido}.
 
 SkipCCH is not a crash-alert protocol: it targets video over multi-channel WAVE, not one-hop multicast warnings on a single channel.

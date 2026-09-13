@@ -62,7 +62,7 @@ Every station contends for a shared channel under the rules of DCF or EDCA, and 
 \label{sec:bg:dcf}
 % ----------------------------------------------------------------------
 
-The \gls{dcf} is the fundamental contention-based access method of IEEE~802.11~\cite{IEEE80211}.
+The \gls{dcf} is the fundamental contention-based access method of IEEE~802.11 \cite{IEEE80211}.
 It is also the non-differentiated baseline of this study: the \texttt{plain} policy runs a single pending queue with no DSCP-to-access-category classifier and no EDCA parameter differentiation.
 Understanding DCF in detail is therefore prerequisite both to reading the evaluation baselines and to appreciating what EDCA adds---and what it still fails to guarantee.
 
@@ -126,7 +126,7 @@ This dissertation therefore focuses exclusively on EDCA, which is the mechanism 
 \subsection{EDCA access categories and contention parameters}
 \label{sec:bg:edca-mech}
 
-EDCA maintains four \glspl{ac}---Voice (\texttt{AC\_VO}), \gls{vi} (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and \gls{bk} (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.
+EDCA maintains four \glspl{ac}---Voice (\texttt{AC\_VO}), Video (\texttt{AC\_VI}), Best Effort (\texttt{AC\_BE}), and Background (\texttt{AC\_BK})---as parallel backoff entities within a station~\cite{IEEE80211e_2005,mangold2003QoS,kong2004EDCA}.\glsadd{vi}\glsadd{bk}
 Each category has its own transmit queue and its own set of contention parameters: an \gls{aifsn}, a minimum and maximum contention window ($\mathrm{CW}_{\min}[\mathrm{AC}]$, $\mathrm{CW}_{\max}[\mathrm{AC}]$), and an optional \gls{txop} limit.
 The \gls{aifs} of category $i$ is built from the \gls{sifs} as
 \begin{equation}
@@ -201,13 +201,13 @@ Related Work develops the contrast with adaptive EDCA, with DCC, and with synchr
 \label{sec:bg:80211aa}
 
 IEEE~802.11aa and IEEE~802.11ae later extended the QoS toolkit for infrastructure WLANs~\cite{kosekszott2012What}.
-802.11aa introduced the Group Addressed Transmission Service (GATS), including GroupCast with Retries (\gls{gcr}) Unsolicited Retry and GCR Block Ack, to raise the delivery probability of group-addressed frames that the base standard transmits without retries.
+802.11aa introduced the Group Addressed Transmission Service (GATS), including \gls{gcr} Unsolicited Retry and \glsentryshort{gcr} Block Ack, to raise the delivery probability of group-addressed frames that the base standard transmits without retries.
 It also added intra-AC queue splitting for Voice and Video and a Stream Classification Service (SCS) that can map streams to queues independently of the 802.1D user-priority table.
 802.11ae introduced the QoS Management Frame (QMF) policy so that management frames need not always consume the highest access category.
 
 These amendments are evidence of an acknowledged gap: standard group-addressed delivery was recognized as unreliable or unscalable, and substantial protocol machinery was added to repair it in BSS operation~\cite{kosekszott2012What}.
 They do not, however, transfer to the OCB setting of this study.
-GCR, directed multicast, and related AP-centric mechanisms presuppose an infrastructure BSS, association state, and often a coordinator; none of these are present when vehicles exchange frames Outside the Context of a BSS.
+GCR, directed multicast, and related mechanisms centred on an \gls{ap} presuppose an infrastructure BSS, association state, and often a coordinator; none of these are present when vehicles exchange frames Outside the Context of a BSS.
 The crash-alert multicast of this dissertation therefore inherits the unresolved group-addressed contract of the base standard, as elaborated in Section~\ref{sec:bg:multicast}.
 
 % ----------------------------------------------------------------------
@@ -356,7 +356,7 @@ The DSCP$\rightarrow$UP$\rightarrow$AC mechanics carry over unchanged to OCB bec
 RFC~9119 analyzes multicast over IEEE~802 wireless media as an Informational operational document~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Three limitations dominate the crash-alert setting.
 First, because there are no ACKs for multicast packets, the transmitter cannot know whether a retransmission is needed; there is consequently no loss-driven backoff on behalf of failed receivers, and packet loss rates of 5\% or more are not uncommon~\cite{RFC9119_Multicast_IEEE802_Wireless}.
-Second, multicast and broadcast traffic is generally transmitted at the slowest rate among connected devices---the basic rate---so that every intended receiver can decode the frame; spectral-efficiency techniques such as multi-user MIMO spatial multiplexing are unavailable with more than one intended receiver~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+Second, multicast and broadcast traffic is generally transmitted at the slowest rate among connected devices---the basic rate---so that every intended receiver can decode the frame; spectral-efficiency techniques such as multi-user \gls{mimo} spatial multiplexing are unavailable with more than one intended receiver~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Third, low-rate transmissions occupy the medium longer, consuming airtime that would otherwise be available to other stations and degrading overall capacity~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 
 \autoref{tab:bg:multicast-tools} summarizes which reliability tools are available in infrastructure BSS operation versus in the OCB setting of this study.
