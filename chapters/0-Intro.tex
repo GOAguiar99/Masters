@@ -9,7 +9,7 @@ Within IEEE~802.11, two standard mechanisms are central to traffic differentiati
 
 Recent literature pursues stronger contention control through slot-based schedulers inspired by \gls{tsn}, preemptive or cooperative \gls{mac} schemes, and cellular sidelink resource allocation \cite{TSNCtl_Feraudo, PRP_MAC_Li, CFC_MAC_Linn, CV2X_Sidelink_Allocation}. These approaches confirm the value of tighter contention control, but they rely on synchronization, infrastructure, or richer protocol machinery, assumptions that are difficult to satisfy in a decentralized vehicular ad hoc network. This leaves a practical gap for a local, event-driven design that isolates one crash-triggered high-priority flow against ordinary background traffic and quantifies both the protection obtained and the penalty imposed. Staying within standard IEEE~802.11p mechanisms keeps such a design deployable: no clock synchronization, infrastructure, or protocol changes are required, and adoption can proceed per node.
 
-This dissertation addresses that gap with a deliberately narrow study: a focused crash-aware prioritization strategy built from standard mechanisms rather than a new MAC protocol. All vehicles exchange periodic \gls{be} multicast traffic, while one designated crash vehicle emits temporary alert bursts marked with DSCP~46 and mapped to the \gls{vo} access category. On top of this two-class model, five MAC policies are compared: a plain \gls{dcf} baseline, EDCA with explicit DSCP-to-Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, and \texttt{emergency}) that temporarily suppress or drop competing BE traffic while alerts are active. The adaptive profiles are fixed design points that map a protection-versus-cost frontier, aiming at better statistical latency under congestion rather than deterministic guarantees.
+This work addresses that gap by proposing a focused crash-aware prioritization strategy built from standard mechanisms rather than a new MAC protocol. All vehicles exchange periodic \gls{be} multicast traffic, while one designated crash vehicle emits temporary alert bursts marked with DSCP~46 to receive preferential channel access. On top of this two-class model, five MAC policies are compared: a plain \gls{dcf} baseline, EDCA with explicit DSCP-to-Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, and \texttt{emergency}) that temporarily suppress or drop competing BE traffic while alerts are active. The adaptive profiles are fixed design points that map a protection-versus-cost frontier, aiming at better statistical latency under congestion rather than deterministic guarantees.
 
 \section{Research Question and Scope}
 \label{sec:intro:question}
@@ -17,17 +17,17 @@ This dissertation addresses that gap with a deliberately narrow study: a focused
 The central question investigated in this dissertation is:
 
 \begin{quote}
-	Can crash-triggered traffic obtain better wireless service than ordinary traffic in Veins/\gls{inet} simulations, and what cost does that protection impose on ordinary traffic?
+	Can crash-triggered traffic obtain better wireless service than ordinary traffic under contention, and what cost does that protection impose on ordinary traffic?
 \end{quote}
 
-The scope is intentionally minimal. The study considers a single crash source, a two-class BE/VO traffic distinction, and one-hop multicast dissemination on a highway corridor, with no access points, roadside units, or centralized coordination. It does not attempt to reproduce a full \gls{its} stack, standardized cooperative-awareness message schedules, or multi-class traffic orchestration. All findings are obtained by simulation in \gls{omnet}/Veins/\gls{inet}, and all observed prioritization is statistical contention shaping: no deterministic slotting, synchronization, or provable worst-case bounds are claimed.
+The study considers a single crash source, a two-class BE/VO traffic distinction, and one-hop multicast dissemination on a highway corridor, with no access points, roadside units, or centralized coordination. It does not attempt to reproduce a full \gls{its} stack, standardized cooperative-awareness message schedules, or multi-class traffic orchestration. Within this scope, the study evaluates how local MAC prioritization affects crash-alert service and the cost to ordinary traffic in decentralized vehicular Wi-Fi. All findings are obtained by simulation in \gls{omnet}/Veins/\gls{inet}, and all observed prioritization is statistical contention shaping: no deterministic slotting, synchronization, or provable worst-case bounds are claimed.
 
 \section{Objectives}
 \label{sec:intro:objectives}
 
-The general objective of this dissertation is to evaluate, through simulation, whether crash-triggered Voice traffic can obtain measurably better wireless service than ordinary Best Effort traffic in decentralized vehicular Wi-Fi, using only local, standard-compliant MAC mechanisms, and to quantify the cost that this protection imposes on ordinary traffic.
+The main objective of this dissertation is to evaluate, through simulation, whether crash-triggered Voice traffic can obtain measurably better wireless service than ordinary Best Effort traffic in decentralized vehicular Wi-Fi, using only local, standard-compliant MAC mechanisms, and to quantify the cost that this protection imposes on ordinary traffic.
 
-The specific objectives are:
+To achieve the main objective, we define the following specific objectives:
 
 \begin{enumerate}
 	\item To implement a crash-triggered two-class traffic model in Veins/\gls{inet}, in which all vehicles generate periodic BE multicast traffic and a designated crash vehicle emits DSCP~46 alert bursts mapped to the VO access category through an explicit classifier.

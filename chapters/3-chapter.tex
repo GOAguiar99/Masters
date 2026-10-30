@@ -35,7 +35,7 @@ Group-addressed IEEE~802 frames inherit the hostile link-layer contract already 
 	\fonte{Prepared by the author.}
 \end{figure}
 
-The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; reference transmit power, channel index, sensitivity, noise floor, and \gls{snir} threshold are fixed for all policies and recorded with the implementation parameters in \autoref{tab:impl:parameters}.
+The radio model uses an IEEE~802.11p physical layer at 5.9~GHz with 10~MHz channelization; radio settings are held fixed across all policies.
 Propagation is free-space path loss with binary obstruction and without small-scale fading or shadowing, as stated in \autoref{sec:sys:scope}.
 \emph{Physical-layer connectivity is held fixed across the five \gls{mac} policies}, so differences between \gls{be} and \gls{vo} service reflect queueing and contention rather than time-varying link quality.
 Dense highway broadcast already stresses this shared medium through repeated backoff freezing under load~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}; the model isolates that contention so that the policies can be compared under controlled offered load.
@@ -89,7 +89,6 @@ None of the policies reserves the channel or claims deterministic delay bounds: 
 
 \noindent
 For brevity the adaptive policies are often abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency}.
-Queue depths, contention windows, and controller timing knobs for each policy are bound in the implementation and listed in \autoref{tab:impl:parameters}.
 
 \subsection{Adaptive three-mode controller}
 \label{sec:sys:controller}
@@ -149,7 +148,7 @@ It isolates a single crash source and a bounded alert interval so that the five 
 
 The model is intentionally minimal.
 There is no infrastructure, centralized scheduler, or Time-Sensitive Networking-style gating; there is a single crash source; and there is a two-class \gls{be}/\gls{vo} distinction only.
-Road geometry, fleet density, and radio parameters fix concrete instances of the model; their reference values are recorded with the implementation in \autoref{tab:impl:parameters}.
+Road geometry, fleet density, and radio parameters fix concrete instances of the model; their values are specified in the Implementation chapter.
 
 \gls{dcc}, as standardized for ITS-G5 deployments, is \emph{not} part of the model: application transmit rates follow the fixed offered-load profiles rather than reacting to channel busy ratio~\cite{etsi_dcc_2018}.
 As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regulator; excluding it here isolates the protection-versus-cost behaviour of the five \gls{mac} policies.

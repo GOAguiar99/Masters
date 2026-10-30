@@ -4,7 +4,7 @@
 \autoref{chap:sysmodel} defined the crash-aware system conceptually, and \autoref{chap:implementation} mapped it onto the Veins/\gls{inet} artifact.
 This chapter asks whether that realization works as intended: does crash-triggered Voice traffic obtain better wireless service than ordinary Best Effort under contention, and what cost does that protection impose on ordinary traffic?
 
-The evaluation is a protection-versus-cost study, not a claim of deterministic real-time guarantees~\cite{kosekszott2012What,IEEE80211e_2005}.
+The evaluation is a protection-versus-cost study, not a claim of deterministic real-time guarantees.
 Two highway-density packages are used: a light-density sensitivity sweep (10~vehicles) and a heavy-density congestion stress case (100~vehicles), with emphasis on the latter~\cite{aguiar2026_veins_qos}.
 Numeric bindings for timing, radio, load, and \gls{mac} policies are those of \autoref{tab:impl:parameters}; this chapter reports outcomes, not module wiring.
 
@@ -403,6 +403,8 @@ In short: deferral buys delay; dropping buys silence; only dropping yields Voice
 \section{Discussion}
 \label{sec:eval:discussion}
 
+The results establish a conditional protection-versus-cost trade-off. The following discussion interprets when the adaptive profiles help, what they cost, and how measurement and deployment limits shape that interpretation.
+
 \subsection{Event-triggered escalation, not always-on QoS}
 \label{sec:eval:disc:escalation}
 
@@ -472,7 +474,7 @@ The hotspot cells place streaming nodes by injection order rather than by a rece
 Within that scope the comparison remains internally fair: all configurations share the same \gls{phy} stack, mobility trace, and load matrix, isolating \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Chapter Summary}
+\section{Summary}
 \label{sec:eval:summary}
 
 The evaluation compared five \gls{mac} policies on the same highway matrix and found a regime-conditional answer rather than a universal Voice-tail race.

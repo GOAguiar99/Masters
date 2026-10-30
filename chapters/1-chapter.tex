@@ -37,7 +37,7 @@ As discussed in Section~\ref{sec:bg:multicast}, however, group-addressed IEEE~80
 \subsection{Quantified latency and reliability budgets}
 \label{sec:bg:budgets}
 
-Service requirements for V2X scenarios are stated quantitatively by \textcite{ts22186} in TS~22.186.
+The 3rd Generation Partnership Project (3GPP) specifies V2X service requirements in TS~22.186~\cite{ts22186}.
 Table~5.2-1 of that specification lists performance targets for vehicle platooning as a function of the degree of automation.
 Requirement~[R.5.2-004] specifies, for the lowest degree of automation, an end-to-end latency of \SI{25}{\milli\second}, a reliability of 90\%, a message size of 300--400~bytes, and a rate of 30~messages per second.
 Harsher rows in the same table raise reliability and tighten latency as automation increases; the \SI{25}{\milli\second} figure is therefore a conservative, widely cited reference bound rather than the most stringent requirement in the document.
@@ -95,7 +95,7 @@ DCF therefore provides no \gls{qos} differentiation whatsoever.
 \subsection{Saturation throughput and the cost of contention}
 \label{sec:bg:saturation}
 
-Bianchi's classical analysis models the per-station backoff process under saturation---every station always has a packet ready to send---as a two-dimensional discrete-time Markov chain whose state is the pair $(\text{backoff stage}, \text{backoff counter})$, as developed by~\textcite{bianchi2000DCF}.
+Bianchi's classical analysis models the per-station backoff process under saturation---every station always has a packet ready to send---as a two-dimensional discrete-time Markov chain whose state is the pair $(\text{backoff stage}, \text{backoff counter})$~\cite{bianchi2000DCF}.
 Under the approximation that each transmission attempt collides with a constant conditional probability \gls{pcol} independent of retransmission history, the chain yields a nonlinear system in $p$ and in the per-slot transmission probability \gls{tau}, with a unique solution.
 From $\tau$ and $p$ one obtains the saturation throughput of the Basic Access and \gls{rts}/\gls{cts} modes.
 
