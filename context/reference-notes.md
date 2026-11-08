@@ -25,6 +25,8 @@ All reference PDFs live in `ref_papers/Relevant/` (gitignored, filenames = bib k
 | `CFC_MAC_Linn` | yes | Match | Sensors 23(2):1033, 2023. Distributed TDMA-based cooperative MAC — relies on time-slotted (synchronization-like) operation |
 | `SkipCCH_Garrido` | yes | Match | Computers 13(1):16, 2024. Multi-channel packet scheduling (SkipCCH) for video over VANET — relies on 1609.4 multi-channel machinery |
 | `veins_sommer2011` | yes | Match | IEEE TMC 10(1):3–15, Jan 2011 (verified from PDF header). Bidirectional coupling of OMNeT++ and SUMO via TraCI; mobility model choice strongly influences IVC results |
+| `etsi_en_302637_3` | no (ETSI PDF free to view at etsi.org) | Match (metadata) | Added 2026-11-08. EN 302 637-3 V1.3.1 (2019-04), DEN basic service supporting the Road Hazard Warning (RHW) application; DENM sent by the detecting ITS station. Cite only for "road-hazard warnings are standardized as decentralized environmental notifications" |
+| `naik2019ieee80211bd` | no (open: arXiv 1903.08391) | Match (metadata) | Added 2026-11-08. IEEE Access 7:70169–70184, 2019, DOI 10.1109/ACCESS.2019.2919489 (verified via IEEE Xplore/DOAJ). Survey of 802.11bd (backward compatible/interoperable with 802.11p, same distributed channel access) and NR V2X. Cite for 802.11bd successor + NR-V2X as distinct RAT |
 | `lopez2018sumo` | yes | Match | ITSC 2018, pp. 2575–2582 (DLR open-access copy). SUMO reference publication; microscopic, intermodal, TraCI coupling |
 
 The intro sentence "these approaches rely on synchronization, infrastructure, or richer protocol machinery" is **supported** by all four related-work papers (TSNCtl: sync+leader; PRP-MAC: UAV infrastructure+machinery; CFC-MAC: TDMA sync; NR-V2X sidelink: cellular resource machinery).

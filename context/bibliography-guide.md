@@ -8,7 +8,9 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 |-----|----------------|
 | `IEEE_80211p_Survey` | Intro, Background — vehicular Wi-Fi motivation (**deprecated for new text**; prefer `jiang2008ieee80211p` / `etsi_en_302663`) |
 | `jiang2008ieee80211p` | Background — reliable 802.11p / OCB reference |
-| `etsi_en_302663` | Background — ITS-G5 access layer |
+| `etsi_en_302663` | Intro, Background — ITS-G5 access layer |
+| `etsi_en_302637_3` | Intro — ETSI DENM road-hazard warning (V2X use-case anchor, professor rev. #1) |
+| `naik2019ieee80211bd` | Intro — 802.11bd as backward-compatible 802.11p successor; NR-V2X as a distinct RAT (professor rev. #3) |
 | `IEEE80211`, `IEEE80211e_2005` | Background — DCF/EDCA standards |
 | `bianchi2000DCF`, `kong2004EDCA`, `mangold2003QoS` | Background — DCF/EDCA analysis |
 | `ni2004Qiang`, `kosekszott2012What`, `Evolution_QoS_Mechanisms` | Background, Related Work — QoS surveys |
@@ -21,7 +23,7 @@ Single database: `aftertext/references.bib` (biblatex/abnt).
 | `TSNCtl_Feraudo`, `PRP_MAC_Li`, `CFC_MAC_Linn`, `CV2X_Sidelink_Allocation` | Related Work — stronger alternatives |
 | `11288825` | Related Work — prior SBESC2025 work (wireless TSN precursor) |
 | `etsi_dcc_2018` | Related Work — DCC positioning (complementary, not modeled; SBESC §II-B) |
-| `ts22186` | Evaluation/Discussion — 3GPP TS 22.186 25 ms platooning latency budget (SBESC discussion) |
+| `ts22186` | Intro, Background, Evaluation/Discussion — 3GPP TS 22.186 platooning latency budgets (10–25 ms; Background reproduces Table 5.2-1 rows) |
 | `aguiar2026_veins_qos` | Implementation, Evaluation — software artifact |
 
 ## Tier 2 — Tools (Implementation / Methodology)

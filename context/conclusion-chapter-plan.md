@@ -1,5 +1,7 @@
 # Conclusion chapter plan (`chapters/6-chapter.tex`, prints as Chapter 7)
 
+> **Note (2026-11-08):** section titles in this chapter were renamed in the professor-revision #26 style pass; `\label`s are unchanged. Current titles and the full rename list: `docs/spec/professor-revisions.md` (“#26 style pass: change log”).
+
 **Goal:** replace the legacy DQ-WiFi Work Plan / Schedule with a crash-aware Conclusion that closes the research question, restates headline findings with exact KPIs, states the conditional practical takeaway, and lists limitations and future work—without inventing results or re-running Evaluation discussion.
 
 **Status of this file:** implemented in `chapters/6-chapter.tex` (August 2026). Work Plan / timeline deleted.
