@@ -85,36 +85,10 @@ The present dissertation drops \gls{tas}-oriented scheduling, abandons synchroni
 \subsection{Synthesis: stronger control under broader assumptions}
 \label{sec:rw:stronger-synth}
 
-\autoref{tab:rw:comparison} summarizes the approaches in this section and the families reviewed later.
-Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study.
+The comparative summary of these approaches, together with the families reviewed later in this chapter, is consolidated in \autoref{tab:rw:comparison}, which closes the chapter in \autoref{sec:rw:gap}.
 Collectively, TSNCtl, PRP-MAC, CFC-MAC, and NR-V2X Mode~2 demonstrate that tighter contention or resource control can improve safety-oriented delivery metrics, but each relies on synchronization, a coordinating entity, TDMA-style reservations, UAV or roadside assistance, or cellular sidelink machinery~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 None isolates the narrow question of whether a local, standard-compliant EDCA stack---augmented only by explicit DSCP-to-Voice mapping and short-lived BE suppression---can protect a crash-triggered multicast burst and at what cost to ordinary traffic.
 That narrower question is the gap this dissertation fills.
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:rw:comparison}Comparative summary of related approaches and this dissertation.}
-	\begin{center}
-		\setlength{\tabcolsep}{3pt}
-		\renewcommand{\arraystretch}{1.05}
-		\begin{tabularx}{\linewidth}{@{}*{6}{>{\RaggedRight\arraybackslash}X}@{}}
-		    \toprule
-		    Approach & Key mechanism & Requirements & Target traffic & Advantages (claimed) & Relation to this work \\
-		    \midrule
-		    TSNCtl\newline\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
-		    PRP-MAC\newline\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
-		    CFC-MAC\newline\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
-		    NR-V2X Mode~2\newline\cite{CV2X_Sidelink_Allocation} & Adaptive SPS / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy \gls*{sps} & Different radio access technology \\
-		    SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \glsentryshort{cch}-induced \glsentryshort{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
-		    Adaptive EDCF\newline\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
-		    DCC\newline\cite{etsi_dcc_2018} & CBR-driven TPC/TRC/access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
-		    Wireless TSN / OFDMA\newline\cite{seliem2023wirelesstsn,schneider_trigger_2024} & TAS/TWT/RU scheduling & Wi-Fi~6/NIC mods or sync & Industrial / scheduled & Tighter latency control & Out of OCB scope \\
-		    \textbf{This work} & \textbf{DSCP$\rightarrow$VO + event-triggered BE suppress} & \textbf{Local OCB EDCA only} & \textbf{Crash VO vs BE multicast} & \textbf{Protection--cost frontier} & \textbf{No sync/infra} \\
-		    \bottomrule
-		\end{tabularx}
-	\end{center}
-	\fonte{Prepared by the author from the cited works.}
-\end{table}
 
 % ----------------------------------------------------------------------
 \section{Contention Dynamics and the Cost of Protection}
@@ -269,5 +243,54 @@ What remains unresolved for the crash-aware OCB setting is a local mechanism tha
 Existing stronger MACs solve related problems under broader assumptions~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 Adaptive EDCA and DCC solve always-on congestion under complementary objectives~\cite{romdhani2003AdaptiveEDCF,etsi_dcc_2018}.
 TSN and OFDMA solve determinism when infrastructure and advanced PHY/MAC features are present~\cite{ieee8021qbv,schneider_trigger_2024}.
+
+\autoref{tab:rw:comparison} consolidates the reviewed works family by family.
+Assumptions and mechanisms are those stated by the cited works; the final row positions the crash-aware study against the unresolved gap above.
+
+{\ABNTEXfontereduzida
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{xltabular}{\linewidth}{@{}*{6}{>{\RaggedRight\arraybackslash}X}@{}}
+	\caption{\label{tab:rw:comparison}Comparative summary of the related-work families and this dissertation.}\\
+	\toprule
+	\textbf{Approach} & \textbf{Key mechanism} & \textbf{Requirements} & \textbf{Target traffic} & \textbf{Advantages (claimed)} & \textbf{Relation to this work} \\
+	\midrule
+	\endfirsthead
+	\caption[]{Comparative summary of the related-work families and this dissertation. (continued)}\\
+	\toprule
+	\textbf{Approach} & \textbf{Key mechanism} & \textbf{Requirements} & \textbf{Target traffic} & \textbf{Advantages (claimed)} & \textbf{Relation to this work} \\
+	\midrule
+	\endhead
+	\bottomrule
+	\endlastfoot
+	\multicolumn{6}{@{}l@{}}{\textbf{Stronger contention control (\autoref{sec:rw:stronger})}} \\
+	\midrule
+	TSNCtl\newline\cite{TSNCtl_Feraudo} & App-level slot schedule + FSM & Sync, platoon master & Platoon V2V & Lower collisions vs CSMA/CA & Sync/leader; preprint \\
+	PRP-MAC\newline\cite{PRP_MAC_Li} & Preemptive-resume priority + arbiter & UAV/RSU-assisted stack & BSM uploads & Lower BSM delay & Infra + richer MAC \\
+	CFC-MAC\newline\cite{CFC_MAC_Linn} & Cooperative TDMA + slot repair & Slot sync, coop.\ signaling & VANET safety & Low collision, determ.\ access delay & TDMA contract \\
+	NR-V2X Mode~2\newline\cite{CV2X_Sidelink_Allocation} & Adaptive \gls*{sps} / resource selection & Cellular sidelink & Periodic safety & Better resource use vs legacy \gls*{sps} & Different radio access technology \\
+	Prior SBESC study\newline\cite{11288825} & \glsentryshort{tas} schedules + synchronization for V2X QoS & Sync, gate-control lists & Vehicular Wi-Fi QoS & Determinism-oriented QoS & Precursor; TAS and sync dropped \\
+	\addlinespace
+	\multicolumn{6}{@{}l@{}}{\textbf{Contention dynamics and the cost of protection (\autoref{sec:rw:dynamics})}} \\
+	\midrule
+	Backoff-freezing analysis\newline\cite{Continuous_Backoff_Freezing_Li} & Analytical model of repeated backoff freezes & Density-to-contenders coupling & 802.11p broadcast & Access delay and loss grow with density & Trend motivates BE suppression \\
+	SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \glsentryshort{cch}-induced \glsentryshort{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
+	QoS surveys\newline\cite{Evolution_QoS_Mechanisms,kosekszott2012What,ni2004Qiang} & Taxonomy of EDCA QoS enhancements & --- & Differentiated ACs & Differentiation, not bounds; low-AC starvation risk & Mandates reporting BE cost \\
+	\addlinespace
+	\multicolumn{6}{@{}l@{}}{\textbf{Always-on load regulation (\autoref{sec:rw:alwayson})}} \\
+	\midrule
+	Adaptive EDCF\newline\cite{romdhani2003AdaptiveEDCF} & CW/persistence retuning & Continuous measurement & Differentiated ACs & Better differentiation under load & Always-on, aggregate \\
+	DCC\newline\cite{etsi_dcc_2018} & CBR-driven TPC\slash TRC\slash access & Always-on ITS-G5 loop & Aggregate load & Congestion management & Complementary \\
+	\addlinespace
+	\multicolumn{6}{@{}l@{}}{\textbf{Wired TSN, wireless TSN, and OFDMA contrast (\autoref{sec:rw:tsn-ofdma})}} \\
+	\midrule
+	Wired TSN\newline\cite{ieee8021qbv,craciunas2016,debnath2023mixed,modeling} & \glsentryshort{tas} gates; schedule synthesis; hybrid shapers & Switched Ethernet, path config, sync & Industrial real-time & Protected windows; delay/jitter control & Wired assumptions; contrast only \\
+	Wireless TSN\newline\cite{seliem2023wirelesstsn,satka2023wireless,schneider2022twt} & TSN extensions over Wi-Fi: preemption, shaping, TWT cycles & NIC/driver support; Wi-Fi~6 features & Industrial IoT & TSN-style determinism over Wi-Fi & BSS/industrial, not OCB \\
+	OFDMA scheduling\newline\cite{karthik2018,schneider_mu_edca_2023,schneider_trigger_2024} & RU allocation; MU-EDCA; scheduled Trigger Frames & Infrastructure AP; Wi-Fi~6/7 & Industrial Wi-Fi & Tighter latency control than EDCA & Out of OCB scope \\
+	\midrule
+	\textbf{This work} & \textbf{DSCP$\rightarrow$VO + event-triggered BE suppression} & \textbf{Local OCB EDCA only} & \textbf{Crash VO vs BE multicast} & \textbf{Protection--cost frontier} & \textbf{No sync\slash infra\slash sidelink} \\
+\end{xltabular}
+\fonte{Prepared by the author from the cited works.}
+}
 
 \autoref{chap:sysmodel} instantiates the residual gap as a concrete system model: a highway one-hop multicast scenario, a two-class BE/Voice traffic abstraction with a timed crash window, and five MAC policies---\texttt{plain}, \texttt{edca\_only}, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency})---that map the protection-versus-cost frontier without leaving the standard-compliant, infrastructure-free design envelope.

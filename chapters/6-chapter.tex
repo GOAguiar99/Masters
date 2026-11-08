@@ -63,6 +63,18 @@ Pooled Best Effort averages understate spatially concentrated cost near the cras
 Within that scope the comparison remains internally fair---shared radio stack, mobility, and load matrix---so the reported differences isolate \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Publications}
+\label{sec:conc:publications}
+
+The dissertation builds on two conference papers by the author and on the public simulation artifact that accompanies them; the sections in which their content is represented are the following.
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Crash-aware prioritization study (SBESC 2026).} \textcite{aguiar2026crash} is the dissertation's direct precursor. Its introduction and related-work positioning are expanded in \autoref{chap:intro} and \autoref{sec:rel_work}, its contention and DiffServ background in \autoref{chap:background}, and its network, traffic, and policy model together with its implementation notes correspond to \autoref{chap:sysmodel} and \autoref{chap:implementation}. The paper's evaluation section, however, reports an earlier measurement campaign and covers only the uniform-load density matrices; \autoref{chap:evaluation} re-runs those campaigns, extends the scenario with the concentrated near-crash load overlay in which crash-adjacent vehicles bulk-upload and give protection a measurable Voice return (\autoref{sec:eval:hotspot}), and deliberately supersedes the paper's numerical results.
+  \item \textbf{Wireless TSN precursor (SBESC 2025).} \textcite{11288825} explored wireless TSN and QoS support for V2X under Time-Aware Shaper schedules and synchronization requirements. Its role in this dissertation is recorded in \autoref{sec:rw:prior}, which presents it as the precursor from which the present study deliberately diverges by dropping gate-control scheduling and synchronization.
+  \item \textbf{Simulation artifact.} The implementation, scenario packages, and KPI dashboard underlying \autoref{chap:implementation} and \autoref{chap:evaluation} are archived in the public artifact~\cite{aguiar2026_veins_qos}; \autoref{apend:layout} records its directory layout.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Future Work}
 \label{sec:conc:future}
 
@@ -86,5 +98,9 @@ Alternative protection timings, including predictive pre-blocking armed from a l
 \noindent\textbf{Deployment constraints.}
 Security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source are prerequisites before comparable \gls{mac} aggression could be defended outside a synthetic two-class study.
 Hardware-in-the-loop or testbed validation would further bound how much of the simulated protection-versus-cost frontier transfers to real 802.11p stacks.
+
+\medskip
+\noindent\textbf{Consolidated journal publication.}
+Because the SBESC 2026 paper reports only the earlier, uniform-load measurement campaign (\autoref{sec:conc:publications}), a journal-length follow-up consolidating the full results of this dissertation is planned for the future: the re-run uniform-load matrices, the concentrated near-crash hotspot overlay, and the five-policy protection-versus-cost frontier of \autoref{chap:evaluation}~\cite{aguiar2026crash}.
 
 In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay and Voice-frame integrity where near-crash congestion is concentrated and bursts are dense enough to keep protection armed, but only as a carefully bounded, event-triggered escalation whose cost to ordinary traffic must be acknowledged and constrained.

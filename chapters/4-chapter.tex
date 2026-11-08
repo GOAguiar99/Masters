@@ -418,6 +418,46 @@ Each adaptive configuration extends \texttt{edca\_only}, replaces \texttt{hcf.ty
 
 Legacy configuration names from earlier prototypes (for example Friendly/Protect aliases documented in the artifact's deprecation notes) are not part of the active matrix and must not be confused with the five policies of \autoref{sec:sys:qos}.
 
+Closing the configuration wiring, \autoref{tab:impl:provenance} summarizes what was modified inside the simulators and what was used as original, component by component.
+It complements the per-layer mapping of \autoref{tab:impl:map} and the attribution of \autoref{sec:impl:attribution}: besides the study-created modules, the only vendored component the study modified is \path{VeinsInetApplicationBase}, and the frameworks themselves are consumed as read-only submodules.
+Vendored files that are present in the tree but not selected by the active configurations are omitted from the table, consistent with \autoref{sec:impl:attribution}.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:impl:provenance}Provenance of the simulation code base: components created by the study, the vendored component modified by the study, and components reused unchanged from the original frameworks.}
+	\begin{center}
+		\setlength{\tabcolsep}{3pt}
+		\begin{tabularx}{\linewidth}{@{}
+			>{\raggedright\arraybackslash}p{4.6cm}
+			>{\raggedright\arraybackslash}X
+			@{}}
+			\toprule
+			\textbf{Component} & \textbf{Role in the study} \\
+			\midrule
+			\multicolumn{2}{@{}l}{\textbf{Created by this study}} \\
+			\addlinespace
+			\path{CritPacketSender}, \path{CrashBurstApp} & Periodic \gls*{be} generator and crash-triggered \gls*{vo} burst application (\autoref{sec:impl:apps}) \\
+			\path{QosClassifier} & \gls*{dscp}~46~$\rightarrow$ Voice \gls*{up} mapping at the network layer (\autoref{sec:impl:classifier}) \\
+			\path{V2xIeee80211Mac} & Instrumented \gls*{mac} subclass with per-\gls*{ac} drop counters (\autoref{sec:impl:v2xmac}) \\
+			\path{V2xHcf} + \path{V2xEdcaFsmController} & Adaptive \gls*{be} blocking and emergency preemption on the adaptive policies (\autoref{sec:impl:v2xhcf}) \\
+			Scenario packages and configuration matrix & Highway \texttt{omnetpp.ini} policy/load/hotspot compositions, SUMO road networks, and run scripts (\autoref{sec:impl:scenarios}) \\
+			\path{kpi_dashboard} & Offline \gls*{kpi} extraction and figure export (\autoref{sec:impl:kpi}) \\
+			\addlinespace
+			\multicolumn{2}{@{}l}{\textbf{Vendored from Veins and modified by this study}} \\
+			\addlinespace
+			\path{VeinsInetApplicationBase} & Application base of both study applications; modified for configurable ports and multicast-loopback control (\autoref{sec:impl:host}) \\
+			\addlinespace
+			\multicolumn{2}{@{}l}{\textbf{Reused unchanged from the original frameworks}} \\
+			\addlinespace
+			\path{VeinsInetCar}, \path{VeinsInetManager}, \path{VeinsInetMobility} & Veins/\gls*{inet} host, manager, and mobility integration of the vendored \texttt{veins\_inet} subproject (\autoref{sec:impl:host}) \\
+			INET 4.5.4 (git submodule) & Radio/\gls*{phy}, dimensional radio medium, IPv4/UDP transport, and stock \texttt{Hcf} under \texttt{plain} and \texttt{edca\_only} (\autoref{sec:impl:radio}) \\
+			Veins 5.3.1 (git submodule) & TraCI coupling with SUMO and \texttt{veins\_launchd} (\autoref{sec:impl:sumo}) \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author from the artifact's repository records~\cite{aguiar2026_veins_qos}.}
+\end{table}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Scenario Packages, Simulation Parameters, and Configuration Matrix}
 \label{sec:impl:scenarios}
