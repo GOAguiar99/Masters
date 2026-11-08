@@ -16,7 +16,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 - [x] **#16 Related-work comparison table** — PDF p. 51, lines 10–22. Review all related work individually, synthesize the comparison, and add this dissertation as a row.
 - [x] **#17 AI-use disclosure** _(Figure 7 / timeline origin still to confirm)_ — PDF p. 53, line 4. Establish the actual AI use and locations before writing the disclosure; do not infer or invent usage.
 - [x] **#23 Simulator changes/originals table** — PDF p. 69, lines 23–25. Audit the active implementation and distinguish study modifications from reused framework components.
-- [ ] **#26 AI-dependent writing review** — PDF p. 78, lines 10–17. Review the dissertation prose and section structure individually, checking authorial understanding and claims.
+- [ ] **#26 AI-dependent writing review** _(mechanical style pass done on all chapters, see change log at the end; author rewrite pending)_ — PDF p. 78, lines 10–17. Review the dissertation prose and section structure individually, checking authorial understanding and claims.
 - [x] **#28 Publications mapping** — PDF p. 94, lines 32–35. Verify the publications and map their actual content to dissertation sections.
 
 ### Medium
@@ -89,7 +89,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 ## Cross-cutting
 
 - [x] **#17 Document AI use** — **PDF p. 53, line 4** (printed folio 52; anchor: “Figure 7 – System architecture…”). Professor: “gerada por IA? adicionar um disclaimer no final da tese citando como a IA foi usada e onde (seções, figuras, tabelas, etc)” Add a disclosure at the end of the dissertation describing how AI was used and identifying affected sections, figures, tables, or other material. Done (2026-11-08): new Appendix B `aftertext/apendice_b.tex` (`apend:ai`, included in `main.tex` after Appendix A), pointed to from the Introduction's document-structure paragraph. Facts from the author: models = only frontier LLMs (Claude Opus, Claude Fable, GPT-Sol, others of the same class); harnesses = Claude Code, Codex, Cursor (listed separately from the models in the appendix); used to improve text, write code, and help with simulations; framed as assistant, not main source, while stating it was important. Repo evidence added: coding agents (Cursor co-author trailers on the TikZ figure commits `fbdfcfb`, `e3dc938`, `b42c85f`; Claude Code on the revision commits) and AI-assisted reference checking (`context/reference-notes.md`). `tab:ai:use` maps eight activities (text, literature, simulation code, campaigns, conceptual TikZ figures, result figures, synthesis tables, result tables) to chapters/figures/tables by label; closes with the two limits (no number produced by a model; no AI-suggested reference cited unverified). **Open:** `fig:sys:architecture` (the Figure 7 the professor asked about, now Figure 8 after the new Introduction figure; `system_model_architecture.pdf`) and `fig:sys:timeline` have no TikZ source and came from the conference papers; their AI involvement is unknown and they are not listed. Confirm with the author and add them to the table if applicable.
-- [ ] **#26 Review for AI-dependent writing** — **PDF p. 78, lines 10–17** (printed folio 77; anchor: section heading “6.3 VOICE PROTECTION UNDER LOAD: THE HEADLINE ANSWER”). Professor: “teu texto e as seções estão muito IA-dependent. Fica claro o uso bastante grande de IA, tem que ter cuidado.” Review the prose and section structure carefully; ensure the final text reflects the author’s own understanding, voice, and verified claims.
+- [ ] **#26 Review for AI-dependent writing** — **PDF p. 78, lines 10–17** (printed folio 77; anchor: section heading “6.3 VOICE PROTECTION UNDER LOAD: THE HEADLINE ANSWER”). Professor: “teu texto e as seções estão muito IA-dependent. Fica claro o uso bastante grande de IA, tem que ter cuidado.” Review the prose and section structure carefully; ensure the final text reflects the author’s own understanding, voice, and verified claims. In progress (2026-11-08), first mechanical pass on the Evaluation chapter (`chapters/5-chapter.tex`, branch `revision/26-style-pass`): 18 slogan-style headings replaced by descriptive ones (flagged §6.3 is now “Overview of the Results”); all prose em-dash asides rewritten as plain sentences; metaphors removed (“prices the Best Effort bill”, “only louder”, “deferral buys delay; dropping buys silence”, “starvation cure”, “cost center/Voice lever”, “take-home”, “collision arena”, “null case”, “armed”); “X, not Y” constructions reduced. Labels, numbers, and claims unchanged (numeric tokens of the diff verified identical apart from “8-copy” → “eight copies”). Extended the same day to the whole document (Introduction, Background, Related Work, System Model, Implementation, Conclusion, Resumo, Abstract): every prose em-dash rewritten (~108 outside the Evaluation), slogan headings replaced (“Statistical priority without guarantees”, “EDCA under OCB for broadcast safety traffic”, “Comparison and Research Gap”, “Wired TSN, Wireless TSN, and OFDMA”, “Practical Implications”, the three Related Work “Synthesis” subsections given distinct “Summary of …” titles), and “hostile link-layer contract”, “knobs”, “armed”, “takeaway”, “first-class”, “regime-conditional”, “null”, “taxes/buying” rephrased. Numeric tokens verified unchanged per file. Also cleared the pre-existing 18 pt overfull in Background (Bianchi state pair written in words); no chapter now has an overfull box. Remaining: the author's own rewrite in their voice.
 
 ## Markup-only entries
 
@@ -98,3 +98,69 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 - **PDF p. 58, lines 22–23** (printed folio 57): a highlight on the implementation-table reference in the assumptions/scope discussion: “radio parameters fix concrete instances of the model; their reference values are recorded with the implementation in Table 12.” No comment text is attached.
 - **PDF p. 91, line 4** (printed folio 90): a strikeout over “CHAPTER” in the heading “6.8 CHAPTER SUMMARY.” Removed “Chapter” from the heading; the section is now “Summary.”
 
+## #26 style pass: change log (2026-11-08)
+
+Mechanical first pass for comment #26 (“teu texto e as seções estão muito IA-dependent”), applied to every chapter, the Resumo, and the Abstract on branch `revision/26-style-pass`. Rules: no change to numbers, claims, citations, tables, figures, or `\label`s; only headings and phrasing. The author's own rewrite in their voice is still pending.
+
+### Heading renames (labels unchanged)
+
+| Chapter | Old heading | New heading |
+|---------|-------------|-------------|
+| Background | Statistical priority, not guarantees | Statistical priority without guarantees |
+| Background | EDCA under OCB and the broadcast safety contract | EDCA under OCB for broadcast safety traffic |
+| Related Work | Authors' prior wireless TSN exploration | Prior wireless TSN study by the authors |
+| Related Work | Synthesis: stronger control under broader assumptions | Summary of stronger contention control |
+| Related Work | Reshaping when traffic may contend | Rescheduling traffic in time |
+| Related Work | Protection versus cost as a first-class metric | Measuring protection together with its cost |
+| Related Work | Synthesis (§3.2) | Summary of contention dynamics |
+| Related Work | Always-On Load Regulation: Adaptive EDCA and DCC | Continuous Load Regulation with Adaptive EDCA and DCC |
+| Related Work | Synthesis (§3.3) | Summary of load regulation |
+| Related Work | Short Contrast: Wired TSN, Wireless TSN, and OFDMA | Wired TSN, Wireless TSN, and OFDMA |
+| Related Work | Synthesis (§3.4) | Summary of the TSN and OFDMA contrast |
+| Related Work | Synthesis and Research Gap | Comparison and Research Gap |
+| Evaluation | Voice Protection Under Load: The Headline Answer (flagged §6.3) | Overview of the Results |
+| Evaluation | Hotspot Load: Voice Recovery Under Concentrated Contention | Voice Service Under Concentrated Load |
+| Evaluation | The `hotspot_high` cell | High-load results |
+| Evaluation | Dose response: why only dense bursts win | Effect of the alert burst cadence |
+| Evaluation | Uniform Load: The Null Voice Case | Voice Service Under Uniform Load |
+| Evaluation | Light-density gating numbers | Light density |
+| Evaluation | Heavy-density confirmation | Heavy density |
+| Evaluation | The Best Effort Cost of Protection | Cost to Best Effort Traffic |
+| Evaluation | Hotspot pricing | Cost under concentrated load |
+| Evaluation | Uniform-load cost without a Voice target | Cost under uniform load |
+| Evaluation | Event-triggered escalation, not always-on QoS | When to enable adaptive protection |
+| Evaluation | Reading the baseline correctly | Interpretation of the baseline |
+| Evaluation | Regime-conditional significance of the Voice effects | Practical significance of the Voice results |
+| Evaluation | Preemption as a starvation cure under concentrated contention | Best Effort starvation at the crash node |
+| Evaluation | Burst cadence as an online arming trigger | Burst cadence as a trigger for protection |
+| Conclusion | Practical Takeaway | Practical Implications |
+
+### Phrasing replaced
+
+| Pattern | Replacement | Where |
+|---------|-------------|-------|
+| Em-dash asides (`---`) in prose | Commas, parentheses, colons, or separate sentences | All chapters (Intro 5, Background 42, Related Work 10, System Model 13, Implementation 18, Evaluation 21, Conclusion 15), Resumo 2, Abstract 2; none remain in prose. Table cells and the reproduced-table caption keep their literal “---” |
+| “hostile link-layer contract”, “broadcast safety contract”, “group-addressed contract” | “weak link-layer guarantees”, “broadcast safety traffic”, “limitations of group-addressed delivery” | Background, Related Work, System Model |
+| “knobs” | “parameters” | System Model, Implementation (incl. `tab:impl:policyknobs` caption) |
+| “armed”, “arm”, “arming” (protection) | “active”, “activated”, “trigger”, “activation” | Related Work, System Model, Evaluation, Conclusion (the software “fallback timer armed” row is kept) |
+| “headline answer/cells”, “positive cell”, “null case”, “scientific null against that win”, “gating test” | “overview”, “main results”, “reference case”, “first check” | Evaluation, Conclusion |
+| “prices the Best Effort bill”, “Best Effort bill is inseparable from the Voice win”, “buys/buying”, “taxes” | “quantifies the cost to Best Effort traffic”, “cannot be separated from its Best Effort cost”, “improving/harms” | Evaluation, Abstract (Resumo: “sem comprar serviço de Voz” → “sem melhorar o serviço de Voz”) |
+| “the same null Voice story holds, only louder” | “the policies again leave Voice service unchanged” | Evaluation |
+| “deferral buys delay; dropping buys silence; …” | “deferring Best Effort frames adds delay and dropping them removes traffic; …” | Evaluation |
+| “starvation cure”, “Voice lever”, “cost center”, “the take-home”, “collision arena”, “refill the arena”, “own the local arbitration forever” | Literal descriptions (prevents starvation, improves Voice service, only costs Best Effort traffic, main result, competing frames, hold the channel) | Evaluation, Conclusion |
+| “regime-conditional”, “regime-aware” | “depends on the load pattern / how the load is distributed” | Intro contributions, Evaluation, Conclusion, Abstract, Resumo |
+| “takeaway”, “first-class”, “precisely” | “implications / relevant as motivation”, “integral”, removed | Related Work, Background, Implementation, Conclusion |
+| “X, not Y” slogans (“not an always-on Voice accelerator”, “protection buys latency and integrity, not fan-out”, …) | Plain statements | Evaluation, Conclusion |
+| Itemize separators “`name` --- Description” | “`name`, description” or “`name`: description” | System Model policy list, Implementation package list |
+
+### Other fixes made in the same pass
+
+- Evaluation §6.3 opening: “Voice obtains better service than Best Effort only under specific conditions” → “the protection policies improve Voice service only under specific conditions” (the results compare policies, not classes).
+- Evaluation §6.4.1: “The same policies starve…” → “Like EDCA, these two policies also starve…”, matching the 0.98–1.45 s range, which includes EDCA's value in `tab:eval:hotspot`.
+- Evaluation §6.7.2: the historical “seeds no longer split into an uncongested draw and two saturated draws” (a reference to the superseded campaign) → “the three seeds face comparable congestion”.
+- Background §2.2.2: Bianchi's state pair written in words instead of an unbreakable math tuple, clearing the pre-existing 18 pt overfull box.
+
+### Verification
+
+- Numeric tokens of the old and new text compared per file: identical, apart from “8-copy” → “eight copies” and the added token “P95” in one Evaluation sentence.
+- TeX Live 2026 build: 0 errors, 0 undefined references/citations, no overfull box in any chapter (8 sub-6 pt boxes remain in the front-matter lists).

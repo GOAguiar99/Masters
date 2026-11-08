@@ -4,9 +4,9 @@
 \autoref{chap:background} established the standards path from application criticality through \gls{dscp} marking and IEEE~802.11 \gls{edca} to a shared contention medium, and \autoref{sec:rel_work} showed that stronger vehicular \gls{mac} alternatives typically require synchronization, infrastructure, or a different radio access technology.
 The residual design point occupied by this dissertation is narrower: protect rare, high-impact crash alerts with an explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or a new \gls{mac} protocol~\cite{jiang2008ieee80211p,IEEE80211,RFC8325_WiFi_QoS}.
 
-This chapter formalizes that design point as an abstract system model---what the proposed system \emph{is}, independently of any particular simulator, programming language, or software stack.
+This chapter formalizes that design point as an abstract system model, which describes what the proposed system \emph{is} independently of any particular simulator, programming language, or software stack.
 It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, and the modeling assumptions.
-Concrete numeric bindings for timing, load, radio, and access-control knobs are recorded with the software realization in \autoref{chap:implementation}; how well the system performs under experiment is deferred to the subsequent evaluation.
+Concrete numeric bindings for timing, load, radio, and access-control parameters are recorded with the software realization in \autoref{chap:implementation}; how well the system performs under experiment is deferred to the subsequent evaluation.
 
 The chapter is organized as follows.
 Section~\ref{sec:sys:network} states the network model.
@@ -24,7 +24,7 @@ No access point, roadside unit, or centralized coordinator participates in forwa
 All stations therefore contend for the same wireless medium under \gls{ocb} operation, so the delivery of urgent traffic depends on distributed medium access rather than on reserved transmission opportunities~\cite{IEEE80211,etsi_en_302663}.
 
 At the application level, communication follows a one-hop multicast dissemination model: each transmission is injected into the same contention-based medium and may be received by all vehicles within radio range.
-Group-addressed IEEE~802 frames inherit the hostile link-layer contract already discussed in \autoref{chap:background}---no acknowledgement, no automatic retransmission, and typically a conservative mandatory data rate---so timely delivery hinges on contention control and on correct priority mapping rather than on link-layer recovery~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+Group-addressed IEEE~802 frames have the weak link-layer guarantees already discussed in \autoref{chap:background}: no acknowledgement, no automatic retransmission, and typically a conservative mandatory data rate. Timely delivery therefore depends on contention control and on correct priority mapping rather than on link-layer recovery~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 \autoref{fig:sys:architecture} summarizes this infrastructure-free \gls{v2v} picture.
 
 \begin{figure}[htb]
@@ -80,11 +80,11 @@ They form a comparison ladder from undifferentiated access, through standard \gl
 None of the policies reserves the channel or claims deterministic delay bounds: \gls{edca} provides statistical differentiation only~\cite{mangold2003QoS,kosekszott2012What,kong2004EDCA}.
 
 \begin{itemize}
-  \item \texttt{plain} --- Non-\gls{qos} \gls{dcf} baseline: undifferentiated access with a single pending queue and no DSCP-to-\gls{ac} mapping~\cite{IEEE80211,bianchi2000DCF}.
-  \item \texttt{edca\_only} --- Standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0~\cite{IEEE80211e_2005}.
-  \item \texttt{edca\_v2x\_vo\_stable} --- Sustained Voice protection: inherits \texttt{edca\_only} and adds the adaptive controller below with comparatively long protection windows.
-  \item \texttt{edca\_v2x\_vo\_guarded} --- Bounded suppression: same inheritance with tighter, shorter protection windows.
-  \item \texttt{edca\_v2x\_vo\_emergency} --- Emergency preemption: same inheritance with aggressive activation; newly arriving \gls{be} packets may be dropped while protection is active.
+  \item \texttt{plain}, the non-\gls{qos} \gls{dcf} baseline: undifferentiated access with a single pending queue and no DSCP-to-\gls{ac} mapping~\cite{IEEE80211,bianchi2000DCF}.
+  \item \texttt{edca\_only}, the standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0~\cite{IEEE80211e_2005}.
+  \item \texttt{edca\_v2x\_vo\_stable}, sustained Voice protection: inherits \texttt{edca\_only} and adds the adaptive controller below with comparatively long protection windows.
+  \item \texttt{edca\_v2x\_vo\_guarded}, bounded suppression: same inheritance with tighter, shorter protection windows.
+  \item \texttt{edca\_v2x\_vo\_emergency}, emergency preemption: same inheritance with aggressive activation; newly arriving \gls{be} packets may be dropped while protection is active.
 \end{itemize}
 
 \noindent
@@ -94,7 +94,7 @@ For brevity the adaptive policies are often abbreviated \texttt{stable}, \texttt
 \subsection{Adaptive three-mode controller}
 \label{sec:sys:controller}
 
-The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening}, \emph{blocking}, and \emph{sending}---that temporarily gates \gls{be} eligibility for channel access without changing the underlying queue parameters inherited from \texttt{edca\_only}.
+The three adaptive policies add a local three-mode \gls{fsm} with the modes \emph{listening}, \emph{blocking}, and \emph{sending}, which temporarily gates \gls{be} eligibility for channel access without changing the underlying queue parameters inherited from \texttt{edca\_only}.
 \autoref{fig:sys:fsm} summarizes the modes and transitions.
 
 \begin{figure}[htb]
@@ -105,9 +105,9 @@ The three adaptive policies add a local three-mode \gls{fsm}---\emph{listening},
 	\fonte{Prepared by the author.}
 \end{figure}
 
-A node leaves \emph{listening} for \emph{blocking} when the local Voice queue crosses the activation threshold or when any Voice-marked frame is overheard---a single overheard alert frame suffices to arm or extend protection; the queue threshold applies only to locally generated Voice traffic.
+A node leaves \emph{listening} for \emph{blocking} when the local Voice queue crosses the activation threshold or when any Voice-marked frame is overheard. A single overheard alert frame is enough to start or extend protection; the queue threshold applies only to locally generated Voice traffic.
 It moves to \emph{sending} when its own Voice frames obtain the channel.
-After the Voice transmission ends---or if the send-guard timer fires first---it returns to \emph{blocking} while the protection window is still open, and to \emph{listening} once that window has expired.
+After the Voice transmission ends, or earlier if the send-guard timer fires, it returns to \emph{blocking} while the protection window is still open, and to \emph{listening} once that window has expired.
 Nodes that only overhear Voice traffic never enter \emph{sending}: they remain in \emph{blocking} until the window expires.
 \autoref{fig:sys:fsm} also shows a skip from \emph{listening} directly to \emph{sending} when a local Voice frame wins the channel without a prior demand-triggered block.
 Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but lose channel-access eligibility while the controller is blocking or sending.
