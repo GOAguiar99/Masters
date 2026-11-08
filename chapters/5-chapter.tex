@@ -35,6 +35,38 @@ The crash source adds overlapping Voice repeats during the alert window (eight p
 With a genuine Poisson offer the channel does \emph{not} enter queue overflow: Best Effort P95 stays sub-millisecond under plain \gls{dcf} and EDCA, and overflow counters remain zero.
 The policy contrast under that uniform offer is therefore Best Effort cost, not a Voice-tail race under saturation~\cite{aguiar2026_veins_qos,Continuous_Backoff_Freezing_Li}.
 
+\autoref{tab:eval:decisions} condenses the principal experimental decisions of this section, and the numeric bindings it defers to, into a single reference.
+The prose above and the Implementation chapter remain the detailed account; the table is the checklist view of what was chosen and why.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:eval:decisions}Principal experimental decisions of the evaluation. Numeric bindings are consolidated in \autoref{tab:impl:parameters}; policy characteristics in \autoref{tab:bg:policies}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+			\toprule
+			\textbf{Decision} & \textbf{Choice} & \textbf{Rationale} \\
+			\midrule
+			Study framing & Protection-versus-cost comparison; no deterministic-guarantee claims & Isolates what local MAC mechanisms can and cannot deliver \\
+			\addlinespace
+			Density packages & Light: 10 vehicles (sensitivity sweep); heavy: 100 vehicles (congestion stress case, emphasized) & Sweeps sensitivity and then stresses the mechanisms where contention binds \\
+			\addlinespace
+			\gls{mac} policies & Five-policy ladder: \texttt{plain} to \texttt{emergency} & Each rung isolates one mechanism step (\autoref{tab:bg:policies}) \\
+			\addlinespace
+			\gls{be} offered load & Poisson inter-arrivals, means \SI{500}/\SI{250}/\SI{125}{\milli\second} at low/medium/high & Reproduces bursty contention without queue overflow \\
+			\addlinespace
+			Crash-alert traffic & Eight physical Voice copies, \SI{5}{\milli\second} gap at high load ($\approx$400~packets/s during the window) & Dense repeats stress the Voice path precisely when protection matters \\
+			\addlinespace
+			Contention source & Offered load and fleet density; no synthetic random-waypoint saturation & Load-driven contention is the phenomenon under study \\
+			\addlinespace
+			Seeds & Three repetitions (\texttt{\#0}--\texttt{\#2}) per configuration & Bounded stochastic evidence, reproducible from the artifact \\
+			\addlinespace
+			Experiment matrices & Uniform: 15~configurations; hotspot overlay: the same 15 $\times$ 3~seeds (45~seeded runs) & Uniform offer gives the null case; the overlay concentrates \gls{be} airtime near the crash source \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Metrics and Aggregation}
 \label{sec:eval:metrics}

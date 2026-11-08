@@ -37,10 +37,30 @@ As discussed in Section~\ref{sec:bg:multicast}, however, group-addressed IEEE~80
 \subsection{Quantified latency and reliability budgets}
 \label{sec:bg:budgets}
 
-The 3rd Generation Partnership Project (3GPP) specifies V2X service requirements in TS~22.186~\cite{ts22186}.
-Table~5.2-1 of that specification lists performance targets for vehicle platooning as a function of the degree of automation.
+The 3rd Generation Partnership Project (3GPP) specifies V2X service requirements in TS~22.186~\cite{ts22186}, which lists performance targets for vehicle platooning as a function of the degree of automation.
+\autoref{tab:bg:platooning-kpis} reproduces the rows of that specification's platooning table for the scenario that matters here: information exchange between the vehicles of a platoon.
 Requirement~[R.5.2-004] specifies, for the lowest degree of automation, an end-to-end latency of \SI{25}{\milli\second}, a reliability of 90\%, a message size of 300--400~bytes, and a rate of 30~messages per second.
-Harsher rows in the same table raise reliability and tighten latency as automation increases; the \SI{25}{\milli\second} figure is therefore a conservative, widely cited reference bound rather than the most stringent requirement in the document.
+Harsher rows in the same table raise reliability and tighten latency as automation increases, reaching \SI{10}{\milli\second} at 99.99\% for the highest degree; the \SI{25}{\milli\second} figure is therefore a conservative, widely cited reference bound rather than the most stringent requirement in the document.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:platooning-kpis}Platooning performance requirements by degree of automation, for the information-exchange-within-the-platoon scenario of 3GPP TS~22.186. Rows follow the source order; ``---'' marks cells left empty in the specification, and communication ranges assume \SI{130}{\km\per\hour} in a single driving direction.}
+	\begin{center}
+		\setlength{\tabcolsep}{4pt}
+		\begin{tabular}{@{}llcccccc@{}}
+			\toprule
+			Degree & Req \# & \shortstack{Payload\\(bytes)} & \shortstack{Tx rate\\(msg/s)} & \shortstack{Max latency\\(ms)} & \shortstack{Reliability\\(\%)} & \shortstack{Data rate\\(Mbps)} & \shortstack{Min range\\(m)} \\
+			\midrule
+			Lowest & [R.5.2-004] & 300--400 & 30 & 25 & 90 & --- & --- \\
+			Low & [R.5.2-005] & 6500 & 50 & 20 & --- & --- & 350 \\
+			Highest & [R.5.2-006] & 50--1200 & 30 & 10 & 99.99 & --- & 80 \\
+			High & [R.5.2-007] & --- & --- & 20 & --- & 65 & 180 \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\fonte{Adapted from \textcite{ts22186}, Table~5.2-1.}
+\end{table}
+
 The broader 5G service-requirements specification of \textcite{3gpp_ts_22_261_r18} (TS~22.261) defines \gls{urllc} classes in general terms but defers the concrete V2X \glspl{kpi} to TS~22.186; citing the latter for platooning and related scenarios is therefore the accurate practice.
 
 These budgets are application-layer end-to-end targets.
@@ -196,6 +216,29 @@ It does not retune AIFSN or CW values.
 It leaves the EDCA parameter set of \texttt{edca\_only} unchanged and instead interposes a local three-mode controller that temporarily withholds BE channel-access requests---and, in the emergency profile, may drop BE---while crash-related Voice activity is detected.
 The adaptation is therefore \emph{event-triggered and per-class}, not a permanent retuning of aggregate contention parameters.
 Related Work develops the contrast with adaptive EDCA, with DCC, and with synchronized or infrastructure-assisted designs; the background point is simply that local, load-aware control of who is allowed to contend is a recognized response to the limits of static EDCA~\cite{romdhani2003AdaptiveEDCF,Evolution_QoS_Mechanisms}.
+
+The five \gls{mac} policies later evaluated in this dissertation span that design corner together with the two standard baselines below it.
+\autoref{tab:bg:policies} summarizes their defining characteristics: the DSCP-to-access-category mapping each policy applies, the treatment of Best Effort traffic while crash alerts are active, and the character of the protection window.
+The policies are defined formally in \autoref{sec:sys:qos}; the table makes the differences visible before those details: \texttt{plain} offers no differentiation at all, \texttt{edca\_only} adds the standard statistical mapping, and the three adaptive profiles escalate the same event-triggered controller from sustained blocking to emergency preemption.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:bg:policies}Characteristics of the five MAC policies compared in this dissertation. The adaptive profiles share the local controller of \autoref{sec:sys:controller} and are abbreviated here; their full configuration names are \texttt{edca\_v2x\_vo\_*}.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+			\toprule
+			\textbf{Policy} & \textbf{DSCP-to-AC mapping} & \textbf{BE treatment while alerts are active} & \textbf{Protection window} \\
+			\midrule
+			\texttt{plain} & None: single \gls{dcf} queue, no classifier & Contends normally; every frame receives identical MAC treatment & Not applicable \\
+			\texttt{edca\_only} & DSCP~46 $\rightarrow$ \texttt{AC\_VO}; BE at user priority~0 & Contends normally under standard EDCA parameters & Not applicable \\
+			\texttt{stable} & As \texttt{edca\_only} & Queued, but loses channel-access eligibility while the controller blocks or sends & Comparatively long, sustained \\
+			\texttt{guarded} & As \texttt{edca\_only} & Queued, but loses channel-access eligibility as above & Tighter and shorter \\
+			\texttt{emergency} & As \texttt{edca\_only} & Blocked as above; newly arriving BE packets may additionally be dropped & Aggressive activation \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
 
 \subsection{Later QoS amendments and the group-addressed gap}
 \label{sec:bg:80211aa}

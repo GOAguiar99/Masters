@@ -11,17 +11,6 @@ Recent literature pursues stronger contention control through slot-based schedul
 
 This work addresses that gap by proposing a focused crash-aware prioritization strategy built from standard mechanisms rather than a new MAC protocol. All vehicles exchange periodic \gls{be} multicast traffic, while one designated crash vehicle emits temporary alert bursts marked with DSCP~46 to receive preferential channel access. On top of this two-class model, five MAC policies are compared: a plain \gls{dcf} baseline, EDCA with explicit DSCP-to-Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, and \texttt{emergency}) that temporarily suppress or drop competing BE traffic while alerts are active. The adaptive profiles are fixed design points that map a protection-versus-cost frontier, aiming at better statistical latency under congestion rather than deterministic guarantees.
 
-\section{Research Question and Scope}
-\label{sec:intro:question}
-
-The central question investigated in this dissertation is:
-
-\begin{quote}
-	Can crash-triggered traffic obtain better wireless service than ordinary traffic under contention, and what cost does that protection impose on ordinary traffic?
-\end{quote}
-
-The study considers a single crash source, a two-class BE/VO traffic distinction, and one-hop multicast dissemination on a highway corridor, with no access points, roadside units, or centralized coordination. It does not attempt to reproduce a full \gls{its} stack, standardized cooperative-awareness message schedules, or multi-class traffic orchestration. Within this scope, the study evaluates how local MAC prioritization affects crash-alert service and the cost to ordinary traffic in decentralized vehicular Wi-Fi. All findings are obtained by simulation in \gls{omnet}/Veins/\gls{inet}, and all observed prioritization is statistical contention shaping: no deterministic slotting, synchronization, or provable worst-case bounds are claimed.
-
 \section{Objectives}
 \label{sec:intro:objectives}
 
@@ -35,6 +24,9 @@ To achieve the main objective, we define the following specific objectives:
 	\item To evaluate the five policies across a matrix of vehicle densities (10 and 100 vehicles), offered-load profiles, and spatial concentrations of that load---from a uniform fleet-wide offer to a localized hotspot near the crash source---using class-specific delay, jitter, multicast reach, and MAC-loss metrics.
 	\item To characterize the resulting protection-versus-cost frontier and derive engineering guidance on when adaptive suppression should be enabled.
 \end{enumerate}
+
+The scope within which these objectives are pursued is the following.
+The study considers a single crash source, a two-class BE/VO traffic distinction, and one-hop multicast dissemination on a highway corridor, with no access points, roadside units, or centralized coordination. It does not attempt to reproduce a full \gls{its} stack, standardized cooperative-awareness message schedules, or multi-class traffic orchestration. Within this scope, the study evaluates how local MAC prioritization affects crash-alert service and the cost to ordinary traffic in decentralized vehicular Wi-Fi. All findings are obtained by simulation in \gls{omnet}/Veins/\gls{inet}, and all observed prioritization is statistical contention shaping: no deterministic slotting, synchronization, or provable worst-case bounds are claimed.
 
 \section{Contributions}
 \label{sec:intro:contributions}
