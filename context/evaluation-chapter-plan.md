@@ -1,5 +1,7 @@
 # Evaluation chapter plan (`chapters/5-chapter.tex`, prints as Chapter 6)
 
+> **Note (2026-11-08):** section titles in this chapter were renamed in the professor-revision #26 style pass; `\label`s are unchanged. Current titles and the full rename list: `docs/spec/professor-revisions.md` (“#26 style pass: change log”).
+
 **Goal:** add a dissertation-depth Evaluation chapter that answers *whether* crash-triggered Voice obtains better service than Best Effort under contention and *at what cost*—without Implementation leakage or invented results.
 
 **Status of this file:** implemented in `chapters/5-chapter.tex` (August 2026); Conclusion lives in `chapters/6-chapter.tex` (Work Plan deleted). Reviewed against [`scientific-paper-structure.md`](scientific-paper-structure.md).

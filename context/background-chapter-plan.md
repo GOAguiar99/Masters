@@ -1,5 +1,7 @@
 # Background chapter plan (`chapters/1-chapter.tex`, prints as Chapter 2)
 
+> **Note (2026-11-08):** section titles in this chapter were renamed in the professor-revision #26 style pass; `\label`s are unchanged. Current titles and the full rename list: `docs/spec/professor-revisions.md` (“#26 style pass: change log”).
+
 **Goal:** replace the legacy TSN-only outline with a dissertation-scale Background that gives a reader everything needed to understand the crash-aware study: vehicular safety messaging and its budgets, 802.11 channel access, EDCA and its limits, 802.11p specifics, the DSCP-to-air-interface path, multicast limitations, and the simulation toolchain.
 
 **Sources:** SBESC §II-A as the skeleton (tight prose), expanded with ETFA §Background (DiffServ RFC path) and the verified claims in [reference-notes.md](reference-notes.md). Size is not constrained (dissertation, not paper): target 12–18 pages.
