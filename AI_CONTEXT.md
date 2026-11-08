@@ -20,6 +20,7 @@ When working here, assume:
 This repository currently has:
 - **Ready:** AI context, bibliography merge, ref-papers pipeline, SBESC/ETFA/code summaries, paper figures in `Figs/`, persistent `build/` workflow, Overleaf-ready sources
 - **Pivoted:** `main.tex` title/metadata (crash-aware topic, 2026); Resumo/Abstract; Introduction; Background; Related Work (`chapters/2-chapter.tex`); System Model (`chapters/3-chapter.tex`); Implementation (`chapters/4-chapter.tex`); Evaluation (`chapters/5-chapter.tex`); Conclusion (`chapters/6-chapter.tex`)
+- **Professor revisions:** tracked in `docs/spec/professor-revisions.md` (annotated PDF: `professor-revisions-main.pdf`). Open: #26 author-voice review. #17 is done as Appendix B (`aftertext/apendice_b.tex`); only the origin of `system_model_architecture.pdf` / `event_timeline_cropped.pdf` is unconfirmed — do not invent AI usage
 - **Optional remaining polish:** proofreading against SBESC/`DSD2026_REVIEW.md` and orphaned legacy figure cleanup in `Figs/`
 
 When assisting, prefer updating `context/`, `references.bib`, and `ref_papers/` over editing chapter prose unless the user explicitly asks for a chapter rewrite.
