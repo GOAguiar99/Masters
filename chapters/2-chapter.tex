@@ -1,7 +1,7 @@
 \chapter{Related Work}
 \label{sec:rel_work}
 
-\autoref{chap:background} established that \gls{edca} improves statistical priority for Voice traffic but cannot guarantee delay or throughput bounds on a shared wireless medium~\cite{kosekszott2012What,mangold2003QoS}, that correct \gls{dscp} to access-category mapping is not automatic~\cite{RFC8325_WiFi_QoS}, and that group-addressed IEEE~802 frames inherit a hostile link-layer contract without acknowledgement or retransmission~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+\autoref{chap:background} established that \gls{edca} improves statistical priority for Voice traffic but cannot guarantee delay or throughput bounds on a shared wireless medium~\cite{kosekszott2012What,mangold2003QoS}, that correct \gls{dscp} to access-category mapping is not automatic~\cite{RFC8325_WiFi_QoS}, and that group-addressed IEEE~802 frames have weak link-layer guarantees, without acknowledgement or retransmission~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 Those facts define a practical research neighborhood: how to protect rare, high-impact crash alerts under contention without introducing synchronization, infrastructure, or a new MAC standard.
 
 The literature answers that question along several axes.
@@ -29,7 +29,7 @@ The remainder of the chapter surveys the four families above, synthesizes their 
 % ----------------------------------------------------------------------
 
 A recurring response to EDCA's statistical limits is to replace or overlay random access with tighter coordination.
-The works reviewed in this section confirm that stronger control can reduce collisions and delay for safety-oriented traffic, but they do so under operating assumptions---synchronized slotting, a coordinating master or \gls{uav}, TDMA-style reservations, or cellular resource selection---that are broader than the focused crash-protection problem addressed here~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
+The works reviewed in this section confirm that stronger control can reduce collisions and delay for safety-oriented traffic, but they rely on operating assumptions that go beyond the focused crash-protection problem addressed here, such as synchronized slotting, a coordinating master or \gls{uav}, TDMA-style reservations, or cellular resource selection~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 
 \subsection{TSN-inspired slot scheduling for platooning}
 \label{sec:rw:tsnctl}
@@ -41,7 +41,7 @@ In \gls{omnet}/\gls{inet} experiments, short slot lengths (for example, \SI{2}{\
 The design's effectiveness rests on synchronized operation and on a platoon master that allocates slots.
 Those assumptions are natural for a coordinated platoon with a designated leader; they are not available in a fully decentralized highway fleet in which a single crash source must warn arbitrary neighbors without prior group formation.
 TSNCtl is furthermore published as an arXiv work-in-progress preprint and should be read as preliminary rather than as a peer-reviewed standard result~\cite{TSNCtl_Feraudo}.
-For the present dissertation, the relevant takeaway is motivational: slot-based suppression of contention can protect critical V2V traffic, but only by introducing synchronization and leadership that the crash-aware study deliberately avoids.
+For the present dissertation, this work is relevant as motivation: slot-based suppression of contention can protect critical V2V traffic, but only by introducing synchronization and leadership that the crash-aware study deliberately avoids.
 
 \subsection{Preemptive-resume priority in UAV-assisted VANETs}
 \label{sec:rw:prp}
@@ -62,7 +62,7 @@ The protocol seeks deterministic access delay and low collision rates by identif
 Reported simulations show substantial collision-rate and access-delay improvements over existing solutions under the authors' scenarios.
 
 CFC-MAC's gains presuppose a TDMA-style organization of the medium and the signaling needed to estimate trajectories and renegotiate slots.
-That is a stronger coordination contract than EDCA on a single shared OCB channel.
+That requires stronger coordination than EDCA on a single shared OCB channel.
 The present work does not attempt contention-free operation; it accepts random access and asks how much local, temporary BE suppression can reshape the contention that remains~\cite{CFC_MAC_Linn,IEEE80211}.
 
 \subsection{Cellular NR-V2X sidelink resource allocation}
@@ -75,19 +75,19 @@ NR-V2X is therefore a parallel access technology, not a drop-in repair for 802.1
 Comparisons that claim superiority of one stack over the other require matched scenarios and are outside this dissertation's scope.
 The citation's role here is to acknowledge that the industry pursues tighter resource control for periodic safety traffic through cellular machinery, whereas this study remains inside the IEEE~802.11p design envelope~\cite{jiang2008ieee80211p,CV2X_Sidelink_Allocation}.
 
-\subsection{Authors' prior wireless TSN exploration}
+\subsection{Prior wireless TSN study by the authors}
 \label{sec:rw:prior}
 
 An earlier conference study by Aguiar and Gracioli explored wireless TSN and QoS support for V2X under a simpler IEEE~802.11 setting, with emphasis on Time-Aware Shaper schedules and synchronization rather than on decentralized crash-triggered prioritization~\cite{11288825}.
 That work is a precursor in the sense that it investigated determinism-oriented QoS for vehicular Wi-Fi; it is not the same research question.
 The present dissertation drops \gls{tas}-oriented scheduling, abandons synchronization as a requirement, and focuses on a shared OCB channel in which crash-alert Voice bursts compete with ordinary BE multicast under five MAC policies that require no gate-control lists~\cite{11288825}.
 
-\subsection{Synthesis: stronger control under broader assumptions}
+\subsection{Summary of stronger contention control}
 \label{sec:rw:stronger-synth}
 
 The comparative summary of these approaches, together with the families reviewed later in this chapter, is consolidated in \autoref{tab:rw:comparison}, which closes the chapter in \autoref{sec:rw:gap}.
 Collectively, TSNCtl, PRP-MAC, CFC-MAC, and NR-V2X Mode~2 demonstrate that tighter contention or resource control can improve safety-oriented delivery metrics, but each relies on synchronization, a coordinating entity, TDMA-style reservations, UAV or roadside assistance, or cellular sidelink machinery~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
-None isolates the narrow question of whether a local, standard-compliant EDCA stack---augmented only by explicit DSCP-to-Voice mapping and short-lived BE suppression---can protect a crash-triggered multicast burst and at what cost to ordinary traffic.
+None isolates the narrow question of whether a local, standard-compliant EDCA stack, augmented only by explicit DSCP-to-Voice mapping and short-lived BE suppression, can protect a crash-triggered multicast burst and at what cost to ordinary traffic.
 That narrower question is the gap this dissertation fills.
 
 % ----------------------------------------------------------------------
@@ -110,7 +110,7 @@ For crash-aware design, that trend is decisive.
 The same density that raises the value of a timely warning also raises the frequency of freeze intervals that postpone channel access for every contending station, including the crash source~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}.
 A mechanism that only remaps DSCP to Voice still contends through random backoff; a mechanism that temporarily removes BE competitors during the alert window attacks the freeze process at its source by reducing the offered load that keeps the medium busy.
 
-\subsection{Reshaping when traffic may contend}
+\subsection{Rescheduling traffic in time}
 \label{sec:rw:skipcch}
 
 Garrido Abenza et al.\ study video delivery over \gls{wave} multi-channel operation and show that the IEEE~1609.4 \gls{cch} / \gls{sch} alternation can accumulate packets during the \glsentryshort{cch} interval and release them as a burst at the start of the \glsentryshort{sch} interval, inflating contention and loss~\cite{SkipCCH_Garrido,ieee1609_4}.
@@ -119,9 +119,9 @@ Their SkipCCH method reshapes transmission timing so that the MAC avoids those a
 SkipCCH is not a crash-alert protocol: it targets video over multi-channel WAVE, not one-hop multicast warnings on a single channel.
 Its conceptual contribution to this dissertation is the demonstration that \emph{when} traffic is allowed to contend can matter as much as \emph{which} access category contends~\cite{SkipCCH_Garrido}.
 Event-triggered BE suppression is a different reshaping: instead of shifting packet release across channel intervals, it withholds BE channel-access requests while Voice activity associated with a crash is detected.
-That philosophy also differs from the always-on congestion loops of adaptive EDCA and DCC discussed in Section~\ref{sec:rw:alwayson}: those mechanisms retune aggregate load continuously, whereas BE suppression is armed only for the crash-alert window and then released.
+That philosophy also differs from the always-on congestion loops of adaptive EDCA and DCC discussed in Section~\ref{sec:rw:alwayson}: those mechanisms retune aggregate load continuously, whereas BE suppression is active only during the crash-alert window and is then released.
 
-\subsection{Protection versus cost as a first-class metric}
+\subsection{Measuring protection together with its cost}
 \label{sec:rw:cost}
 
 Surveys of IEEE~802.11 QoS mechanisms emphasize that preferential treatment for urgent traffic improves its service only at the expense of weaker treatment for lower-priority flows, including possible starvation under sustained high-priority load~\cite{Evolution_QoS_Mechanisms,kosekszott2012What}.
@@ -133,7 +133,7 @@ First, any crash-protection scheme that suppresses BE is not inventing a new ext
 Second, evaluation that reports only Voice delay improvements without BE delay, reach, or drop statistics is incomplete relative to the QoS literature's own warnings~\cite{Evolution_QoS_Mechanisms}.
 The dissertation therefore treats the protection-versus-cost frontier as a primary result, not as a secondary side effect.
 
-\subsection{Synthesis}
+\subsection{Summary of contention dynamics}
 \label{sec:rw:dynamics-synth}
 
 Backoff-freezing analysis explains why dense vehicular contention threatens timely broadcast~\cite{Continuous_Backoff_Freezing_Li}.
@@ -142,7 +142,7 @@ QoS surveys insist that protection always has a cost~\cite{Evolution_QoS_Mechani
 Together they motivate a design that (i) acts when contention is actually crash-relevant, (ii) reshapes who may contend rather than only remapping queues, and (iii) reports BE penalties with the same seriousness as Voice gains.
 
 % ----------------------------------------------------------------------
-\section{Always-On Load Regulation: Adaptive EDCA and DCC}
+\section{Continuous Load Regulation with Adaptive EDCA and DCC}
 \label{sec:rw:alwayson}
 % ----------------------------------------------------------------------
 
@@ -160,7 +160,7 @@ The common pattern is \emph{continuous}, measurement-driven retuning of the cont
 Adaptive EDCA therefore shares with this dissertation the belief that fixed EDCA parameters are insufficient across operating regimes~\cite{romdhani2003AdaptiveEDCF,bianchi2000DCF}.
 It differs in \emph{what} is adapted and \emph{when}.
 Adaptive EDCF-style controllers modify contention parameters for ongoing traffic classes as a permanent control loop.
-The crash-aware controller leaves the \texttt{edca\_only} AIFSN and CW set unchanged and instead temporarily withholds---or, under emergency preemption, drops---BE channel-access requests while crash-related Voice activity is detected.
+The crash-aware controller leaves the \texttt{edca\_only} AIFSN and CW set unchanged and instead temporarily withholds BE channel-access requests, or drops them under emergency preemption, while crash-related Voice activity is detected.
 The adaptation is event-triggered and class-selective rather than a standing retuning of aggregate contention parameters~\cite{romdhani2003AdaptiveEDCF}.
 
 \subsection{Decentralized Congestion Control in ITS-G5}
@@ -173,18 +173,18 @@ In all cases the loop acts continuously on a station's \emph{aggregate} offered 
 DCC and event-triggered BE suppression therefore optimize different objective functions.
 DCC keeps the long-term operating point away from congestion collapse by throttling how much traffic a station injects as CBR rises~\cite{etsi_dcc_2018}.
 Crash-aware suppression reshapes the mix of traffic that is allowed to contend during a short alert window, discriminating BE from Voice rather than scaling all traffic uniformly.
-The mechanisms are complementary: a deployment could run DCC permanently and still arm local BE suppression when a crash alert is active.
+The mechanisms are complementary: a deployment could run DCC permanently and still activate local BE suppression when a crash alert is active.
 The evaluation in this dissertation disables DCC deliberately, so that the five MAC policies' protection-versus-cost frontier is isolated; no claim of superiority over DCC is made or supported~\cite{etsi_dcc_2018}.
 
-\subsection{Synthesis}
+\subsection{Summary of load regulation}
 \label{sec:rw:alwayson-synth}
 
 Adaptive EDCA and DCC demonstrate mature, always-on answers to congestion and differentiation under load~\cite{romdhani2003AdaptiveEDCF,etsi_dcc_2018,Evolution_QoS_Mechanisms}.
-They do not answer whether a short, crash-triggered intervention that leaves EDCA parameters untouched can further compress Voice tails under heavy contention, nor what BE cost that intervention imposes when armed under light contention.
+They do not answer whether a short, crash-triggered intervention that leaves EDCA parameters untouched can further compress Voice tails under heavy contention, nor what BE cost that intervention imposes when active under light contention.
 Those are the questions reserved for the five-policy matrix in \autoref{chap:sysmodel}.
 
 % ----------------------------------------------------------------------
-\section{Short Contrast: Wired TSN, Wireless TSN, and OFDMA}
+\section{Wired TSN, Wireless TSN, and OFDMA}
 \label{sec:rw:tsn-ofdma}
 % ----------------------------------------------------------------------
 
@@ -223,19 +223,19 @@ OFDMA scheduling presupposes an infrastructure AP and Wi-Fi~6/7 hardware capable
 Those prerequisites are outside the OCB 802.11p envelope of this study~\cite{jiang2008ieee80211p,IEEE80211}.
 No OFDMA migration path is claimed or evaluated.
 
-\subsection{Synthesis}
+\subsection{Summary of the TSN and OFDMA contrast}
 \label{sec:rw:tsn-synth}
 
 Wired TSN, wireless TSN, and OFDMA illustrate how far the field goes when synchronization, infrastructure, or next-generation PHY/MAC features are available~\cite{ieee8021qbv,seliem2023wirelesstsn,schneider_trigger_2024}.
 The crash-aware problem statement asks a different question: what protection-versus-cost frontier is achievable when those features are \emph{not} available and only local EDCA behavior can change.
 
 % ----------------------------------------------------------------------
-\section{Synthesis and Research Gap}
+\section{Comparison and Research Gap}
 \label{sec:rw:gap}
 % ----------------------------------------------------------------------
 
 Across the surveyed literature, three recurring design philosophies appear.
-The first seeks \emph{stronger coordination}---slots, preemption under arbitration, cooperative TDMA, or cellular resource selection---and accepts synchronization or infrastructure as the price of reduced collisions~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
+The first seeks \emph{stronger coordination} through slots, preemption under arbitration, cooperative TDMA, or cellular resource selection, and accepts synchronization or infrastructure as the price of reduced collisions~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 The second reshapes \emph{contention timing} or reports the \emph{cost} of prioritization, showing that when and whom one allows to contend determines both urgent-flow delay and ordinary-flow harm~\cite{SkipCCH_Garrido,Continuous_Backoff_Freezing_Li,Evolution_QoS_Mechanisms}.
 The third regulates load \emph{continuously} through adaptive EDCA parameters or DCC, optimizing aggregate congestion rather than short crash windows~\cite{romdhani2003AdaptiveEDCF,etsi_dcc_2018}.
 
@@ -293,4 +293,4 @@ Assumptions and mechanisms are those stated by the cited works; the final row po
 \fonte{Prepared by the author from the cited works.}
 }
 
-\autoref{chap:sysmodel} instantiates the residual gap as a concrete system model: a highway one-hop multicast scenario, a two-class BE/Voice traffic abstraction with a timed crash window, and five MAC policies---\texttt{plain}, \texttt{edca\_only}, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency})---that map the protection-versus-cost frontier without leaving the standard-compliant, infrastructure-free design envelope.
+\autoref{chap:sysmodel} instantiates the residual gap as a concrete system model: a highway one-hop multicast scenario, a two-class BE/Voice traffic abstraction with a timed crash window, and five MAC policies, namely \texttt{plain}, \texttt{edca\_only}, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency}), which map the protection-versus-cost frontier without leaving the standard-compliant, infrastructure-free design envelope.

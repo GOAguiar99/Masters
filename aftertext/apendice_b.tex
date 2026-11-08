@@ -1,0 +1,70 @@
+\chapter{Use of Artificial Intelligence Tools}
+\label{apend:ai}
+
+This appendix declares how generative artificial intelligence (AI) tools were used during this work and where their assistance is reflected in the dissertation.
+
+Two kinds of AI tools were used throughout the work, and they are kept apart here:
+\begin{itemize}
+	\item Models: only frontier large language models, namely Claude Opus, Claude Fable, GPT-Sol, and other frontier models of the same generation.
+	\item Harnesses: the applications through which the author used those models directly on the dissertation and simulation repositories, namely Claude Code, Codex, and Cursor.
+\end{itemize}
+
+The models produced the suggestions; the harnesses gave them controlled access to the files, so that every proposed change could be inspected, tested, and accepted or rejected by the author.
+
+These tools acted as assistants, not as the main source of the work.
+The research problem, the crash-aware prioritization approach, the five \gls{mac} policies, the experiment design, and the interpretation of the results were defined by the author.
+The tools were used to discuss alternatives, point out weaknesses, and speed up the execution of decisions that the author had already made.
+The author reviewed, corrected, and approved every AI-assisted output that appears in this dissertation and takes full responsibility for its content.
+
+Even in this assisting role, the AI tools were important to the work.
+They shortened the implementation and debugging of the simulation code, helped set up and check the measurement campaigns, and improved the clarity and consistency of the text across the successive revisions.
+\autoref{tab:ai:use} lists each type of use and where it appears.
+
+\begin{table}[htb]
+	\ABNTEXfontereduzida
+	\caption{\label{tab:ai:use}Use of AI tools as assistants, by activity, and the parts of the dissertation where each use is reflected.}
+	\begin{center}
+		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{4.4cm}@{}}
+			\toprule
+			\textbf{Activity} & \textbf{How the AI tools assisted} & \textbf{Where} \\
+			\midrule
+			Text writing and revision &
+			  Language editing and clarity suggestions; structural suggestions for sections and paragraphs; consistency checks between chapters, the simulation code, and the published papers; \LaTeX{} formatting of text, tables, and captions. &
+			  All chapters; Resumo and Abstract. \\
+			\addlinespace
+			Literature support &
+			  Searching for candidate references, summarizing papers, and checking bibliographic data. &
+			  Chapters~\ref{chap:intro} to~\ref{sec:rel_work}; References. \\
+			\addlinespace
+			Simulation code &
+			  Writing, debugging, and refactoring the study modules (traffic applications, \gls*{dscp} classifier, adaptive \gls*{mac} and \gls*{hcf}, \gls*{fsm} controller), the scenario configuration, and the \texttt{kpi\_dashboard} analysis tool. &
+			  \autoref{chap:implementation}; Appendix~\ref{apend:layout}. \\
+			\addlinespace
+			Simulation campaigns &
+			  Setting up and automating the experiment matrices, inspecting simulator outputs, and cross-checking the values reported in the result tables against the archived outputs. &
+			  \autoref{chap:evaluation}. \\
+			\addlinespace
+			Conceptual figures &
+			  Writing the TikZ source code of diagrams whose content was defined by the author. &
+			  Figures \ref{fig:intro:crash-scenario}, \ref{fig:bg:dcf-backoff}, \ref{fig:bg:edca-queues}, \ref{fig:bg:ocb}, \ref{fig:bg:dscp-path}, \ref{fig:bg:veins}, \ref{fig:rw:taxonomy}, \ref{fig:sys:stack}, \ref{fig:sys:fsm}, \ref{fig:impl:architecture}, and \ref{fig:impl:stack}. \\
+			\addlinespace
+			Result figures &
+			  Developing the plotting code of \texttt{kpi\_dashboard}, which renders these plots directly from the simulation outputs. &
+			  Figures \ref{fig:eval:regime_contrast}, \ref{fig:eval:hotspot_delay}, \ref{fig:eval:hotspot_dose}, \ref{fig:eval:p95_gap_heavy}, \ref{fig:eval:gain_cost}, and \ref{fig:eval:ctrl}. \\
+			\addlinespace
+			Synthesis tables &
+			  Drafting tables that condense content already present in the dissertation or in the cited source. &
+			  Tables \ref{tab:bg:platooning-kpis}, \ref{tab:bg:policies}, \ref{tab:rw:comparison}, \ref{tab:impl:provenance}, and \ref{tab:eval:decisions}. \\
+			\addlinespace
+			Result tables &
+			  Formatting the tables and cross-checking their values against the archived simulation outputs. &
+			  Tables \ref{tab:eval:glance}, \ref{tab:eval:hotspot}, \ref{tab:eval:hotspot_dose}, \ref{tab:eval:light}, \ref{tab:eval:heavy_qos}, \ref{tab:eval:heavy_p95}, and \ref{tab:eval:heavy_ctrl}. \\
+			\bottomrule
+		\end{tabularx}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{table}
+
+Two limits applied to every use.
+First, no numerical result in this dissertation was produced by a language model: every value in the evaluation tables and figures comes from the simulation outputs, processed by the analysis tool and archived with the simulation artifact~\cite{aguiar2026_veins_qos}.
+Second, a reference suggested by an AI tool was cited only after its existence and bibliographic data had been verified against the original publication or its official record.

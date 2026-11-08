@@ -22,7 +22,7 @@ Port from SBESC sections first (tighter prose, post-review); fall back to ETFA w
 
 | Chapter | File | Target content | Port from | Legacy content to remove |
 |---------|------|----------------|-----------|--------------------------|
-| Intro | `chapters/0-Intro.tex` | **Done** — crash-aware QoS question, objectives, five MAC policies, contributions | SBESC §I | (removed) |
+| Intro | `chapters/0-Intro.tex` | **Done** — highway collision-warning example + crash-alert figure, 802.11p vs alternatives, objectives + scope (research-question section removed per professor rev. #9), five MAC policies, contributions | SBESC §I + `docs/spec/professor-revisions.md` | (removed) |
 | Background | `chapters/1-chapter.tex` | **Done** — 802.11p, DCF, EDCA, DSCP/EF path, multicast limits, DCC contrast, simulation toolchain (plan: `context/background-chapter-plan.md`) | SBESC §II-A + ETFA §Background + `context/reference-notes.md` | (removed) |
 | Related Work | `chapters/2-chapter.tex` | **Done** — stronger MACs, contention dynamics, adaptive EDCA/DCC, short TSN/OFDMA contrast (plan: `context/related-work-chapter-plan.md`) | SBESC §II-B + `context/reference-notes.md` | (removed) |
 | System Model | `chapters/3-chapter.tex` | **Done** — highway multicast, BE/VO two-class model, crash timeline, five policies, three-mode controller (plan: `context/system-model-chapter-plan.md`) | SBESC §III-A/B + ETFA §System Model | (removed) |
@@ -66,6 +66,8 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 
 | File | Use |
 |------|-----|
+| `intro_crash_scenario.{tex,pdf}` | Intro crash-alert example (`fig:intro:crash-scenario`, professor rev. #2) |
+| `impl_architecture.{tex,pdf}` | Implementation architecture (`fig:impl:architecture`, professor rev. #20) |
 | `system_model_architecture.pdf` | System model (Ch4; also ETFA) |
 | `event_timeline_cropped.pdf` | Crash timeline (Ch4; SBESC Fig. 1) |
 | `fig_01_p95_delay_priority_gap_highway_heavy.pdf` | Dual-panel VO/BE P95 at high load, heavy density (uniform null; light density as table) |
@@ -96,6 +98,7 @@ sources before removal).
 7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (glance map + headline → hotspot_high primary → short uniform null → hotspot-first cost; fig_01/04/07/08/09/10; drop-attr table removed; heavy_p95 BE-only)
 8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
+10. Professor revisions (`docs/spec/professor-revisions.md`, 28 comments): all done except #26 author-voice rewrite (mechanical style pass on all chapters done 2026-11-08, change log in the checklist); #17 AI-use disclosure is Appendix B (`aftertext/apendice_b.tex`), pending confirmation of Figure 7's origin
 
 ## Headline results (heavy density, high load, 3-run means; measurement-fix campaign `5b0f584`)
 
