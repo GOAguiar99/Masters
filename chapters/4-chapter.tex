@@ -6,6 +6,16 @@ This chapter maps that model onto the concrete software artifact developed for t
 
 The realization is an \gls{omnet}~6.1 \cite{varga2008omnetpp} / \gls{inet}~4.5.4 \cite{inet_framework} / Veins~5.3.1 \cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
 Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
+\autoref{fig:impl:architecture} shows the role of each element and the paths over which they communicate: configuration files select the scenario and \gls{mac} policy; \gls{sumo} exchanges vehicle state and the crash stop command with Veins over \gls{traci}; the study modules extend the vendored Veins/\gls{inet} hosts and substitute the \gls{hcf} on the adaptive policies; and recorded signals are parsed offline by the KPI dashboard.
+
+\begin{figure}[htb]
+	\caption{\label{fig:impl:architecture}Implementation architecture: role of each framework element and the communication paths between them.}
+	\begin{center}
+		\includegraphics[width=\linewidth]{Figs/impl_architecture.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
 The chapter is organized as follows.
 Section~\ref{sec:impl:toolchain} pins the toolchain; the repository layout of the artifact is recorded in Appendix~\ref{apend:layout}.
 Section~\ref{sec:impl:host} describes the vehicle host and scenario compound modules.

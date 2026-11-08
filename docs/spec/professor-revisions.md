@@ -24,7 +24,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 - [x] **#9 Research-question/scope restructuring** — PDF p. 20, lines 23–38. Remove the research-question section and place the scope after the objectives.
 - [x] **#12 External-table reference** — PDF p. 24, lines 25–35. Bring the relevant content into the dissertation by reproducing the table or describing it.
 - [x] **#15 Evaluated-policy comparison table** — PDF p. 40, lines 24–33. Synthesize the policy characteristics and distinctions, including `plain`.
-- [ ] **#20 Architecture figure** — PDF p. 59, lines 13–20. Diagram component roles and communication paths.
+- [x] **#20 Architecture figure** — PDF p. 59, lines 13–20. Diagram component roles and communication paths.
 - [x] **#21 Move repository layout to appendix** — PDF p. 60, lines 9–16. Relocate the marked material and check resulting references/structure.
 - [x] **#22 Convert short subsections to items** — PDF p. 61, lines 6–21. Reshape the marked implementation subsections into a readable item list.
 - [x] **#25 Experiment-decisions table** — PDF p. 77, lines 8–9. Synthesize the experiment choices into a concise table.
@@ -71,7 +71,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 
 - [x] **#18 Move implementation parameters out of the system model** — **PDF p. 53, line 16** (printed folio 52; selected anchor: “…implementation parameters in Table 12”). Professor: “Não faz sentido citar parâmetros de implementação no modelo de sistema. Remova a referência pra tabela.” Remove the marked table reference from the system model; keep implementation parameters in the implementation chapter.
 - [x] **#19 Remove the marked reference** — **PDF p. 55, line 50** (printed folio 54; selected anchor: “…listed in Table 12”). Professor: “remove a referência aqui.” Inspect the highlighted location and remove the reference there.
-- [ ] **#20 Add an explanatory architecture figure** — **PDF p. 59, lines 13–20** (printed folio 58; anchor: “The realization is an OMNeT++ 6.1 / INET 4.5.4 / Veins 5.3.1 project”). Professor: “se conseguir colocar uma figura aqui, mostrando o que cada elemento faz e como se comunica com o outro ficaria mais fácil entender o papel de cada um deles.” Add a figure showing each element’s role and the communication paths between elements.
+- [ ] **#20 Add an explanatory architecture figure** — **PDF p. 59, lines 13–20** (printed folio 58; anchor: “The realization is an OMNeT++ 6.1 / INET 4.5.4 / Veins 5.3.1 project”). Professor: “se conseguir colocar uma figura aqui, mostrando o que cada elemento faz e como se comunica com o outro ficaria mais fácil entender o papel de cada um deles.” Add a figure showing each element’s role and the communication paths between elements. Done: new `Figs/impl_architecture.tex/.pdf` (TikZ, house style) inserted as Figure 11 (`fig:impl:architecture`) after the toolchain paragraph at the start of Implementation: config files → OMNeT++ kernel (Veins 5.3.1, veins_inet, INET 4.5.4, veins_qos study code) ↔ SUMO via veins_launchd/TraCI, recorded signals → kpi_dashboard. Verified: 0 errors; figure renders in the PDF.
 
 ## Implementation and dissertation structure
 
