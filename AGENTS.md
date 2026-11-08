@@ -4,6 +4,8 @@ Read [AI_CONTEXT.md](AI_CONTEXT.md) before editing chapters or bibliography.
 
 | Resource | Path |
 |----------|------|
+| Repo overview | `README.md` |
+| Professor revision checklist | `docs/spec/professor-revisions.md` (annotated PDF: `professor-revisions-main.pdf`) |
 | Technical source of truth | `../veins-inet-qos/veins_qos/` |
 | Latest short paper (primary source) | `../SBESC-2026-Paper/text.tex` |
 | Earlier short paper (secondary) | `../ETFA-2026---Paper/text.tex` |
