@@ -98,7 +98,7 @@ sources before removal).
 7. ~~Evaluation (Ch5 file / prints as Ch6)~~ — done (glance map + headline → hotspot_high primary → short uniform null → hotspot-first cost; fig_01/04/07/08/09/10; drop-attr table removed; heavy_p95 BE-only)
 8. ~~Conclusion (Ch6 file / prints as Ch7)~~ — done (SBESC §V; Work Plan deleted)
 9. Proofread against `veins_qos/AI_CONTEXT.md`, SBESC paper, and `DSD2026_REVIEW.md`
-10. Professor revisions (`docs/spec/professor-revisions.md`, 28 comments): all done except #26 author-voice rewrite; #17 AI-use disclosure is Appendix B (`aftertext/apendice_b.tex`), pending confirmation of Figure 7's origin
+10. Professor revisions (`docs/spec/professor-revisions.md`, 28 comments): all done except #26 author-voice rewrite (mechanical style pass on all chapters done 2026-11-08, change log in the checklist); #17 AI-use disclosure is Appendix B (`aftertext/apendice_b.tex`), pending confirmation of Figure 7's origin
 
 ## Headline results (heavy density, high load, 3-run means; measurement-fix campaign `5b0f584`)
 
