@@ -1,5 +1,7 @@
 # Related Work chapter plan (`chapters/2-chapter.tex`, prints as Chapter 3)
 
+> **Note (2026-11-08):** section titles in this chapter were renamed in the professor-revision #26 style pass; `\label`s are unchanged. Current titles and the full rename list: `docs/spec/professor-revisions.md` (“#26 style pass: change log”).
+
 **Goal:** replace the legacy DQ-WiFi / TSN-primary survey with a dissertation-depth Related Work that positions crash-aware, local, event-triggered BE suppression against stronger MAC alternatives, always-on load regulation, and a short TSN/OFDMA contrast.
 
 **Status of this file:** implemented in `chapters/2-chapter.tex` (July 2026).
