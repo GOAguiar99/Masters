@@ -7,7 +7,7 @@ This chapter maps that model onto the concrete software artifact developed for t
 The realization is an \gls{omnet}~6.1 \cite{varga2008omnetpp} / \gls{inet}~4.5.4 \cite{inet_framework} / Veins~5.3.1 \cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
 Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
 The chapter is organized as follows.
-Section~\ref{sec:impl:toolchain} pins the toolchain and repository layout.
+Section~\ref{sec:impl:toolchain} pins the toolchain; the repository layout of the artifact is recorded in Appendix~\ref{apend:layout}.
 Section~\ref{sec:impl:host} describes the vehicle host and scenario compound modules.
 Section~\ref{sec:impl:path} traces the end-to-end packet path.
 Section~\ref{sec:impl:apps} details the application modules.
@@ -20,7 +20,7 @@ Section~\ref{sec:impl:scope} states implementation scope and deliberate omission
 Seeds, statistical aggregation, and measured results belong to \autoref{chap:evaluation} and are not reported here.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Simulation Toolchain and Repository Layout}
+\section{Simulation Toolchain}
 \label{sec:impl:toolchain}
 
 The Background chapter motivates bidirectional road-and-network coupling for inter-vehicle protocol studies (\autoref{sec:bg:sim}).
@@ -33,48 +33,7 @@ Here the same stack is pinned to the versions used for the experiments and narro
 \gls{inet}~4.5.4 supplies the Internet protocol stack, IEEE~802.11p-capable \gls{mac} and \gls{phy}, radio propagation abstractions, and the \gls{hcf} into which the study's adaptive controller is substituted for selected policies~\cite{inet_framework,IEEE80211e_2005}.
 Veins couples \gls{omnet}/\gls{inet} to \gls{sumo} through \gls{traci}, so highway mobility, lane discipline, and the crash-node stop command remain consistent with the road microsimulation~\cite{veins_sommer2011,lopez2018sumo}.
 In the artifact tree, \texttt{inet/} and \texttt{veins/} are git submodules consumed as read-only frameworks, pinned to the \gls{inet}~4.5.4 and Veins~5.3.1 releases; the study-authored code lives under \texttt{veins\_qos/}~\cite{aguiar2026_veins_qos}.
-
-\subsection{Repository layout}
-\label{sec:impl:layout}
-
-\autoref{tab:impl:layout} summarizes the directories that matter for implementation and reproducibility.
-Only the active highway packages participate in the dissertation experiment matrix; older square and early highway packages remain in the tree as development history and are not part of the reported study~\cite{aguiar2026_veins_qos}.
-
-\begin{table}[htb]
-	\ABNTEXfontereduzida
-	\caption{\label{tab:impl:layout}Artifact directory layout relevant to the crash-aware implementation.}
-	\begin{center}
-		\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.8cm} >{\raggedright\arraybackslash}X@{}}
-			\toprule
-			\textbf{Path} & \textbf{Role} \\
-			\midrule
-			\path{veins_qos/src/traffic/} &
-			  Study applications: \texttt{CritPacketSender}, \texttt{CrashBurstApp}. \\
-			\addlinespace
-			\path{veins_qos/src/qos/} &
-			  Explicit DSCP-to-user-priority classifier. \\
-			\addlinespace
-			\path{veins_qos/src/mac/} &
-			  Instrumented IEEE~802.11 \gls*{mac}, adaptive \gls*{hcf}, and \gls*{fsm} controller. \\
-			\addlinespace
-			\path{veins_qos/src/veins_inet/} &
-			  Veins$\leftrightarrow$\gls*{inet} host, mobility, manager, and UDP application base. \\
-			\addlinespace
-			\path{veins_qos/simulations/}\newline
-			\path{veins_inet_highway_light/},\newline
-			\path{veins_inet_highway_heavy/} &
-			  Active density packages: SUMO network, obstacles, \texttt{omnetpp.ini}, runners. \\
-			\addlinespace
-			\path{kpi_dashboard/} &
-			  Offline parser of OMNeT++ \texttt{.sca}/\texttt{.vec} result files and figure export. \\
-			\addlinespace
-			\path{inet/}, \path{veins/} &
-			  Framework submodules (read-only). \\
-			\bottomrule
-		\end{tabularx}
-	\end{center}
-	\fonte{Prepared by the author.}
-\end{table}
+The directory layout of the artifact is recorded in Appendix~\ref{apend:layout}.
 
 \subsection{Attribution}
 \label{sec:impl:attribution}
@@ -87,41 +46,14 @@ Study-specific logic is confined to the application generators, the classifier, 
 \section{Host and Scenario Compound Modules}
 \label{sec:impl:host}
 
-\subsection{Vehicle host}
-\label{sec:impl:car}
+The vehicle fleet and the scenario network are assembled from three compound building blocks.
+They are short enough to record as items rather than as separate subsections:
 
-Each simulated vehicle is an instance of \texttt{veins\_qos.veins\_inet.VeinsInetCar}, a thin extension of INET's \texttt{AdhocHost} that carries a single IEEE~802.11 wireless interface (\texttt{wlan0}), an IPv4 stack with \texttt{HostAutoConfigurator}, and a Veins mobility submodule~\cite{inet_framework,aguiar2026_veins_qos}.
-The manager launches cars with
-
-\begin{quote}
-\ttfamily *.manager.moduleType = "veins\_qos.veins\_inet.VeinsInetCar"
-\end{quote}
-
-so that every TraCI-injected node receives the same compound type.
-Mobility is bound to \texttt{veins\_qos.veins\_inet.VeinsInetMobility}, which mirrors SUMO positions, headings, and presence into the INET mobility model~\cite{veins_sommer2011}.
-IPv4 autoconfiguration joins the multicast group \texttt{224.0.0.1} on \texttt{wlan0}, matching the application destination used by both traffic generators.
-
-\subsection{Application base}
-\label{sec:impl:appbase}
-
-Both study applications extend \texttt{VeinsInetApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware \gls{udp} socket setup~\cite{inet_framework,aguiar2026_veins_qos}.
-The base class opens a \gls{udp} socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access.
-Study applications therefore inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
-
-\subsection{Scenario network}
-\label{sec:impl:scenario-ned}
-
-Each active package defines a \texttt{Scenario} network \gls{ned} that composes:
-
-\begin{itemize}
-  \item \texttt{Ieee80211DimensionalRadioMedium} --- shared radio medium for all nodes;
-  \item \texttt{VeinsInetManager} --- TraCI scenario manager that launches SUMO through \texttt{veins\_launchd} on \texttt{localhost:9999} using \texttt{highway.launchd.xml};
-  \item \texttt{PhysicalEnvironment} --- obstacle geometry from \texttt{highway.obstacles.xml};
-  \item visualizers (optional for interactive runs);
-  \item an initial \texttt{VeinsInetCar} placeholder; additional cars are injected by TraCI as SUMO vehicles appear.
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Vehicle host.} Each simulated vehicle is an instance of \texttt{veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetCar}, a thin extension of INET's \texttt{AdhocHost} that carries a single IEEE~802.11 wireless interface (\texttt{wlan0}), an IPv4 stack with \texttt{HostAutoConfigurator}, and a Veins mobility submodule~\cite{inet_framework,aguiar2026_veins_qos}. The manager launches cars with \texttt{*.manager.moduleType =\allowbreak\ "veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetCar"} so that every TraCI-injected node receives the same compound type. Mobility is bound to \texttt{veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetMobility}, which mirrors SUMO positions, headings, and presence into the INET mobility model~\cite{veins_sommer2011}. IPv4 autoconfiguration joins the multicast group \texttt{224.0.0.1} on \texttt{wlan0}, matching the application destination used by both traffic generators.
+  \item \textbf{Application base.} Both study applications extend \texttt{VeinsInet\allowbreak ApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware \gls{udp} socket setup~\cite{inet_framework,aguiar2026_veins_qos}. The base class opens a \gls{udp} socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access. Study applications therefore inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
+  \item \textbf{Scenario network.} Each active package defines a \texttt{Scenario} network \gls{ned} that composes an \texttt{Ieee80211\allowbreak DimensionalRadioMedium} (shared radio medium for all nodes), a \texttt{VeinsInetManager} (TraCI scenario manager that launches SUMO through \texttt{veins\_launchd} on \texttt{localhost:9999} using \texttt{highway.launchd.xml}), a \texttt{PhysicalEnvironment} with obstacle geometry from \texttt{highway.obstacles.xml}, optional visualizers for interactive runs, and an initial \texttt{VeinsInetCar} placeholder, with additional cars injected by TraCI as SUMO vehicles appear. This compound is the OMNeT++ \texttt{network} selected by every runnable configuration in the package~\cite{aguiar2026_veins_qos}.
 \end{itemize}
-
-This compound is the OMNeT++ \texttt{network} selected by every runnable configuration in the package~\cite{aguiar2026_veins_qos}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{End-to-End Packet Path}
