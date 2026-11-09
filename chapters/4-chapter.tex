@@ -284,7 +284,6 @@ Their semantics match the three-mode controller of \autoref{sec:sys:controller};
 	\fonte{Prepared by the author.}
 \end{table}
 
-\subsection{Controller integration hooks}
 \label{sec:impl:hooks}
 
 \autoref{tab:impl:hooks} summarizes how \texttt{V2xHcf} couples application- and peer-observed Voice activity to Best Effort eligibility.
@@ -369,14 +368,13 @@ Numeric access-control values are collected in \autoref{tab:impl:parameters}; he
 	\fonte{Prepared by the author.}
 \end{table}
 
-\subsection{\texttt{plain}}
+\subsection{Baseline policies: \texttt{plain} and \texttt{edca\_only}}
 \label{sec:impl:plain}
 
 \texttt{[Config plain]} keeps a non-QoS station.
 It sets the single DCF pending-queue capacity to 128~packets and does not enable \texttt{qosStation}, does not install \texttt{QosClassifier}, and does not override \texttt{hcf.typename}.
 DSCP markings still travel with IP packets for KPI classification at receivers, but they do not drive EDCA access categories.
 
-\subsection{\texttt{edca\_only}}
 \label{sec:impl:edca}
 
 \texttt{[Config edca\_only]} extends the plain baseline with standard EDCA~\cite{IEEE80211e_2005}:
@@ -593,7 +591,7 @@ Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt
 \fonte{Prepared by the author.}
 }
 
-\subsection{Density packages}
+\subsection{Density packages, road network, and mobility}
 \label{sec:impl:density}
 
 The dissertation experiments use two parallel packages under
@@ -608,7 +606,6 @@ Both packages share the same corridor geometry (\texttt{highway.net.xml}), obsta
 Fleet size is selected by the SUMO route file (\texttt{highway.rou.xml}): a fixed vehicle \texttt{node0\_highway} departs at time~0 and becomes OMNeT++ node index~0 (the default crash target), while additional vehicles are injected from SUMO flows.
 Separating density (package) from offered load (ini overlay) is deliberate: the two stress dimensions can be varied independently~\cite{aguiar2026_veins_qos}.
 
-\subsection{Road network and mobility}
 \label{sec:impl:sumo}
 
 The SUMO network is a straight bidirectional highway corridor of 5~km with three lanes per direction and mixed car/truck vehicle types under EIDM car-following and LC2013 lane-changing models~\cite{lopez2018sumo}.
@@ -640,13 +637,12 @@ The configured set therefore makes Best Effort compete harder than an \gls{ocb}-
 
 Because this baseline is identical across policies, cross-policy differences isolate queueing, contention, and local Best Effort suppression.
 
-\subsection{Timing and default application binding}
+\subsection{Timing, load overlays, and runnable matrix}
 \label{sec:impl:timing}
 
 Under \texttt{[General]}, both packages set \texttt{sim-time-limit = 70s}, crash start \texttt{crashAt = 30s}, and crash duration \texttt{resumeAfter = 30s}, matching \autoref{sec:sys:event} and \autoref{tab:impl:parameters}.
 Default application parameters in \texttt{[General]} match the medium load profile; the \texttt{\_netload\_*} overlays override them for the full matrix.
 
-\subsection{Load overlays and runnable matrix}
 \label{sec:impl:matrix}
 
 Three helper configurations vary only application-side load, using the means and payloads in \autoref{tab:impl:parameters}.

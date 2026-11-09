@@ -68,8 +68,8 @@ Controller modes: *listening* / *blocking* / *sending* (`V2xHcf` + `V2xEdcaFsmCo
 |------|-----|
 | `intro_crash_scenario.{tex,pdf}` | Intro crash-alert example (`fig:intro:crash-scenario`, professor rev. #2) |
 | `impl_architecture.{tex,pdf}` | Implementation architecture (`fig:impl:architecture`, professor rev. #20) |
-| `system_model_architecture.pdf` | System model (Ch4; also ETFA) |
-| `event_timeline_cropped.pdf` | Crash timeline (Ch4; SBESC Fig. 1) |
+| `sys_architecture.{tex,pdf}` | System model architecture (`fig:sys:architecture`); TikZ redraw replacing the AI-generated `system_model_architecture.pdf` (removed 2026-11-08) |
+| `sys_timeline.{tex,pdf}` | Crash event timeline (`fig:sys:timeline`); TikZ redraw replacing the AI-generated `event_timeline_cropped.pdf` (removed 2026-11-08) |
 | `fig_01_p95_delay_priority_gap_highway_heavy.pdf` | Dual-panel VO/BE P95 at high load, heavy density (uniform null; light density as table) |
 | `fig_04_vo_gain_vs_be_cost_highway_heavy.pdf` | VO gain vs BE cost tradeoff (hotspot-first cost section) |
 | `fig_07_v2x_control_actions_by_load_highway_heavy.pdf` | Controller actions by load, heavy (uniform cost coda) |

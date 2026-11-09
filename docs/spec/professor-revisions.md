@@ -14,7 +14,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 - [x] **#2 Crash-alert example figure** — PDF p. 19, line 23. Develop an example that demonstrates the crash-alert problem and illustrate it.
 - [x] **#3 Compare wireless options** — PDF p. 20, lines 4–9. Add a supported comparison of 802.11p and relevant alternatives.
 - [x] **#16 Related-work comparison table** — PDF p. 51, lines 10–22. Review all related work individually, synthesize the comparison, and add this dissertation as a row.
-- [x] **#17 AI-use disclosure** _(Figure 7 / timeline origin still to confirm)_ — PDF p. 53, line 4. Establish the actual AI use and locations before writing the disclosure; do not infer or invent usage.
+- [x] **#17 AI-use disclosure** — PDF p. 53, line 4. Establish the actual AI use and locations before writing the disclosure; do not infer or invent usage.
 - [x] **#23 Simulator changes/originals table** — PDF p. 69, lines 23–25. Audit the active implementation and distinguish study modifications from reused framework components.
 - [ ] **#26 AI-dependent writing review** _(mechanical style pass done on all chapters, see change log at the end; author rewrite pending)_ — PDF p. 78, lines 10–17. Review the dissertation prose and section structure individually, checking authorial understanding and claims.
 - [x] **#28 Publications mapping** — PDF p. 94, lines 32–35. Verify the publications and map their actual content to dissertation sections.
@@ -164,3 +164,24 @@ Mechanical first pass for comment #26 (“teu texto e as seções estão muito I
 
 - Numeric tokens of the old and new text compared per file: identical, apart from “8-copy” → “eight copies” and the added token “P95” in one Evaluation sentence.
 - TeX Live 2026 build: 0 errors, 0 undefined references/citations, no overfull box in any chapter (8 sub-6 pt boxes remain in the front-matter lists).
+
+## Follow-up review and fixes (2026-11-08)
+
+Full re-scan of all 28 comments and 4 markup-only marks against `main` after PRs #4 and #5. The annotations were re-extracted directly from `professor-revisions-main.pdf` with PDFKit (32 marks, anchors matching this checklist), and the built PDF was checked page by page. 20 comments were done well; 8 needed follow-up. All eight were fixed on branch `revision/professor-review-followups`:
+
+| # | Finding on `main` | Fix |
+|---|-------------------|-----|
+| 3 | The 802.11p comparison sat between the gap paragraph and “This work addresses **that** gap” | Comparison moved right after the 802.11p paragraph, where wireless is introduced; its last sentence now carries the “fully distributed, no central scheduler” point for both 802.11p and 802.11bd; the deployability sentence is back at the end of the gap paragraph |
+| 5 | “Voice/VO” and “DSCP 46” still appeared before being explained | The DSCP/EDCA paragraph now introduces DSCP 46 as the Expedited Forwarding codepoint (`RFC3246_EF_PHB`) and names the four access categories with Voice as the most favored (`IEEE80211`) |
+| 6 | Research question removed, but “Veins/INET” still appeared from nowhere in objective 1 | The proposal paragraph now introduces the simulation toolchain (OMNeT++, INET, SUMO via Veins; existing bib keys) before the objectives |
+| 14 | 3GPP expanded again in the Background summary (his anchor) because the first mention was literal text | First mention uses `\gls{threegpp}`; the summary prints “3GPP” |
+| 17 | The figure he asked about (“gerada por IA?”, then Figure 7, now Figure 8) and the event timeline (Figure 11) were AI-generated raster images, not listed in Appendix B | Author confirmed both were AI-generated. Both redrawn as TikZ in the house style (`Figs/sys_architecture.tex`, `Figs/sys_timeline.tex`), content taken from System Model §4.1/§4.4; the old `system_model_architecture.pdf` and `event_timeline_cropped.pdf` removed. Appendix B lists both under conceptual figures and states that earlier drafts used AI-generated images, replaced so that no figure is an AI-generated image |
+| 18 (+p58 mark) | System Model still pointed to the Implementation chapter for “numeric bindings” (opening) and for parameter values (scope section) | Opening now says only that later chapters cover the software realization and the experiments; scope says road geometry, density, and radio settings are free parameters of the model; closing says Implementation “realizes them in software” |
+| 24 | Same pattern as his anchor in four other sentences: Conclusion opening cited Kosek-Szott and IEEE 2005 (his exact pair) on the author's own statement; Evaluation cited Wu et al. and the artifact for its own result (the sentence he highlighted on p77), its own effect-size caveat, and its own recommendation | Citations removed from those four sentences; data-source citations to the artifact kept |
+| 26 (“as seções”) | 12 subsections under ~110 words, the #22 complaint, fixed earlier only in §5.2 | Evaluation Discussion merged from 8 to 4 subsections (Enabling adaptive protection in practice; Cost, fairness, and starvation; Interpretation and practical significance; Limitations and threats to validity). Implementation: “Controller integration hooks” folded into the V2xHcf subsection, `plain` + `edca_only` merged into “Baseline policies”, “Road network and mobility” into “Density packages, road network, and mobility”, “Timing…” + “Load overlays…” into “Timing, load overlays, and runnable matrix”. All referenced labels kept as paragraph anchors. The three Related Work “Summary of …” subsections were kept: folding them would make each section synthesis read as part of the last reviewed work |
+
+Also fixed: “The model is intentionally minimal” and “This three-phase structure is deliberately simple” in the System Model (the sentence type cut in #7); the Conclusion opening “This dissertation asked whether…” (the research question no longer exists) now restates the main objective; “precisely” removed from `tab:eval:decisions`.
+
+Verification: 0 errors, 0 undefined references/citations, no LaTeX warnings, no overfull box outside the front-matter lists; numeric tokens per file unchanged apart from added/removed citation keys, DSCP 46 in the new Introduction sentence, and figure widths; Figures 8 and 11, the Introduction, the Discussion, and Appendix B checked visually in the PDF.
+
+Still open: the author's own rewrite for #26, and the approval-page committee names before the defense.
