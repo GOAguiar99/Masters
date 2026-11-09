@@ -2,11 +2,14 @@
 \label{chap:implementation}
 
 \autoref{chap:sysmodel} defined the crash-aware system at a conceptual level: a decentralized IEEE~802.11p highway network, a synthetic two-class \gls{be}/\gls{vo} traffic model, five \gls{mac} policies with a local three-mode controller, and a three-phase crash timeline.
-This chapter maps that model onto the concrete software artifact developed for this dissertation, so that a reader who already understands the design can reproduce the build, follow the packet path, and locate every study-specific module without consulting undocumented source comments.
+This chapter maps that model onto the software artifact developed for this dissertation.
+A reader who already understands the design should be able to reproduce the build, follow the packet path, and locate every study-specific module without consulting undocumented source comments.
 
 The realization is an \gls{omnet}~6.1 \cite{varga2008omnetpp} / \gls{inet}~4.5.4 \cite{inet_framework} / Veins~5.3.1 \cite{veins_sommer2011} project whose source, scenario packages, and analysis tooling are publicly available~\cite{aguiar2026_veins_qos}.
 Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2018sumo}.
-\autoref{fig:impl:architecture} shows the role of each element and the paths over which they communicate: configuration files select the scenario and \gls{mac} policy; \gls{sumo} exchanges vehicle state and the crash stop command with Veins over \gls{traci}; the study modules extend the vendored Veins/\gls{inet} hosts and substitute the \gls{hcf} on the adaptive policies; and recorded signals are parsed offline by the KPI dashboard.
+\autoref{fig:impl:architecture} shows the role of each element and the paths over which they communicate.
+Configuration files select the scenario and \gls{mac} policy, and \gls{sumo} exchanges vehicle state and the crash stop command with Veins over \gls{traci}.
+The study modules extend the vendored Veins/\gls{inet} hosts and replace the \gls{hcf} on the adaptive policies, and the KPI dashboard parses the recorded signals offline.
 
 \begin{figure}[htb]
 	\caption{\label{fig:impl:architecture}Implementation architecture: role of each framework element and the communication paths between them.}
@@ -16,18 +19,8 @@ Road mobility is provided by \gls{sumo} coupled through \gls{traci}~\cite{lopez2
 	\fonte{Prepared by the author.}
 \end{figure}
 
-The chapter is organized as follows.
-Section~\ref{sec:impl:toolchain} pins the toolchain; the repository layout of the artifact is recorded in Appendix~\ref{apend:layout}.
-Section~\ref{sec:impl:host} describes the vehicle host and scenario compound modules.
-Section~\ref{sec:impl:path} traces the end-to-end packet path.
-Section~\ref{sec:impl:apps} details the application modules.
-Section~\ref{sec:impl:classifier} covers the DSCP-to-Voice classifier.
-Section~\ref{sec:impl:mac} explains the instrumented \gls{mac} and the adaptive \gls{hcf} controller.
-Section~\ref{sec:impl:policies} documents how the five policies are wired in configuration.
-Section~\ref{sec:impl:scenarios} presents the highway scenario packages, the consolidated simulation-parameter table, and the configuration matrix.
-Section~\ref{sec:impl:instrumentation} lists recorded signals and the analysis tooling surface.
-Section~\ref{sec:impl:scope} states implementation scope and deliberate omissions.
-Seeds, statistical aggregation, and measured results belong to \autoref{chap:evaluation} and are not reported here.
+The chapter follows the software from the toolchain and host modules, through the packet path, the applications, the classifier, and the \gls{mac}, to the policy configuration, the scenario packages, and the instrumentation.
+The repository layout of the artifact is recorded in Appendix~\ref{apend:layout}, and measured results are left to \autoref{chap:evaluation}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Simulation Toolchain}
@@ -50,7 +43,8 @@ The directory layout of the artifact is recorded in Appendix~\ref{apend:layout}.
 
 The Veins/\gls{inet} integration modules under \texttt{veins\_qos/src/veins\_inet/} derive from the Veins project (Sommer et al.)~\cite{veins_sommer2011}.
 The \texttt{VeinsInetTransparentMobility} component incorporates work by Jannusch Bigge (TU Dresden); it is present in the tree but is \emph{not} selected by the active highway configurations, which use \texttt{VeinsInetMobility} instead~\cite{aguiar2026_veins_qos}.
-Study-specific logic is confined to the application generators, the classifier, the instrumented \gls{mac}, and, for the adaptive policies only, a replacement \gls{hcf} submodule, so that physical-layer connectivity, mobility, and offered-load profiles stay shared across all five \gls{mac} policies (\autoref{sec:sys:network}).
+Study-specific logic is confined to the application generators, the classifier, the instrumented \gls{mac}, and, for the adaptive policies only, a replacement \gls{hcf} submodule.
+Physical-layer connectivity, mobility, and offered-load profiles stay shared across all five \gls{mac} policies (\autoref{sec:sys:network}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Host and Scenario Compound Modules}
@@ -61,7 +55,7 @@ They are short enough to record as items rather than as separate subsections:
 
 \begin{itemize}[leftmargin=2em]
   \item \textbf{Vehicle host.} Each simulated vehicle is an instance of \texttt{veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetCar}, a thin extension of INET's \texttt{AdhocHost} that carries a single IEEE~802.11 wireless interface (\texttt{wlan0}), an IPv4 stack with \texttt{HostAutoConfigurator}, and a Veins mobility submodule~\cite{inet_framework,aguiar2026_veins_qos}. The manager launches cars with \texttt{*.manager.moduleType =\allowbreak\ "veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetCar"} so that every TraCI-injected node receives the same compound type. Mobility is bound to \texttt{veins\_qos.\allowbreak veins\_inet.\allowbreak VeinsInetMobility}, which mirrors SUMO positions, headings, and presence into the INET mobility model~\cite{veins_sommer2011}. IPv4 autoconfiguration joins the multicast group \texttt{224.0.0.1} on \texttt{wlan0}, matching the application destination used by both traffic generators.
-  \item \textbf{Application base.} Both study applications extend \texttt{VeinsInet\allowbreak ApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware \gls{udp} socket setup~\cite{inet_framework,aguiar2026_veins_qos}. The base class opens a \gls{udp} socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access. Study applications therefore inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
+  \item \textbf{Application base.} Both study applications extend \texttt{VeinsInet\allowbreak ApplicationBase}, itself derived from INET's \texttt{ApplicationBase} with Veins-aware \gls{udp} socket setup~\cite{inet_framework,aguiar2026_veins_qos}. The base class opens a \gls{udp} socket on \texttt{wlan0}, disables multicast loopback (\texttt{setMulticastLoop(false)}), and provides helpers for timed transmission and TraCI access. Study applications inherit a common multicast send path and concentrate their own logic on marking, timing, and instrumentation.
   \item \textbf{Scenario network.} Each active package defines a \texttt{Scenario} network \gls{ned} that composes an \texttt{Ieee80211\allowbreak DimensionalRadioMedium} (shared radio medium for all nodes), a \texttt{VeinsInetManager} (TraCI scenario manager that launches SUMO through \texttt{veins\_launchd} on \texttt{localhost:9999} using \texttt{highway.launchd.xml}), a \texttt{PhysicalEnvironment} with obstacle geometry from \texttt{highway.obstacles.xml}, optional visualizers for interactive runs, and an initial \texttt{VeinsInetCar} placeholder, with additional cars injected by TraCI as SUMO vehicles appear. This compound is the OMNeT++ \texttt{network} selected by every runnable configuration in the package~\cite{aguiar2026_veins_qos}.
 \end{itemize}
 
@@ -133,7 +127,8 @@ Both are instantiated on every vehicle (\texttt{numApps = 2}); only the configur
 \end{table}
 
 On transmission, the module stamps \texttt{CreationTimeTag} and emits a Best Effort counter.
-On reception it ignores datagrams whose Layer-3 source equals the local \texttt{wlan0} address, maps remaining packets by DSCP into BE or VO delay/RX streams, and, when deduplication is enabled, accepts only the first Voice packet of each (source,~sequence) pair for the remainder of the run.
+On reception it ignores datagrams whose Layer-3 source equals the local \texttt{wlan0} address and maps the remaining packets by DSCP into BE or VO delay/RX streams.
+When deduplication is enabled, it accepts only the first Voice packet of each (source,~sequence) pair for the remainder of the run.
 This design keeps a single receiver module as the KPI sink for both traffic classes.
 
 \subsection{\texttt{CrashBurstApp}: crash-triggered Voice}
@@ -151,8 +146,9 @@ At absolute simulation time \texttt{crashAt} (30~s in the highway packages), the
 \end{enumerate}
 
 Copy~$i$ of a sequence is scheduled at $\max(0,\; i\cdot\texttt{repeatGap} + U(-J,\,J))$ after the logical burst time, where $J$ is \texttt{repeatJitter}.
-The jitter therefore applies to the \emph{first} copy as well as to later repeats, so even an alert delivered on its first transmission carries a dispatch offset whose 95th percentile is $0.9\,J$.
-Because the same logical burst time is the origin of the alert-age metric (\autoref{sec:impl:signals}), this offset is a lower bound on measured Voice delay that no \gls{mac} policy can remove; \autoref{sec:eval:light} quantifies its effect on the reported Voice tails.
+The jitter applies to the \emph{first} copy as well as to later repeats, so even an alert delivered on its first transmission carries a dispatch offset whose 95th percentile is $0.9\,J$.
+Because the same logical burst time is the origin of the alert-age metric (\autoref{sec:impl:signals}), this offset is a lower bound on measured Voice delay that no \gls{mac} policy can remove.
+\autoref{sec:eval:light} quantifies its effect on the reported Voice tails.
 
 After \texttt{resumeAfter} (30~s), Voice transmission stops and TraCI restores normal speed control (\texttt{setSpeed(-1)}).
 The crash source continues to run \texttt{CritPacketSender} throughout, so alerts are superimposed on ongoing Best Effort traffic rather than replacing it (\autoref{sec:sys:traffic}).
@@ -199,7 +195,7 @@ There is no multi-level criticality ladder and no separate four-priority applica
 \label{sec:impl:classifier}
 
 Correct placement of crash alerts into the Voice access category is not automatic under the common three-MSB DSCP-to-\gls{up} heuristic (\autoref{sec:bg:rfc8325}, \autoref{sec:sys:qos}).
-The artifact therefore installs an explicit classifier rather than relying on default DiffServ-to-802.11 mapping~\cite{RFC8325_WiFi_QoS}.
+The artifact installs an explicit classifier rather than relying on default DiffServ-to-802.11 mapping~\cite{RFC8325_WiFi_QoS}.
 
 \texttt{veins\_qos.qos.QosClassifier} implements INET's \texttt{IIeee8021dQosClassifier} interface.
 It reads DSCP from packet indications or requests (and, if needed, from IPv4/IPv6 headers), maps \texttt{crashDscp} (default~46) to Voice user priority, and assigns \texttt{defaultUp} (default~0, Best Effort) to every other packet~\cite{RFC8325_WiFi_QoS,IEEE80211e_2005,aguiar2026_veins_qos}.
@@ -474,7 +470,8 @@ Vendored files that are present in the tree but not selected by the active confi
 \label{sec:impl:parameters}
 
 \autoref{tab:impl:parameters} collects the concrete timing, topology, radio, application, classifier, and \gls{mac} bindings used by the active highway artifact.
-It is the numeric counterpart of the System Model in \autoref{chap:sysmodel}: the conceptual roles of the five policies and the crash timeline are defined there; the values that instantiate them in this study are recorded here~\cite{aguiar2026_veins_qos}.
+It is the numeric counterpart of the System Model in \autoref{chap:sysmodel}.
+The conceptual roles of the five policies and the crash timeline are defined there, and the values that instantiate them in this study are recorded here~\cite{aguiar2026_veins_qos}.
 Best Effort inter-arrivals are Poisson: OMNeT++ \texttt{exponential($\cdot$)} is marked \texttt{volatile} and redrawn independently before every packet, so the mean is a rate rather than a per-vehicle constant period.
 Voice burst periods are fixed, with optional per-repeat jitter.
 Adaptive policies are abbreviated \texttt{stable}, \texttt{guarded}, and \texttt{emergency} in the first column; the full OMNeT++ configuration names are \texttt{edca\_v2x\_vo\_*}.
@@ -633,7 +630,7 @@ This differs from production deployments, where group-addressed frames are commo
 Two fidelity caveats apply.
 First, the artifact realizes 802.11p-like operation through \gls{inet}'s \texttt{AdhocHost} (no association or authentication, ad hoc management); it approximates \gls{ocb} operation rather than literally implementing \texttt{dot11OCBActivated} behaviour.
 Second, the \gls{edca} parameter set of \autoref{tab:impl:parameters} follows the IEEE~802.11 BSS QoS defaults, whereas IEEE~802.11 specifies a distinct default \gls{edca} parameter set for \gls{ocb} operation with a less aggressive Best Effort category (\gls{aifsn}~6 instead of~3)~\cite{IEEE80211,etsi_en_302663}.
-The configured set therefore makes Best Effort compete harder than an \gls{ocb}-default deployment would, which is conservative for the protection problem studied here.
+The configured set makes Best Effort compete harder than an \gls{ocb}-default deployment would, which is conservative for the protection problem studied here.
 
 Because this baseline is identical across policies, cross-policy differences isolate queueing, contention, and local Best Effort suppression.
 
@@ -655,7 +652,7 @@ extends = edca\_v2x\_vo\_emergency, \_netload\_high
 \end{quote}
 
 yielding the naming pattern \texttt{<policy>\_netload\_<low|medium|high>}: five policies $\times$ three loads $=$ fifteen named configurations per density package~\cite{aguiar2026_veins_qos}.
-Across both light and heavy packages the unique named experiments therefore total thirty before seed repetitions (seed counts belong to Evaluation).
+Across both light and heavy packages the unique named experiments total thirty before seed repetitions (seed counts belong to Evaluation).
 
 A sixth overlay family, \texttt{\_hotspot3}, concentrates application load spatially for the hotspot study of \autoref{sec:eval:hotspot}: the three vehicles that enter the corridor immediately after the crash source (nodes 1--3) bulk-upload at a \SI{4}{\milli\second} Poisson mean with 1200~B payloads (\(\approx\)\SI{2.4}{\mega\bit\per\second} each) for the whole run, independently of the crash window.
 Composed as \texttt{<policy>\_hotspot\_<low|medium|high>}, with the overlay listed \emph{before} the \texttt{\_netload\_*} section because OMNeT++ keeps the first matching assignment, it adds fifteen more named configurations to the heavy package.
@@ -716,8 +713,10 @@ These signals are the measurement surface consumed by Evaluation; their statisti
 
 End-to-end delay is computed at receivers as simulation time minus \texttt{CreationTimeTag}.
 Best Effort stamps creation at each physical send.
-Crash Voice stamps creation at the logical burst start (\texttt{logicalCreationTime}), so the Voice delay sample is alert age, the time from the first attempt of that sequence until a receiver's first accepted copy, rather than the air time of a later physical repeat~\cite{aguiar2026_veins_qos}.
-Alert age consequently includes the per-copy dispatch jitter described in \autoref{sec:impl:crash}, which is the intended semantics (the alert is only as timely as the application makes it) but must be kept in mind when absolute Voice delays are read.
+Crash Voice stamps creation at the logical burst start (\texttt{logicalCreationTime}).
+The Voice delay sample is therefore \emph{alert age}: the time from the first attempt of that sequence until a receiver's first accepted copy, not the air time of a later physical repeat~\cite{aguiar2026_veins_qos}.
+Alert age consequently includes the per-copy dispatch jitter described in \autoref{sec:impl:crash}.
+This is the intended semantics, since the alert is only as timely as the application makes it, but it must be kept in mind when absolute Voice delays are read.
 Receivers also record a crash-node Best Effort slice (\texttt{beEndToEndDelayFromCrash}) for packets whose source is the designated crash vehicle, so Voice can be compared with Best Effort from the same sender.
 
 \subsection{Offline analysis tooling}

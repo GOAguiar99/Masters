@@ -16,7 +16,7 @@ The comments are in review order. Locations below use **PDF viewer page numbers*
 - [x] **#16 Related-work comparison table** — PDF p. 51, lines 10–22. Review all related work individually, synthesize the comparison, and add this dissertation as a row.
 - [x] **#17 AI-use disclosure** — PDF p. 53, line 4. Establish the actual AI use and locations before writing the disclosure; do not infer or invent usage.
 - [x] **#23 Simulator changes/originals table** — PDF p. 69, lines 23–25. Audit the active implementation and distinguish study modifications from reused framework components.
-- [ ] **#26 AI-dependent writing review** _(mechanical style pass done on all chapters, see change log at the end; author rewrite pending)_ — PDF p. 78, lines 10–17. Review the dissertation prose and section structure individually, checking authorial understanding and claims.
+- [ ] **#26 AI-dependent writing review** _(two style passes done on all chapters; narrative paragraphs accepted by the author; optional author rewrite of §6.3 and §7.1–7.2, see `docs/spec/rewrite-guide-26.md`)_ — PDF p. 78, lines 10–17. Review the dissertation prose and section structure individually, checking authorial understanding and claims.
 - [x] **#28 Publications mapping** — PDF p. 94, lines 32–35. Verify the publications and map their actual content to dissertation sections.
 
 ### Medium
@@ -185,3 +185,32 @@ Also fixed: “The model is intentionally minimal” and “This three-phase str
 Verification: 0 errors, 0 undefined references/citations, no LaTeX warnings, no overfull box outside the front-matter lists; numeric tokens per file unchanged apart from added/removed citation keys, DSCP 46 in the new Introduction sentence, and figure widths; Figures 8 and 11, the Introduction, the Discussion, and Appendix B checked visually in the PDF.
 
 Still open: the author's own rewrite for #26, and the approval-page committee names before the defense.
+
+## #26 second pass (2026-11-09)
+
+After PR #6, the text still read as LLM output at a deeper level than the first pass had addressed. Measured on `main` (`76faf13`): boilerplate chapter openings, the same caveats and results repeated across chapters, 147 sentences over 35 words, configuration identifiers in prose, and autopilot connectives. Decided with the author: a hybrid split. Structural edits that don't depend on voice are done here (branch `revision/26-second-pass`). The author rewrites §6.3, §7.1–7.2, and three marked narrative drafts, using `docs/spec/rewrite-guide-26.md`.
+
+| Chapter | Changes |
+|---------|---------|
+| Introduction | Five run-on sentences split, including contribution 3 (88 words) |
+| Background | Roadmap and self-commentary opening replaced by a two-sentence lead-in; the Standards-Track/Informational RFC note moved into §2.5.1 where it applies; the repeated "statistical only" caveat dropped from the opening; 40 run-on sentences split (Bianchi citation kept on the throughput claim); "Three pillars emerge…" → "Three points from this chapter…" |
+| Related Work | 13 run-on sentences split; the research-gap (i)–(iv) sentence turned into a numbered list (the four clauses still match the comparison-table "This work" row) |
+| System Model | Roadmap removed (the preceding sentence already lists the contents); repeated "no deterministic bounds" caveat kept once in §4.5; four run-ons split |
+| Implementation | Roadmap replaced by a one-sentence lead-in that keeps the Appendix A pointer; eight run-ons split; "alert age" defined in italics |
+| Evaluation | Roadmap replaced by a marked narrative draft and a one-sentence structure line; §6.4 opening replaced by a marked draft (hypothesis and two predictions); crash-node starvation figures kept only in §6.4.1 (removed from §6.6.1 and the Discussion); duplicate seed caveat removed from §6.7.3; §6.8 Summary cut to four sentences without numbers; configuration identifiers replaced by plain words outside definitions and floats; about 25 run-ons split. §6.3 untouched (author) |
+| Conclusion | Opening caveat replaced by a marked narrative draft; §7.3 "Interpretation caveats" no longer restates §7.2's numbers; run-ons split in §7.3–7.5 and the closing paragraph. §7.1–7.2 untouched (author) |
+| All | 38 redundant "therefore" removed |
+
+Metrics on chapter prose, before → after:
+
+| Metric | Before | After |
+|--------|-------:|------:|
+| Roadmap paragraphs | 4 | 0 |
+| Sentences over 35 words | 147 | 50 |
+| Mean sentence length (words) | 24.2 | 21.7 |
+| "therefore" | 55 | 17 |
+| "rather than" | 52 | 40 |
+| Semicolons | 221 | 160 |
+| Config identifiers in prose | 11 | 4 |
+
+The three narrative paragraphs (Evaluation intro, §6.4 opening, Conclusion opening) were drafted with AI assistance from the author's evaluation notes. They were marked for review, and on 2026-11-09 the author accepted them as written, so the markers were removed. The optional remaining step for #26 is the author's own rewrite of §6.3 and §7.1–7.2, using `docs/spec/rewrite-guide-26.md`.

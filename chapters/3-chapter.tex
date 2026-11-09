@@ -1,19 +1,14 @@
 \chapter{System Model}
 \label{chap:sysmodel}
 
-\autoref{chap:background} established the standards path from application criticality through \gls{dscp} marking and IEEE~802.11 \gls{edca} to a shared contention medium, and \autoref{sec:rel_work} showed that stronger vehicular \gls{mac} alternatives typically require synchronization, infrastructure, or a different radio access technology.
-The residual design point occupied by this dissertation is narrower: protect rare, high-impact crash alerts with an explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or a new \gls{mac} protocol~\cite{jiang2008ieee80211p,IEEE80211,RFC8325_WiFi_QoS}.
+\autoref{chap:background} established the standards path from application criticality through \gls{dscp} marking and IEEE~802.11 \gls{edca} to a shared contention medium.
+\autoref{sec:rel_work} showed that stronger vehicular \gls{mac} alternatives typically require synchronization, infrastructure, or a different radio access technology.
+This dissertation occupies a narrower design point.
+It protects rare, high-impact crash alerts with an explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or a new \gls{mac} protocol~\cite{jiang2008ieee80211p,IEEE80211,RFC8325_WiFi_QoS}.
 
 This chapter formalizes that design point as an abstract system model, which describes what the proposed system \emph{is} independently of any particular simulator, programming language, or software stack.
 It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, and the modeling assumptions.
 How the model is realized in software and how it performs under experiment are the subjects of the following chapters.
-
-The chapter is organized as follows.
-Section~\ref{sec:sys:network} states the network model.
-Section~\ref{sec:sys:traffic} defines the traffic classes.
-Section~\ref{sec:sys:qos} presents the \gls{qos} mapping and the five \gls{mac} policies.
-Section~\ref{sec:sys:event} describes the crash timeline.
-Section~\ref{sec:sys:scope} lists assumptions and scope limits.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network Model}
@@ -24,7 +19,7 @@ No access point, roadside unit, or centralized coordinator participates in forwa
 All stations therefore contend for the same wireless medium under \gls{ocb} operation, so the delivery of urgent traffic depends on distributed medium access rather than on reserved transmission opportunities~\cite{IEEE80211,etsi_en_302663}.
 
 At the application level, communication follows a one-hop multicast dissemination model: each transmission is injected into the same contention-based medium and may be received by all vehicles within radio range.
-Group-addressed IEEE~802 frames have the weak link-layer guarantees already discussed in \autoref{chap:background}: no acknowledgement, no automatic retransmission, and typically a conservative mandatory data rate. Timely delivery therefore depends on contention control and on correct priority mapping rather than on link-layer recovery~\cite{RFC9119_Multicast_IEEE802_Wireless}.
+Group-addressed IEEE~802 frames have the weak link-layer guarantees already discussed in \autoref{chap:background}: no acknowledgement, no automatic retransmission, and typically a conservative mandatory data rate. Timely delivery depends on contention control and on correct priority mapping rather than on link-layer recovery~\cite{RFC9119_Multicast_IEEE802_Wireless}.
 \autoref{fig:sys:architecture} summarizes this infrastructure-free \gls{v2v} picture.
 
 \begin{figure}[htb]
@@ -53,7 +48,8 @@ The model instantiates this process with low, medium, and high offered-load prof
 
 Crash-alert dissemination is an event-driven overlay on that background.
 One designated vehicle becomes the crash source at the configured crash time and begins emitting alert messages marked with \gls{dscp}~46, the Expedited Forwarding codepoint used in this study as the crash marker~\cite{RFC3246_EF_PHB,RFC4594_DiffServ_Service_Classes}.
-Each logical alert may be repeated a configurable number of times, with configurable spacing and jitter, to represent short warning bursts; such application-level repetition of safety messages is the reliability mechanism on which robust broadcast schemes for vehicular networks are built~\cite{Robust_Broadcast_Ma,Reliable_Broadcast_Farnoud,Cooperative_Broadcast_Yoo}.
+Each logical alert may be repeated a configurable number of times, with configurable spacing and jitter, to represent short warning bursts.
+Robust broadcast schemes for vehicular networks rely on this kind of application-level repetition of safety messages~\cite{Robust_Broadcast_Ma,Reliable_Broadcast_Farnoud,Cooperative_Broadcast_Yoo}.
 Importantly, the crash-alert flow is \emph{superimposed} on the background flow rather than replacing it: the crash source continues to contribute ordinary \gls{be} traffic while simultaneously injecting urgent alerts.
 After the crash window ends, alerts cease and the network returns to \gls{be}-only operation, as detailed in \autoref{sec:sys:event}.
 
@@ -77,7 +73,6 @@ That mapping is not automatic in every stack; the Background chapter's DiffServ 
 
 Five \gls{mac} policies operate on the same traffic and radio model.
 They form a comparison ladder from undifferentiated access, through standard \gls{edca} differentiation, to three adaptive extensions that temporarily suppress competing \gls{be} traffic while crash alerts are active.
-None of the policies reserves the channel or claims deterministic delay bounds: \gls{edca} provides statistical differentiation only~\cite{mangold2003QoS,kosekszott2012What,kong2004EDCA}.
 
 \begin{itemize}
   \item \texttt{plain}, the non-\gls{qos} \gls{dcf} baseline: undifferentiated access with a single pending queue and no DSCP-to-\gls{ac} mapping~\cite{IEEE80211,bianchi2000DCF}.
@@ -112,7 +107,7 @@ Nodes that only overhear Voice traffic never enter \emph{sending}: they remain i
 \autoref{fig:sys:fsm} also shows a skip from \emph{listening} directly to \emph{sending} when a local Voice frame wins the channel without a prior demand-triggered block.
 Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but lose channel-access eligibility while the controller is blocking or sending.
 Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} transmission opportunities released.
-The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium, open scheduled gates, or provide worst-case latency bounds~\cite{IEEE80211e_2005,kosekszott2012What}.
+The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium or open scheduled gates.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Event Model}
@@ -137,7 +132,8 @@ The system evolves through three phases, illustrated in \autoref{fig:sys:timelin
     Ordinary background traffic remains active across the network, including at the crash source, so urgent packets must compete with existing channel load~\cite{RFC9119_Multicast_IEEE802_Wireless}.
   \item \textbf{Recovery.}
     After the crash window expires, crash-alert transmissions cease and the system reverts to \gls{be}-only background traffic.
-    Under the adaptive policies, however, the local effect of the crash can briefly outlast the application burst: nodes that still observe Voice queue pressure or receive crash-related Voice frames may remain temporarily in \emph{blocking} or \emph{sending} until the protection window and its short guard interval expire.
+    Under the adaptive policies, however, the local effect of the crash can briefly outlast the application burst.
+    Nodes that still observe Voice queue pressure or receive crash-related Voice frames may remain temporarily in \emph{blocking} or \emph{sending} until the protection window and its short guard interval expire.
 \end{enumerate}
 
 This three-phase structure isolates a single crash source and a bounded alert interval so that the five policies can be compared on the same timeline under light and heavy fleet densities.
@@ -154,7 +150,7 @@ As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regul
 
 Small-scale fading, log-normal shadowing, and graded obstacle attenuation are likewise omitted.
 Connectivity uses free-space path loss, a static \gls{snir} threshold, and binary obstruction (a link is either clear or fully blocked).
-Contention is therefore induced mainly by multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
+Contention is induced mainly by multicast load and fleet density, so the policies compete on backoff, queue service, and local \gls{be} suppression rather than on cross-layer load regulation or time-varying \gls{phy} stress.
 
 Finally, the model makes no deterministic or worst-case latency claims.
 \gls{edca} and all five policies provide statistical service only~\cite{kosekszott2012What,mangold2003QoS}.

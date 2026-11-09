@@ -2,8 +2,13 @@
 \label{chap:conclusion}
 
 The main objective of this dissertation was to evaluate whether crash-triggered Voice traffic can obtain better wireless service than ordinary Best Effort traffic in decentralized vehicular Wi-Fi, using only local, standard-compliant \gls{mac} mechanisms, and to quantify the cost of that protection.
-The study used a two-class traffic model. All vehicles exchange periodic Best Effort multicast, one designated crash source injects temporary Voice alert bursts marked DSCP~46, and five \gls{mac} policies are compared on the same highway matrix: plain \gls{dcf}, EDCA with explicit Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) that suppress competing Best Effort while alerts are active~(\autoref{chap:sysmodel}, \autoref{chap:implementation}).
-The evaluation is simulation-only and mechanism-oriented: it isolates statistical contention shaping under controlled load and density, not deterministic real-time guarantees or application-level crash outcomes (\autoref{chap:evaluation}).
+The study used a two-class traffic model in which all vehicles exchange periodic Best Effort multicast and one designated crash source injects temporary Voice alert bursts marked DSCP~46.
+Five \gls{mac} policies were compared on the same highway scenarios: plain \gls{dcf}, EDCA with explicit Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) that suppress competing Best Effort while alerts are active~(\autoref{chap:sysmodel}, \autoref{chap:implementation}).
+
+Looking back, the result that shaped this work most was a negative one.
+Once the measurement problems of the first campaign were corrected, none of the policies improved Voice service under uniform load.
+We then asked why the mechanism had no effect there, and the answer, that diffuse load leaves node-local suppression nothing to act on, led directly to the concentrated-load experiment in which emergency preemption did help.
+The study gives a conditional answer: whether protection helps depends on how the load is distributed around the crash.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Main Findings}
@@ -34,31 +39,39 @@ The contribution is therefore a \gls{mac}-level accounting of protection and cos
 \section{Limitations}
 \label{sec:conc:limits}
 
-The study's limits are those already argued in the Evaluation discussion (\autoref{sec:eval:discussion}); they are restated here as the boundary conditions on the Conclusion.
+The limits below were discussed in \autoref{sec:eval:disc:limits}; they bound the conclusions of this chapter.
 
 \noindent\textbf{Simulation scope and statistical strength.}
 The evaluation is simulation-only, with no testbed or hardware validation, so claims remain tied to the configured Veins/\gls{inet} model~\cite{aguiar2026_veins_qos}.
-Heavy-density \glspl{kpi} average three seeds and report the min--max range in the main delay tables, still without confidence intervals or significance tests, and light-density results use the same three-seed rule; the numbers are therefore qualitative mechanism checks under a controlled matrix, not proven effect sizes.
+All results average three seeds per configuration, without confidence intervals or significance tests, so they are qualitative mechanism checks, not proven effect sizes.
 All observed prioritization is statistical contention shaping, not deterministic real-time communication~\cite{kosekszott2012What}.
 
 \medskip
 \noindent\textbf{Traffic abstraction and baselines.}
-The traffic model is a synthetic two-class Best Effort / Voice abstraction rather than \gls{cam}/\gls{denm} schedules or richer multi-class ITS stacks, and the high crash-burst profile is a deliberate stress case rather than a standardized alert timetable.
-Treating \emph{all} Best Effort as suppressible is a worst-case bound for that abstraction: in a real stack, traffic outside the current crash alert may still be safety relevant, so a binary split can underestimate preemption harm (\autoref{sec:eval:disc:cost}).
+The traffic model is a synthetic two-class Best Effort / Voice abstraction rather than \gls{cam}/\gls{denm} schedules or richer multi-class ITS stacks.
+The high crash-burst profile is a deliberate stress case, not a standardized alert timetable.
+Treating \emph{all} Best Effort as suppressible is a worst-case bound for that abstraction.
+In a real stack, traffic outside the current crash alert may still be safety relevant, so a binary split can underestimate preemption harm (\autoref{sec:eval:disc:cost}).
 No adaptive-EDCA or \gls{dcc} baseline is implemented, so no superiority claim is made against those always-on families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
 The three adaptive profiles are fixed design points whose triggers are not individually ablated.
 
 \medskip
 \noindent\textbf{Radio, topology, and delivery model.}
-Connectivity uses free-space path loss, a static \gls{snir} threshold, and binary obstacle loss; small-scale fading, shadowing, and graded attenuation are omitted (\autoref{chap:implementation}).
-The corridor is a one-hop highway multicast setting with a single crash source: overlapping protection windows from concurrent alerts are not evaluated, alerts are not retransmitted as multi-hop relays across the 5~km road, and only the light/heavy density pair with three offered-load levels is swept, rather than a continuous space of speeds, lane layouts, or channel plans.
+Connectivity uses free-space path loss, a static \gls{snir} threshold, and binary obstacle loss.
+Small-scale fading, shadowing, and graded attenuation are omitted (\autoref{chap:implementation}).
+The corridor is a one-hop highway multicast setting with a single crash source.
+Overlapping protection windows from concurrent alerts are not evaluated, alerts are not relayed over multiple hops along the 5~km road, and only the light and heavy densities with three offered-load levels are swept, not a continuous space of speeds, lane layouts, or channel plans.
 
 \medskip
-\noindent\textbf{Interpretation caveats that affect how results are read.}
-The reported 2.2~ms Voice P95 quantifies alert age under a moderate Poisson offer and is dominated by the alert generator's per-copy dispatch jitter rather than by medium access, so it is a floor no \gls{mac} policy could have lowered. These delays remain far below representative platooning budgets~\cite{ts22186} and therefore describe the mechanism rather than an application-level safety benefit. Under hotspot contention the baselines approach that budget (18.5--20~ms P95) and emergency keeps 14.6~ms (\autoref{sec:eval:disc:significance}), so absolute claims hold only for each configuration, while Best Effort penalties from untimely blocking can still be severe in both.
-Hotspot streaming nodes are placed by injection order rather than by a received-power map (\autoref{sec:eval:disc:limits}), so hotspot gain magnitudes depend on that geometry; placement sweeps belong to future work.
-Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}); only within-class, cross-policy comparisons are controlled.
-Pooled Best Effort averages understate spatially concentrated cost near the crash source (\autoref{sec:eval:disc:spatial}), and unauthenticated Voice frames can trigger suppression; this denial-of-service risk is bounded by finite windows, but only authentication and rate limiting can remove it (\autoref{sec:eval:disc:dos}).
+\noindent\textbf{Interpretation caveats.}
+Absolute delays hold only for the configuration in which they were measured, and the 2.2~ms Voice P95 under uniform load is set by the alert generator rather than by medium access (\autoref{sec:eval:disc:significance}).
+Hotspot streaming nodes are placed by injection order rather than by a received-power map (\autoref{sec:eval:disc:limits}), so the size of the hotspot gains depends on that geometry.
+Placement sweeps belong to future work.
+Under \texttt{plain}, Best Effort and Voice statistics differ because the traffic processes differ, not because the single \gls{dcf} queue differentiates them (\autoref{sec:eval:disc:plain}).
+Only within-class, cross-policy comparisons are controlled.
+Pooled Best Effort averages understate the cost concentrated near the crash source (\autoref{sec:eval:disc:spatial}).
+Unauthenticated Voice frames can also trigger suppression.
+This denial-of-service risk is bounded by finite windows, but only authentication and rate limiting can remove it (\autoref{sec:eval:disc:dos}).
 
 Within that scope the comparison remains internally fair: all configurations share the radio stack, mobility, and load matrix, so the reported differences isolate \gls{mac}-policy effects~\cite{aguiar2026_veins_qos}.
 
@@ -83,7 +96,7 @@ Several extensions follow directly from the limitations above and from the Evalu
 \medskip
 \noindent\textbf{Stronger evidence and richer scenarios.}
 Larger seed batches with confidence intervals or significance tests would move the study from qualitative mechanism checks toward statistically supported effect sizes.
-Richer propagation (capture effect, small-scale fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the protection-versus-cost frontier holds under more realistic radio and traffic stress.
+Richer propagation (capture effect, small-scale fading, shadowing, graded obstacles), continuous sweeps of density and offered load, multi-channel or multi-hop relay settings on long corridors, and standardized \gls{cam}/\gls{denm}-like schedules would test whether the trade-off between protection and cost holds under more realistic radio and traffic conditions.
 Connecting Voice delay and loss to an application-level safety deadline, crash-avoidance distance, or other outcome metric would address the practical-significance gap left by the present 2.2~ms Voice tails~\cite{ts22186}.
 
 \medskip
@@ -91,16 +104,20 @@ Connecting Voice delay and loss to an application-level safety deadline, crash-a
 Activation-criteria ablations and systematic parameter sweeps would separate which trigger and window settings drive the observed Voice gains.
 Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the event-triggered profiles against established always-on congestion and prioritization families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
 Concurrent alert sources and the interaction of their overlapping protection windows remain unevaluated.
-A closed-loop activation criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) would let the controller engage emergency suppression only under the conditions in which \autoref{tab:eval:hotspot_dose} shows a Voice benefit.
-Alternative protection timings, including predictive pre-blocking activated from a learned burst cadence, were explored during development but showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled ablation; timing remains an open question under concentrated load.
+A closed-loop activation criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) is a natural next step.
+It would let the controller engage emergency suppression only under the conditions in which \autoref{tab:eval:hotspot_dose} shows a Voice benefit.
+Alternative protection timings, including predictive pre-blocking activated from a learned burst cadence, were explored during development.
+They showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled ablation, so timing remains an open question under concentrated load.
 
 \medskip
 \noindent\textbf{Deployment constraints.}
-Security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source are prerequisites before comparable \gls{mac} aggression could be defended outside a synthetic two-class study.
-Hardware-in-the-loop or testbed validation would further bound how much of the simulated protection-versus-cost frontier transfers to real 802.11p stacks.
+Several prerequisites must be met before comparable \gls{mac} aggression could be defended outside a synthetic two-class study: security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source.
+Hardware-in-the-loop or testbed validation would further show how much of the simulated trade-off transfers to real 802.11p stacks.
 
 \medskip
 \noindent\textbf{Consolidated journal publication.}
-Because the SBESC 2026 paper reports only the earlier, uniform-load measurement campaign (\autoref{sec:conc:publications}), a journal-length follow-up consolidating the full results of this dissertation is planned for the future: the re-run uniform-load matrices, the concentrated near-crash hotspot overlay, and the five-policy protection-versus-cost frontier of \autoref{chap:evaluation}~\cite{aguiar2026crash}.
+The SBESC 2026 paper reports only the earlier, uniform-load measurement campaign (\autoref{sec:conc:publications}).
+A journal-length follow-up is planned to consolidate the full results of this dissertation: the re-run uniform-load matrices, the concentrated near-crash hotspot scenario, and the five-policy protection-versus-cost frontier of \autoref{chap:evaluation}~\cite{aguiar2026crash}.
 
-In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay and Voice-frame integrity where near-crash congestion is concentrated and bursts are dense enough to keep protection active, but only as a carefully bounded, event-triggered escalation whose cost to ordinary traffic must be acknowledged and constrained.
+In summary, crash-aware prioritization in decentralized vehicular Wi-Fi can measurably improve Voice delay and Voice-frame integrity where near-crash congestion is concentrated and bursts are frequent enough to keep protection active.
+It works only as a carefully bounded escalation step, triggered by the crash event, whose cost to ordinary traffic must be acknowledged and constrained.
