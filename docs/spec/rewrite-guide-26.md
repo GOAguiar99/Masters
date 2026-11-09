@@ -1,5 +1,7 @@
 # Guia de reescrita — comentário #26 ("texto muito IA-dependent")
 
+> **Status (09/11/2026):** concluído. §6.3, §7.1–7.2, Resumo e Abstract foram reescritos na voz do autor, e os parágrafos narrativos foram aceitos. Este guia fica como referência de estilo para textos futuros.
+
 ## O que o professor quis dizer
 
 "Teu texto e as seções estão muito IA-dependent. Fica claro o uso bastante grande de IA, tem que ter cuidado."

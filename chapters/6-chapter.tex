@@ -14,26 +14,48 @@ The study gives a conditional answer: whether protection helps depends on how th
 \section{Main Findings}
 \label{sec:conc:findings}
 
-The main positive result comes from the hotspot configuration (\autoref{tab:eval:glance}, \autoref{sec:eval:hotspot}). With three crash-adjacent vehicles bulk-uploading about \SI{2.4}{\mega\bit\per\second} each and the dense 20~ms burst profile, emergency preemption improves Voice service, with $39\%$ lower mean and $21\%$ lower P95 alert age than plain \gls{dcf} and $30\%$ fewer Voice-attributed collision losses. The cost is about sixteen thousand explicitly dropped Best Effort frames per run.
-With the same overlay but sparser alert cadences (\texttt{medium}/\texttt{low}), the improvement disappears, so two conditions must hold together: (i)~the near-crash load is concentrated, and (ii)~the bursts are frequent enough to keep protection active for most of the crash window.
+We found three main results.
 
-The uniform Poisson matrix provides the reference case.
-Under heavy density and high offered load, Voice 95th-percentile alert age is about 2.2~ms under every policy: EDCA does not beat plain \gls{dcf}, and emergency's 2.21~ms versus 2.24~ms is not a material improvement of the Voice tail.
-The policies differ there in their cost to Best Effort traffic: \texttt{stable} raises fleet Best Effort P95 from 0.51~ms under plain \gls{dcf} to 30~ms; \texttt{guarded} to 3.9~ms; emergency keeps 0.37~ms by dropping competing frames (about $2.5\times10^{3}$ Best Effort drops while blocked)~\cite{aguiar2026_veins_qos}.
-The light-density high-load results show the same pattern with fewer vehicles: the bounded adaptive profiles leave Voice unchanged while inflating Best Effort P95.
+First, when the background load is uniform, no policy improves Voice service.
+With 100 vehicles and high load, the Voice P95 alert age stays at about 2.2~ms for every policy.
+EDCA is not better than plain \gls{dcf}, and emergency's 2.21~ms against about 2.24~ms for the other policies is too small a difference to matter.
+
+Second, in this uniform case the policies differ only in what they cost to Best Effort traffic.
+\texttt{stable} raises the fleet Best Effort P95 from 0.51~ms under plain \gls{dcf} to 30~ms, and \texttt{guarded} raises it to 3.9~ms, because both hold Best Effort frames back without dropping them.
+Emergency keeps it at 0.37~ms, but only because it drops competing frames, about $2.5\times10^{3}$ per run~\cite{aguiar2026_veins_qos}.
+The light-density runs show the same pattern with fewer vehicles.
+
+Third, when the load is concentrated near the crash, emergency preemption does help (\autoref{tab:eval:glance}, \autoref{sec:eval:hotspot}).
+In our hotspot scenario, three vehicles next to the crash upload about \SI{2.4}{\mega\bit\per\second} each, and the crash vehicle sends a dense alert burst every 20~ms.
+There, emergency reduces the alert age by $39\%$ in the mean and $21\%$ in the P95 compared with plain \gls{dcf}, and it has $30\%$ fewer Voice losses from collisions than EDCA.
+The price is about sixteen thousand dropped Best Effort frames per run.
+When the bursts are less frequent (\texttt{medium} and \texttt{low} profiles), the gain disappears.
+So two things must happen together: the load near the crash must be concentrated, and the alerts must be frequent enough to keep the protection active for most of the crash window.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Practical Implications}
 \label{sec:conc:takeaway}
 
-The practical implications therefore depend on the load pattern.
-Explicit DSCP-to-Voice mapping remains a reasonable default for crash-marked alerts~\cite{IEEE80211e_2005}.
-Adaptive Best Effort suppression, especially emergency preemption, should be enabled as an escalation step only when there is genuine congestion and genuine alert activity, and it should not permanently replace ordinary EDCA.
-Deployment would additionally require authentication, rate limiting, and plausibility checks before overheard Voice frames may trigger suppression, because the same local trigger that protects a crash can be abused by faulty or malicious Voice traffic (\autoref{chap:evaluation}).
+What do these results mean for someone designing a V2X system?
+First, marking crash alerts with DSCP~46 and mapping them explicitly to the Voice category is a good default~\cite{IEEE80211e_2005}.
+It puts the alerts in the right queue and costs almost nothing to ordinary traffic.
 
-Under a uniform Poisson offer the absolute Voice delays remain far below representative platooning latency budgets such as the~\SI{25}{\milli\second} end-to-end bound in \gls{threegpp} TS~22.186~\cite{ts22186}, and most of the small remaining delay is the alert generator's own dispatch jitter rather than channel access (\autoref{sec:eval:light}). Under that offer, the risk is therefore the Best Effort cost and not alert latency.
-Under concentrated hotspot contention the same budget becomes meaningful: plain \gls{dcf}/EDCA reach Voice P95 of 18.5--20~ms, within reach of that bound, while emergency keeps it at 14.6~ms (\autoref{sec:eval:hotspot}).
-The contribution is therefore a \gls{mac}-level accounting of protection and cost that depends on the load pattern, with only a cost under diffuse load and a Voice benefit under concentrated load. It is not a claim that the simulated scenario alone guarantees application-level crash outcomes.
+Second, blocking Best Effort traffic, and especially dropping it with emergency preemption, should not stay on all the time.
+It only pays off when the crash happens where the channel is really congested and alerts are really being sent.
+It should be switched on by the crash, as an escalation step, and switched off afterwards.
+
+Third, the trigger must be protected before this is used in real vehicles.
+Any node that sends Voice-marked frames can make its neighbors block their traffic, so a faulty or malicious node could abuse it.
+Authentication, rate limiting, and plausibility checks are needed first (\autoref{chap:evaluation}).
+
+It also helps to compare the delays with a real requirement.
+\gls{threegpp} TS~22.186 uses \SI{25}{\milli\second} end-to-end as a reference bound for platooning~\cite{ts22186}.
+Under uniform load, the Voice delays are far below this bound, and most of what remains comes from the alert generator itself, not from the channel (\autoref{sec:eval:light}).
+In that case, the real risk is the cost to Best Effort traffic, not the alert latency.
+Under concentrated load, plain \gls{dcf} and EDCA reach a Voice P95 of 18.5--20~ms, close to the bound, and emergency keeps it at 14.6~ms (\autoref{sec:eval:hotspot}).
+
+The contribution of this work is therefore to measure, at the \gls{mac} level, what protection gains and what it costs in each load situation: only a cost when the load is spread out, and a real gain for Voice when it is concentrated.
+It does not show that the simulated scenario, by itself, guarantees anything about real crash outcomes.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Limitations}

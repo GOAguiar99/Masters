@@ -101,14 +101,22 @@ Voice-attributed \gls{mac}-drop comparisons use EDCA because \texttt{plain} has 
 \section{Overview of the Results}
 \label{sec:eval:headline}
 
-Across the full matrix, the protection policies improve Voice service only under specific conditions: emergency preemption reduces Voice delay when (i)~a few senders near the crash dominate the channel and (ii)~the alert bursts are frequent enough to keep protection active for most of the crash window.
-\autoref{tab:eval:glance} summarizes the main results, and \autoref{fig:eval:regime_contrast} compares Voice P95 under the two load patterns.
+The answer to the question of this chapter depends on how the load is distributed around the crash.
+\autoref{tab:eval:glance} summarizes the main results, and \autoref{fig:eval:regime_contrast} compares the Voice P95 delay in the two situations we tested.
 
-At heavy \texttt{netload\_high}, every policy reaches a Voice P95 near 2.2~ms.
-This floor comes from the \SI{2}{\milli\second} dispatch jitter that the alert generator applies to each copy, and not from channel access; with the \SI{5}{\milli\second} jitter of the low and medium profiles, the floor is near 4.6--4.9~ms (\autoref{sec:eval:light}).
-Under \texttt{hotspot\_high}, the Voice tail grows, and only emergency reduces it.
-Protection is therefore useful as an escalation step triggered by the crash event, and its benefit depends on where the load is concentrated and how often alerts are sent; enabling it permanently does not speed up Voice traffic.
-Section~\ref{sec:eval:hotspot} details the hotspot results, Section~\ref{sec:eval:light} the uniform-load results, and Section~\ref{sec:eval:cost} the cost to Best Effort traffic.
+When the background load is spread uniformly over the whole fleet, the policies make no difference for Voice.
+With 100 vehicles and high load, every policy has a Voice P95 of about 2.2~ms.
+Most of this value does not come from the channel.
+The alert generator delays each copy of an alert by a random offset of up to \SI{2}{\milli\second}, and this offset alone explains most of the 2.2~ms.
+It works as a floor that no MAC policy can remove.
+In the low and medium profiles, where the offset can reach \SI{5}{\milli\second}, this floor is about 4.6--4.9~ms (\autoref{sec:eval:light}).
+
+When a few vehicles next to the crash send most of the traffic, the picture changes.
+The Voice P95 grows to 18.5--20~ms with plain \gls{dcf} and EDCA, and emergency preemption is the only policy that brings it down, to 14.6~ms.
+This happens only when the alert bursts are frequent enough to keep the protection active for most of the crash window.
+
+This means that protection is useful when the crash switches it on in a congested area, but not as a mode that stays active all the time.
+The next sections give the details: Section~\ref{sec:eval:hotspot} for the concentrated load, Section~\ref{sec:eval:light} for the uniform load, and Section~\ref{sec:eval:cost} for the cost to Best Effort traffic.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
