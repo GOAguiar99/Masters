@@ -69,7 +69,7 @@ Keep stable label `\label{chap:sysmodel}`.
 - Decentralized VANET; no AP/RSU/central coordinator (`jiang2008ieee80211p`).
 - Shared IEEE 802.11p OCB; one-hop multicast (`RFC9119_Multicast_IEEE802_Wireless`).
 - PHY fixed across policies → isolate queueing/contention (`IEEE80211`).
-- Figure: `Figs/system_model_architecture.pdf`.
+- Figure: `Figs/sys_architecture.pdf` (TikZ; replaced the AI-generated `system_model_architecture.pdf` on 2026-11-08).
 
 ### 4.2 Traffic Model (`sec:sys:traffic`)
 
@@ -92,7 +92,7 @@ Keep stable label `\label{chap:sysmodel}`.
 
 - Three phases: normal → crash window (t=30 s, 30 s, designated node stops) → recovery.
 - Lingering adaptive protection until window + guard expire.
-- Figure: `Figs/event_timeline_cropped.pdf`.
+- Figure: `Figs/sys_timeline.pdf` (TikZ; replaced the AI-generated `event_timeline_cropped.pdf` on 2026-11-08).
 
 ### 4.5 Assumptions and Scope (`sec:sys:scope`)
 
@@ -115,8 +115,8 @@ System Model keeps conceptual roles only; forward-ref the Implementation table f
 
 | Float | Source | Notes |
 |-------|--------|-------|
-| Architecture | `Figs/system_model_architecture.pdf` | Real figure |
-| Event timeline | `Figs/event_timeline_cropped.pdf` | Real figure |
+| Architecture | `Figs/sys_architecture.pdf` (TikZ; replaced the AI-generated `system_model_architecture.pdf` on 2026-11-08) | Real figure |
+| Event timeline | `Figs/sys_timeline.pdf` (TikZ; replaced the AI-generated `event_timeline_cropped.pdf` on 2026-11-08) | Real figure |
 | Stack path | Tabular in chapter | App→Net/QoS→MAC→PHY |
 | Controller FSM | Tabular in chapter | listening↔blocking↔sending |
 | Params / simulation bindings table | Implementation `tab:impl:parameters` | Moved from System Model (Aug 2026); exponential BE means; full `edca_v2x_vo_*` names |

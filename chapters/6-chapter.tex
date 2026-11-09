@@ -1,9 +1,9 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-This dissertation asked whether crash-triggered Voice traffic can obtain better wireless service than ordinary Best Effort under contention in decentralized vehicular Wi-Fi, and at what cost that protection is paid.
-The answer was pursued with a deliberately minimal two-class model. All vehicles exchange periodic Best Effort multicast, one designated crash source injects temporary Voice alert bursts marked DSCP~46, and five \gls{mac} policies are compared on the same highway matrix: plain \gls{dcf}, EDCA with explicit Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) that suppress competing Best Effort while alerts are active~(\autoref{chap:sysmodel}, \autoref{chap:implementation}).
-The evaluation is simulation-only and mechanism-oriented: it isolates statistical contention shaping under controlled load and density, not deterministic real-time guarantees or application-level crash outcomes~(\autoref{chap:evaluation})~\cite{kosekszott2012What,IEEE80211e_2005,aguiar2026_veins_qos}.
+The main objective of this dissertation was to evaluate whether crash-triggered Voice traffic can obtain better wireless service than ordinary Best Effort traffic in decentralized vehicular Wi-Fi, using only local, standard-compliant \gls{mac} mechanisms, and to quantify the cost of that protection.
+The study used a two-class traffic model. All vehicles exchange periodic Best Effort multicast, one designated crash source injects temporary Voice alert bursts marked DSCP~46, and five \gls{mac} policies are compared on the same highway matrix: plain \gls{dcf}, EDCA with explicit Voice mapping, and three adaptive extensions (\texttt{stable}, \texttt{guarded}, \texttt{emergency}) that suppress competing Best Effort while alerts are active~(\autoref{chap:sysmodel}, \autoref{chap:implementation}).
+The evaluation is simulation-only and mechanism-oriented: it isolates statistical contention shaping under controlled load and density, not deterministic real-time guarantees or application-level crash outcomes (\autoref{chap:evaluation}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Main Findings}
