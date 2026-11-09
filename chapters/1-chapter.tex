@@ -37,7 +37,7 @@ As discussed in Section~\ref{sec:bg:multicast}, however, group-addressed IEEE~80
 \subsection{Quantified latency and reliability budgets}
 \label{sec:bg:budgets}
 
-The 3rd Generation Partnership Project (3GPP) specifies V2X service requirements in TS~22.186~\cite{ts22186}, which lists performance targets for vehicle platooning as a function of the degree of automation.
+The \gls{threegpp} specifies V2X service requirements in TS~22.186~\cite{ts22186}, which lists performance targets for vehicle platooning as a function of the degree of automation.
 \autoref{tab:bg:platooning-kpis} reproduces the rows of that specification's platooning table for the scenario that matters here: information exchange between the vehicles of a platoon.
 Requirement~[R.5.2-004] specifies, for the lowest degree of automation, an end-to-end latency of \SI{25}{\milli\second}, a reliability of 90\%, a message size of 300--400~bytes, and a rate of 30~messages per second.
 Harsher rows in the same table raise reliability and tighten latency as automation increases, reaching \SI{10}{\milli\second} at 99.99\% for the highest degree; the \SI{25}{\milli\second} figure is therefore a conservative, widely cited reference bound rather than the most stringent requirement in the document.

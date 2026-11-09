@@ -6,7 +6,7 @@ The residual design point occupied by this dissertation is narrower: protect rar
 
 This chapter formalizes that design point as an abstract system model, which describes what the proposed system \emph{is} independently of any particular simulator, programming language, or software stack.
 It defines the decentralized highway network, the synthetic two-class traffic abstraction, the five \gls{mac} policies and three-mode adaptive controller, the crash-event timeline, and the modeling assumptions.
-Concrete numeric bindings for timing, load, radio, and access-control parameters are recorded with the software realization in \autoref{chap:implementation}; how well the system performs under experiment is deferred to the subsequent evaluation.
+How the model is realized in software and how it performs under experiment are the subjects of the following chapters.
 
 The chapter is organized as follows.
 Section~\ref{sec:sys:network} states the network model.
@@ -28,9 +28,9 @@ Group-addressed IEEE~802 frames have the weak link-layer guarantees already disc
 \autoref{fig:sys:architecture} summarizes this infrastructure-free \gls{v2v} picture.
 
 \begin{figure}[htb]
-	\caption{\label{fig:sys:architecture}System architecture: decentralized vehicle nodes communicating over IEEE~802.11p without infrastructure support.}
+	\caption{\label{fig:sys:architecture}System architecture: vehicles share one IEEE~802.11p channel in \glsentryshort{ocb} mode without infrastructure, and one designated vehicle acts as the crash source.}
 	\begin{center}
-		\includegraphics[width=0.92\linewidth]{Figs/system_model_architecture.pdf}
+		\includegraphics[width=\linewidth]{Figs/sys_architecture.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -121,9 +121,9 @@ The mechanism shapes local contention during the alert period; it does \emph{not
 The system evolves through three phases, illustrated in \autoref{fig:sys:timeline}.
 
 \begin{figure}[htb]
-	\caption{\label{fig:sys:timeline}Conceptual event timeline: normal background traffic, crash-triggered Voice prioritization, and recovery.}
+	\caption{\label{fig:sys:timeline}Event timeline: Best Effort traffic throughout the scenario, Voice alert bursts during the crash window, and the resulting controller modes under the adaptive policies. The hatched controller interval extends slightly past the window because protection lasts until its window and guard interval expire.}
 	\begin{center}
-		\includegraphics[width=\linewidth]{Figs/event_timeline_cropped.pdf}
+		\includegraphics[width=\linewidth]{Figs/sys_timeline.pdf}
 	\end{center}
 	\fonte{Prepared by the author.}
 \end{figure}
@@ -140,16 +140,14 @@ The system evolves through three phases, illustrated in \autoref{fig:sys:timelin
     Under the adaptive policies, however, the local effect of the crash can briefly outlast the application burst: nodes that still observe Voice queue pressure or receive crash-related Voice frames may remain temporarily in \emph{blocking} or \emph{sending} until the protection window and its short guard interval expire.
 \end{enumerate}
 
-This three-phase structure is deliberately simple.
-It isolates a single crash source and a bounded alert interval so that the five policies can be compared on the same timeline under light and heavy fleet densities.
+This three-phase structure isolates a single crash source and a bounded alert interval so that the five policies can be compared on the same timeline under light and heavy fleet densities.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Assumptions and Scope}
 \label{sec:sys:scope}
 
-The model is intentionally minimal.
-There is no infrastructure, centralized scheduler, or Time-Sensitive Networking-style gating; there is a single crash source; and there is a two-class \gls{be}/\gls{vo} distinction only.
-Road geometry, fleet density, and radio parameters fix concrete instances of the model; their values are specified in the Implementation chapter.
+The model has no infrastructure, centralized scheduler, or Time-Sensitive Networking-style gating, a single crash source, and only a two-class \gls{be}/\gls{vo} distinction.
+Road geometry, fleet density, and radio settings are free parameters of the model.
 
 \gls{dcc}, as standardized for ITS-G5 deployments, is \emph{not} part of the model: application transmit rates follow the fixed offered-load profiles rather than reacting to channel busy ratio~\cite{etsi_dcc_2018}.
 As argued in \autoref{sec:rel_work}, DCC remains a complementary always-on regulator; excluding it here isolates the protection-versus-cost behaviour of the five \gls{mac} policies.
@@ -163,4 +161,4 @@ Finally, the model makes no deterministic or worst-case latency claims.
 Quantitative Voice or Best Effort delay statements belong to the evaluation, not to closed-form bounds from this chapter.
 
 Together, these definitions constitute the crash-aware system studied below.
-\autoref{chap:implementation} maps them onto the software artifact and its parameter bindings; \autoref{chap:evaluation} then measures Voice service under contention and the Best Effort cost of that protection.
+\autoref{chap:implementation} realizes them in software; \autoref{chap:evaluation} then measures Voice service under contention and the Best Effort cost of that protection.
