@@ -77,7 +77,7 @@ They form a comparison ladder from undifferentiated access, through standard \gl
 \begin{itemize}
   \item \texttt{plain}, the non-\gls{qos} \gls{dcf} baseline: undifferentiated access with a single pending queue and no DSCP-to-\gls{ac} mapping~\cite{IEEE80211,bianchi2000DCF}.
   \item \texttt{edca\_only}, the standard \gls{qos} baseline: \gls{dscp}~46 maps to \texttt{AC\_VO}; all other packets use user priority~0~\cite{IEEE80211e_2005}.
-  \item \texttt{edca\_v2x\_vo\_stable}, sustained Voice protection: inherits \texttt{edca\_only} and adds the adaptive controller below with comparatively long protection windows.
+  \item \texttt{edca\_v2x\_vo\_stable}, sustained Voice protection: inherits \texttt{edca\_only} and adds the adaptive controller of \autoref{sec:sys:controller} with comparatively long protection windows.
   \item \texttt{edca\_v2x\_vo\_guarded}, bounded suppression: same inheritance with tighter, shorter protection windows.
   \item \texttt{edca\_v2x\_vo\_emergency}, emergency preemption: same inheritance with aggressive activation; newly arriving \gls{be} packets may be dropped while protection is active.
 \end{itemize}
