@@ -78,7 +78,7 @@ The path is identical for Best Effort and Voice except for DSCP marking, classif
   \item The sending application creates a UDP payload, attaches a \texttt{CreationTimeTag} (and, for crash bursts, a sequence request), and marks the packet with a \texttt{DscpReq} of~0 or~46.
   \item \texttt{VeinsInetApplicationBase::sendPacket} delivers the frame to UDP, which sends to multicast \texttt{224.0.0.1}.
   \item IPv4 forwards onto \texttt{wlan0}. Under EDCA policies, \texttt{QosClassifier} converts DSCP into a \texttt{UserPriorityReq} before the frame enters the IEEE~802.11 \gls{mac}~\cite{RFC8325_WiFi_QoS}.
-  \item \texttt{V2xIeee80211Mac} either enqueues into a single \gls{dcf} pending queue (\texttt{plain}) or into \gls{edca} access-category queues (\texttt{edca\_*}). Adaptive policies consult \texttt{V2xEdcaFsmController} before granting Best Effort channel access~\cite{IEEE80211e_2005}.
+  \item \texttt{V2xIeee80211Mac} either enqueues into a single \gls{dcf} pending queue (\texttt{plain}) or into \gls{edca} access-category queues (\texttt{edca\_*}). Adaptive policies consult \texttt{V2xEdcaFsmController} before a newly arriving Best Effort frame requests channel access; only \texttt{emergency} also releases Best Effort channel grants obtained while protection is active~\cite{IEEE80211e_2005}.
   \item The dimensional 802.11p radio transmits on the shared medium; receivers reverse the path through \gls{phy}, \gls{mac}, IP, and UDP.
   \item Every node's \texttt{CritPacketSender} (\texttt{app[0]}, port~9001) processes received datagrams, classifies them by DSCP into BE or VO KPI streams, skips self-originated addresses, and optionally deduplicates Voice repeats.
 \end{enumerate}

@@ -128,6 +128,7 @@ Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the ev
 Concurrent alert sources and the interaction of their overlapping protection windows remain unevaluated.
 A closed-loop activation criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) is a natural next step.
 It would let the controller engage emergency suppression only under the conditions in which \autoref{tab:eval:hotspot_dose} shows a Voice benefit.
+A deferral that also holds back Best Effort queues that are already contending, which the \texttt{stable} and \texttt{guarded} profiles do not do, would show whether deferring without dropping can also help Voice under concentrated load (\autoref{sec:eval:hotspot:high}).
 Alternative protection timings, including predictive pre-blocking activated from a learned burst cadence, were explored during development.
 They showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled ablation, so timing remains an open question under concentrated load.
 
