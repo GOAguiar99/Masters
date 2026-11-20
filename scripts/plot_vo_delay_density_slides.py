@@ -1,6 +1,10 @@
 """Slide version of the Voice alert-age density figure (pt-BR labels, deck colours, side-by-side panels).
 usage: plot_vo_delay_density_slides.py vo_delays.npz OUT_STEM   (writes OUT_STEM.svg and OUT_STEM.png)
 """
+import sys
+
+import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
