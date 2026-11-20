@@ -38,7 +38,7 @@ So two things must happen together: the load near the crash must be concentrated
 
 What do these results mean for someone designing a V2X system?
 First, marking crash alerts with DSCP~46 and mapping them explicitly to the Voice category is a good default~\cite{IEEE80211e_2005}.
-It puts the alerts in the right queue and costs almost nothing to ordinary traffic.
+It puts the alerts in the right queue and, under uniform load, costs almost nothing to ordinary traffic. Under concentrated load, however, the switch from plain \gls{dcf} to \gls{edca} raised the fleet Best Effort delay from about 2~ms to about 370~ms in our hotspot scenario, so this cost must be checked for each deployment (\autoref{sec:eval:cost:hotspot}).
 
 Second, blocking Best Effort traffic, and especially dropping it with emergency preemption, should not stay on all the time.
 It only pays off when the crash happens where the channel is really congested and alerts are really being sent.
