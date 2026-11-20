@@ -75,7 +75,7 @@ The high crash-burst profile is a deliberate stress case, not a standardized ale
 Treating \emph{all} Best Effort as suppressible is a worst-case bound for that abstraction.
 In a real stack, traffic outside the current crash alert may still be safety relevant, so a binary split can underestimate preemption harm (\autoref{sec:eval:disc:cost}).
 No adaptive-EDCA or \gls{dcc} baseline is implemented, so no superiority claim is made against those always-on families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
-The three adaptive profiles are fixed design points whose triggers are not individually ablated.
+The three adaptive profiles are fixed design points whose triggers are not tested individually.
 
 \medskip
 \noindent\textbf{Radio, topology, and delivery model.}
@@ -104,8 +104,8 @@ Within that scope the comparison remains internally fair: all configurations sha
 The dissertation builds on two conference papers by the author and on the public simulation artifact that accompanies them; the sections in which their content is represented are the following.
 
 \begin{itemize}[leftmargin=2em]
-  \item \textbf{Crash-aware prioritization study (SBESC 2026).} \textcite{aguiar2026crash} is the dissertation's direct precursor. Its introduction and related-work positioning are expanded in \autoref{chap:intro} and \autoref{sec:rel_work}, its contention and DiffServ background in \autoref{chap:background}, and its network, traffic, and policy model together with its implementation notes correspond to \autoref{chap:sysmodel} and \autoref{chap:implementation}. The paper's evaluation section, however, reports an earlier measurement campaign and covers only the uniform-load density matrices; \autoref{chap:evaluation} re-runs those campaigns, extends the scenario with the concentrated near-crash load overlay in which crash-adjacent vehicles bulk-upload and give protection a measurable Voice return (\autoref{sec:eval:hotspot}), and deliberately supersedes the paper's numerical results.
-  \item \textbf{Wireless TSN precursor (SBESC 2025).} \textcite{11288825} explored wireless TSN and QoS support for V2X under Time-Aware Shaper schedules and synchronization requirements. Its role in this dissertation is recorded in \autoref{sec:rw:prior}, which presents it as the precursor from which the present study deliberately diverges by dropping gate-control scheduling and synchronization.
+  \item \textbf{Crash-aware prioritization study (SBESC 2026).} \textcite{aguiar2026crash} is the dissertation's direct precursor. Its introduction and related-work positioning are expanded in \autoref{chap:intro} and \autoref{sec:rel_work}, its contention and DiffServ background in \autoref{chap:background}, and its network, traffic, and policy model together with its implementation notes correspond to \autoref{chap:sysmodel} and \autoref{chap:implementation}. The paper's evaluation section, however, reports an earlier measurement campaign and covers only the uniform-load scenarios. \autoref{chap:evaluation} re-runs those campaigns and adds the concentrated near-crash load, in which vehicles next to the crash upload large volumes and protection gives a measurable Voice benefit (\autoref{sec:eval:hotspot}). Its numerical results replace those of the paper.
+  \item \textbf{Wireless TSN precursor (SBESC 2025).} \textcite{11288825} explored wireless TSN and QoS support for V2X under Time-Aware Shaper schedules and synchronization requirements. Its role in this dissertation is recorded in \autoref{sec:rw:prior}, which presents it as the precursor from which the present study diverges by dropping gate-control scheduling and synchronization.
   \item \textbf{Simulation artifact.} The implementation, scenario packages, and KPI dashboard underlying \autoref{chap:implementation} and \autoref{chap:evaluation} are archived in the public artifact~\cite{aguiar2026_veins_qos}; \autoref{apend:layout} records its directory layout.
 \end{itemize}
 
@@ -123,18 +123,18 @@ Connecting Voice delay and loss to an application-level safety deadline, crash-a
 
 \medskip
 \noindent\textbf{Baselines, parameters, and concurrency.}
-Activation-criteria ablations and systematic parameter sweeps would separate which trigger and window settings drive the observed Voice gains.
+Tests of each activation criterion and systematic parameter sweeps would separate which trigger and window settings drive the observed Voice gains.
 Adaptive-\gls{edca}, ITS-G5 \gls{dcc}, and sidelink baselines would place the event-triggered profiles against established always-on congestion and prioritization families~\cite{etsi_dcc_2018,romdhani2003AdaptiveEDCF}.
 Concurrent alert sources and the interaction of their overlapping protection windows remain unevaluated.
 A closed-loop activation criterion based on the blocked duty cycle (alert cadence times bounded block window, \autoref{sec:eval:disc:trigger}) is a natural next step.
 It would let the controller engage emergency suppression only under the conditions in which \autoref{tab:eval:hotspot_dose} shows a Voice benefit.
 A deferral that also holds back Best Effort queues that are already contending, which the \texttt{stable} and \texttt{guarded} profiles do not do, would show whether deferring without dropping can also help Voice under concentrated load (\autoref{sec:eval:hotspot:high}).
 Alternative protection timings, including predictive pre-blocking activated from a learned burst cadence, were explored during development.
-They showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled ablation, so timing remains an open question under concentrated load.
+They showed no measurable benefit at the sparse-burst settings of this study and are not reported as a controlled experiment, so timing remains an open question under concentrated load.
 
 \medskip
 \noindent\textbf{Deployment constraints.}
-Several prerequisites must be met before comparable \gls{mac} aggression could be defended outside a synthetic two-class study: security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source.
+Several prerequisites must be met before comparably aggressive \gls{mac} behavior could be defended outside a synthetic two-class study: security against malicious or faulty Voice triggering (authentication, rate limiting, plausibility checks), finer-grained classes than a binary Voice/Best Effort split, and per-vehicle Best Effort fairness around the crash source.
 Hardware-in-the-loop or testbed validation would further show how much of the simulated trade-off transfers to real 802.11p stacks.
 
 \medskip

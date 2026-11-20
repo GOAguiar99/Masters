@@ -6,11 +6,13 @@ It also showed that correct \gls{dscp}-to-access-category mapping is not automat
 Those facts define a practical research neighborhood: how to protect rare, high-impact crash alerts under contention without introducing synchronization, infrastructure, or a new MAC standard.
 
 The literature answers that question along several axes.
-The works reviewed below were selected by this question rather than by technology: each either prioritizes urgent traffic over contention-based wireless access or offers another way to bound its delay that a vehicular system designer could adopt instead, which is why cellular sidelink and wired or infrastructure-based \gls{tsn} approaches appear alongside IEEE~802.11 proposals.
+The works reviewed below were selected by this question rather than by technology.
+Each one either prioritizes urgent traffic over contention-based wireless access or offers another way to bound its delay that a vehicular system designer could adopt instead.
+This is why cellular sidelink and wired or infrastructure-based \gls{tsn} approaches appear alongside IEEE~802.11 proposals.
 Some proposals pursue \emph{stronger contention control} than plain EDCA through slot scheduling, preemption, cooperative \gls{tdma}, or cellular sidelink allocation.
 Others study \emph{when} traffic is allowed to contend and what ordinary traffic pays when urgent flows are favored.
 A third family regulates offered load \emph{continuously} through adaptive EDCA parameters or \gls{dcc}.
-A fourth transplants \gls{tsn} and \gls{ofdma} ideas from wired or infrastructure Wi-Fi into wireless settings.
+A fourth brings \gls{tsn} and \gls{ofdma} ideas from wired or infrastructure Wi-Fi into wireless settings.
 \autoref{fig:rw:taxonomy} situates these families in a design space whose axes are synchronization or infrastructure dependency and always-on versus event-triggered intervention.
 The figure is a schematic positioning aid: markers are placed qualitatively from each work's stated assumptions, not from a numerical score.
 
@@ -22,8 +24,8 @@ The figure is a schematic positioning aid: markers are placed qualitatively from
 	\fonte{Prepared by the author.}
 \end{figure}
 
-This dissertation occupies a deliberately narrow point in that space: explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or protocol changes~\cite{jiang2008ieee80211p,IEEE80211}.
-The remainder of the chapter surveys the four families above, synthesizes their assumptions and limitations, and states the research gap that \autoref{chap:sysmodel} instantiates as a five-policy evaluation ladder.
+This dissertation occupies a narrow point in that space: explicit DSCP~46-to-Voice mapping plus local, event-triggered \gls{be} suppression on IEEE~802.11p \gls{ocb} operation, without reservations, clock synchronization, or protocol changes~\cite{jiang2008ieee80211p,IEEE80211}.
+The remainder of the chapter surveys the four families above, synthesizes their assumptions and limitations, and states the research gap that \autoref{chap:sysmodel} turns into an evaluation of five policies.
 
 % ----------------------------------------------------------------------
 \section{Stronger Contention Control for Vehicular Networks}
@@ -45,7 +47,7 @@ The design's effectiveness rests on synchronized operation and on a platoon mast
 Those assumptions are natural for a coordinated platoon with a designated leader.
 They do not hold in a fully decentralized highway fleet, where a single crash source must warn arbitrary neighbors without prior group formation.
 TSNCtl is furthermore published as an arXiv work-in-progress preprint and should be read as preliminary rather than as a peer-reviewed standard result~\cite{TSNCtl_Feraudo}.
-For the present dissertation, this work is relevant as motivation: slot-based suppression of contention can protect critical V2V traffic, but only by introducing synchronization and leadership that the crash-aware study deliberately avoids.
+For the present dissertation, this work is relevant as motivation: slot-based suppression of contention can protect critical V2V traffic, but only by introducing synchronization and leadership that the crash-aware study avoids.
 
 \subsection{Preemptive-resume priority in UAV-assisted vehicular networks}
 \label{sec:rw:prp}
@@ -57,8 +59,8 @@ Simulations support the claim that preemption reduces BSM delay relative to non-
 
 The architecture couples richer MAC machinery (preemption and arbitration) with infrastructure assistance (UAV and, in the broader \gls{vanet} framing, roadside units).
 Crash-alert dissemination among peer vehicles on an OCB channel has neither an arbiter nor a UAV relay.
-The dissertation keeps the intuition that aggressive prioritization of urgent traffic can compress delay.
-It realizes that aggression, however, as local BE deferral or drop during an alert window, not as a preemptive-resume service discipline under external arbitration~\cite{PRP_MAC_Li}.
+The dissertation keeps the idea that aggressive prioritization of urgent traffic can compress delay.
+It implements that aggressive priority, however, as local BE deferral or drop during an alert window, not as a preemptive-resume service discipline under external arbitration~\cite{PRP_MAC_Li}.
 
 \subsection{Contention-free cooperative TDMA}
 \label{sec:rw:cfc}
@@ -67,7 +69,7 @@ Linn, Liu, and Gao propose CFC-MAC, a distributed contention-free cooperative MA
 The protocol seeks deterministic access delay and low collision rates by identifying cooperative vehicles, suppressing merging collisions through relative-velocity estimation, and reclaiming or reassigning slots after collision detection~\cite{CFC_MAC_Linn}.
 Reported simulations show substantial collision-rate and access-delay improvements over existing solutions under the authors' scenarios.
 
-CFC-MAC's gains presuppose a TDMA-style organization of the medium and the signaling needed to estimate trajectories and renegotiate slots.
+CFC-MAC's gains depend on a TDMA-style organization of the medium and the signaling needed to estimate trajectories and reassign slots.
 That requires stronger coordination than EDCA on a single shared OCB channel.
 The present work does not attempt contention-free operation; it accepts random access and asks how much local, temporary BE suppression can reshape the contention that remains~\cite{CFC_MAC_Linn,IEEE80211}.
 
@@ -80,7 +82,7 @@ Mode~2 allows vehicles to select radio resources without a base-station schedule
 
 NR-V2X is a parallel access technology, not a drop-in repair for 802.11p OCB.
 Comparisons that claim superiority of one stack over the other require matched scenarios and are outside this dissertation's scope.
-The citation's role here is to acknowledge that the industry pursues tighter resource control for periodic safety traffic through cellular machinery, whereas this study remains inside the IEEE~802.11p design envelope~\cite{jiang2008ieee80211p,CV2X_Sidelink_Allocation}.
+The citation's role here is to acknowledge that the industry pursues tighter resource control for periodic safety traffic through cellular machinery, whereas this study remains within the limits of the IEEE~802.11p design~\cite{jiang2008ieee80211p,CV2X_Sidelink_Allocation}.
 
 \subsection{Prior wireless TSN study by the authors}
 \label{sec:rw:prior}
@@ -112,11 +114,11 @@ That literature motivates evaluating not only whether crash traffic is protected
 \label{sec:rw:freezing}
 
 Wu, Xia, Fan, and Li analyze IEEE~802.11p broadcast performance when the backoff counter freezes continuously during busy periods~\cite{Continuous_Backoff_Freezing_Li}.
-Their model couples highway density to the number of contenders in carrier-sense range.
+Their model couples highway density to the number of competing stations in carrier-sense range.
 It shows that accounting for repeated freeze intervals yields higher access delay than analyses that ignore the effect, and that delay and packet delivery ratio both degrade as density increases~\cite{Continuous_Backoff_Freezing_Li}.
 As noted in \autoref{chap:background}, their absolute delay numbers correspond to a lightly loaded configuration and are not transferable to the saturated BE loads of this study; the transferable claim is the trend.
 
-For crash-aware design, that trend is decisive.
+For crash-aware design, that trend is central.
 The same density that raises the value of a timely warning also raises the frequency of freeze intervals that postpone channel access for every contending station, including the crash source~\cite{Continuous_Backoff_Freezing_Li,bianchi2000DCF}.
 A mechanism that only remaps DSCP to Voice still contends through random backoff.
 A mechanism that temporarily removes BE competitors during the alert window instead attacks the freeze process at its source, by reducing the offered load that keeps the medium busy.
@@ -142,17 +144,17 @@ Malik et al.\ note that strict priority can drive lower-priority throughput towa
 Kosek-Szott et al.\ likewise stress that EDCA parameters yield differentiation, not bounds~\cite{kosekszott2012What}.
 
 These observations have two consequences for related-work positioning.
-First, any crash-protection scheme that suppresses BE is not inventing a new externality; it is making an existing prioritization cost explicit, bounded, and measurable.
+First, any crash-protection scheme that suppresses BE does not create a new cost; it makes an existing prioritization cost explicit, bounded, and measurable.
 Second, evaluation that reports only Voice delay improvements without BE delay, reach, or drop statistics is incomplete relative to the QoS literature's own warnings~\cite{Evolution_QoS_Mechanisms}.
 The dissertation treats the protection-versus-cost frontier as a primary result, not as a secondary side effect.
 
 \subsection{Summary of contention dynamics}
 \label{sec:rw:dynamics-synth}
 
-Backoff-freezing analysis explains why dense vehicular contention threatens timely broadcast~\cite{Continuous_Backoff_Freezing_Li}.
+Backoff-freezing analysis explains why dense vehicular contention puts timely broadcast at risk~\cite{Continuous_Backoff_Freezing_Li}.
 SkipCCH shows that controlling contention timing can protect both high-priority and lower-priority flows in a different WAVE setting~\cite{SkipCCH_Garrido}.
 QoS surveys insist that protection always has a cost~\cite{Evolution_QoS_Mechanisms,kosekszott2012What}.
-Together they motivate a design that (i) acts when contention is actually crash-relevant, (ii) reshapes who may contend rather than only remapping queues, and (iii) reports BE penalties with the same seriousness as Voice gains.
+Together they motivate a design that (i) acts when contention is actually crash-relevant, (ii) reshapes who may contend rather than only remapping queues, and (iii) reports BE penalties with the same weight as Voice gains.
 
 % ----------------------------------------------------------------------
 \section{Continuous Load Regulation with Adaptive EDCA and DCC}
@@ -188,7 +190,7 @@ DCC and event-triggered BE suppression optimize different objective functions.
 DCC keeps the long-term operating point away from congestion collapse by throttling how much traffic a station injects as CBR rises~\cite{etsi_dcc_2018}.
 Crash-aware suppression reshapes the mix of traffic that is allowed to contend during a short alert window, discriminating BE from Voice rather than scaling all traffic uniformly.
 The mechanisms are complementary: a deployment could run DCC permanently and still activate local BE suppression when a crash alert is active.
-The evaluation in this dissertation disables DCC deliberately, so that the five MAC policies' protection-versus-cost frontier is isolated; no claim of superiority over DCC is made or supported~\cite{etsi_dcc_2018}.
+The evaluation in this dissertation disables DCC, so that the five MAC policies' protection-versus-cost frontier is isolated; no claim of superiority over DCC is made or supported~\cite{etsi_dcc_2018}.
 
 \subsection{Summary of load regulation}
 \label{sec:rw:alwayson-synth}
@@ -210,10 +212,10 @@ The treatment is intentionally concise: these technologies are important in indu
 
 IEEE~802.1Qbv defines the Time-Aware Shaper, which opens and closes egress gates according to a Gate Control List so that scheduled traffic obtains protected transmission windows on bridged Ethernet~\cite{ieee8021qbv}.
 Craciunas et al.\ study the synthesis of such schedules for real-time communication and show that feasible gate schedules depend sensitively on flow sets and timing constraints~\cite{craciunas2016}.
-Debnath et al.\ quantify how combining Time-Aware Shaping with credit-based shaping and frame preemption alters delay and jitter, underscoring that hybrid shaper configurations require careful calibration along the path~\cite{debnath2023mixed,modeling}.
+Debnath et al.\ quantify how combining Time-Aware Shaping with credit-based shaping and frame preemption alters delay and jitter, showing that hybrid shaper configurations require careful calibration along the path~\cite{debnath2023mixed,modeling}.
 
 Wired TSN assumes full-duplex switched Ethernet, path-wide configuration, and typically IEEE~802.1AS-class synchronization.
-None of those ingredients exists in decentralized 802.11p OCB V2V~\cite{jiang2008ieee80211p,ieee8021qbv}.
+None of those elements exists in decentralized 802.11p OCB V2V~\cite{jiang2008ieee80211p,ieee8021qbv}.
 TSN results are therefore cited as contrast, not as transferable mechanisms.
 
 \subsection{Wireless TSN over Wi-Fi}
@@ -233,8 +235,8 @@ IEEE~802.11ax-era OFDMA enables an access point to allocate Resource Units (RUs)
 Karthik and Palaniswamy study RU-based OFDMA scheduling that maps priorities into spectral allocation patterns~\cite{karthik2018}.
 Schneider et al.\ investigate deterministic channel access using MU-EDCA parameterization and, in later work, scheduled Trigger Frames aimed at worst-case latency bounds for industrial Wi-Fi use~\cite{schneider_mu_edca_2023,schneider_trigger_2024}.
 
-OFDMA scheduling presupposes an infrastructure AP and Wi-Fi~6/7 hardware capable of RU allocation and triggering.
-Those prerequisites are outside the OCB 802.11p envelope of this study~\cite{jiang2008ieee80211p,IEEE80211}.
+OFDMA scheduling requires an infrastructure AP and Wi-Fi~6/7 hardware capable of RU allocation and triggering.
+Those prerequisites are outside the OCB 802.11p scope of this study~\cite{jiang2008ieee80211p,IEEE80211}.
 No OFDMA migration path is claimed or evaluated.
 
 \subsection{Summary of the TSN and OFDMA contrast}
@@ -248,7 +250,7 @@ The crash-aware problem statement asks a different question: what protection-ver
 \label{sec:rw:gap}
 % ----------------------------------------------------------------------
 
-Across the surveyed literature, three recurring design philosophies appear.
+Across the surveyed literature, three recurring design approaches appear.
 The first seeks \emph{stronger coordination} through slots, preemption under arbitration, cooperative TDMA, or cellular resource selection, and accepts synchronization or infrastructure as the price of reduced collisions~\cite{TSNCtl_Feraudo,PRP_MAC_Li,CFC_MAC_Linn,CV2X_Sidelink_Allocation}.
 The second reshapes \emph{contention timing} or reports the \emph{cost} of prioritization, showing that when and whom one allows to contend determines both urgent-flow delay and ordinary-flow harm~\cite{SkipCCH_Garrido,Continuous_Backoff_Freezing_Li,Evolution_QoS_Mechanisms}.
 The third regulates load \emph{continuously} through adaptive EDCA parameters or DCC, optimizing aggregate congestion rather than short crash windows~\cite{romdhani2003AdaptiveEDCF,etsi_dcc_2018}.
@@ -294,9 +296,9 @@ Assumptions and mechanisms are those stated by the cited works; the final row po
 	\addlinespace
 	\multicolumn{6}{@{}l@{}}{\textbf{Contention dynamics and the cost of protection (\autoref{sec:rw:dynamics})}} \\
 	\midrule
-	Backoff-freezing analysis\newline\cite{Continuous_Backoff_Freezing_Li} & Analytical model of repeated backoff freezes & Density-to-contenders coupling & 802.11p broadcast & Access delay and loss grow with density & Trend motivates BE suppression \\
+	Backoff-freezing analysis\newline\cite{Continuous_Backoff_Freezing_Li} & Analytical model of repeated backoff freezes & Density-to-competitors coupling & 802.11p broadcast & Access delay and loss grow with density & Trend motivates BE suppression \\
 	SkipCCH\newline\cite{SkipCCH_Garrido} & Avoid \glsentryshort{cch}-induced \glsentryshort{sch} bursts & IEEE~1609.4 multi-channel & Video + QoS ACs & Less contention, less low-AC starvation & Multi-channel video \\
-	QoS surveys\newline\cite{Evolution_QoS_Mechanisms,kosekszott2012What,ni2004Qiang} & Taxonomy of EDCA QoS enhancements & --- & Differentiated ACs & Differentiation, not bounds; low-AC starvation risk & Mandates reporting BE cost \\
+	QoS surveys\newline\cite{Evolution_QoS_Mechanisms,kosekszott2012What,ni2004Qiang} & Taxonomy of EDCA QoS enhancements & --- & Differentiated ACs & Differentiation, not bounds; low-AC starvation risk & Requires reporting BE cost \\
 	\addlinespace
 	\multicolumn{6}{@{}l@{}}{\textbf{Always-on load regulation (\autoref{sec:rw:alwayson})}} \\
 	\midrule
@@ -314,4 +316,4 @@ Assumptions and mechanisms are those stated by the cited works; the final row po
 \fonte{Prepared by the author from the cited works.}
 }
 
-\autoref{chap:sysmodel} instantiates the residual gap as a concrete system model: a highway one-hop multicast scenario, a two-class BE/Voice traffic abstraction with a timed crash window, and five MAC policies, namely \texttt{plain}, \texttt{edca\_only}, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency}), which map the protection-versus-cost frontier without leaving the standard-compliant, infrastructure-free design envelope.
+\autoref{chap:sysmodel} turns the remaining gap into a concrete system model: a highway one-hop multicast scenario, a two-class BE/Voice traffic abstraction with a timed crash window, and five MAC policies, namely \texttt{plain}, \texttt{edca\_only}, and three adaptive profiles (\texttt{stable}, \texttt{guarded}, \texttt{emergency}), which map the protection-versus-cost frontier without leaving the standard-compliant, infrastructure-free design space.
