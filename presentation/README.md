@@ -16,7 +16,7 @@ A slide and step can be linked directly: `index.html#/19/3`.
 
 ## Structure
 
-- 36 main slides (about 32 min of planned time, set per slide in `data-time`) plus 9 backup slides (A–I) after "Obrigado!".
+- 37 main slides (about 33 min of planned time, set per slide in `data-time`) plus 8 backup slides (A–H) after "Obrigado!".
 - Speaker notes are in each slide's `<aside class="notes">`.
 - `style.css` holds the shared styles; slide-specific rules are in the `<style>` block of `index.html`.
 - `deck.js` is the slide engine (fragments `.f` with `data-f`, presenter sync via `BroadcastChannel`).

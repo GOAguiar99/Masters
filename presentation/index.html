@@ -531,6 +531,41 @@
 </section>
 
 <section class="slide" data-section="Implementação" data-time="70">
+  <h2><span class="kicker">Implementação · Caminho de um alerta</span>Do veículo acidentado à idade do alerta no vizinho</h2>
+  <div class="row">
+    <svg viewBox="0 0 760 560" width="700" height="516" class="f play" data-f="1" style="flex:none">
+      <g font-size="18" font-weight="700" text-anchor="middle">
+        <text x="150" y="16" font-size="17" fill="#b03030">nó 0 (acidentado)</text>
+        <text x="610" y="16" font-size="17" fill="#5d6675">cada vizinho ao alcance</text>
+        <g><rect x="30" y="24" width="240" height="66" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="50">CrashBurstApp</text><text x="150" y="74" font-size="14" font-weight="500">DSCP 46 · seq · t₀ · 8 cópias</text></g>
+        <g><rect x="30" y="108" width="240" height="56" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="132">UDP 9002 → 9001</text><text x="150" y="154" font-size="14" font-weight="500">multicast 224.0.0.1</text></g>
+        <g><rect x="30" y="182" width="240" height="56" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="206">IPv4 + QosClassifier</text><text x="150" y="228" font-size="14" font-weight="500">DSCP 46 → UP 6 → AC_VO</text></g>
+        <g><rect x="30" y="256" width="240" height="66" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="282">MAC: fila Voice</text><text x="150" y="306" font-size="14" font-weight="500">adaptativas: abre proteção</text></g>
+        <g><rect x="30" y="340" width="240" height="56" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="364">rádio 802.11p</text><text x="150" y="386" font-size="14" font-weight="500">12 Mbit/s · sem ACK</text></g>
+        <g><rect x="490" y="24" width="240" height="66" rx="12" fill="#eaf7f1" stroke="#2a9d6f" stroke-width="2.5"/><text x="610" y="50">CritPacketSender</text><text x="610" y="74" font-size="14" font-weight="500">porta 9001 · 1ª cópia → idade</text></g>
+        <g><rect x="490" y="108" width="240" height="56" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="142">UDP</text></g>
+        <g><rect x="490" y="182" width="240" height="56" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="216">IPv4</text></g>
+        <g><rect x="490" y="256" width="240" height="66" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2.5"/><text x="610" y="282">MAC: VO ouvido</text><text x="610" y="306" font-size="14" font-weight="500">adaptativas: abre proteção local</text></g>
+        <g><rect x="490" y="340" width="240" height="56" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="374">rádio</text></g>
+      </g>
+      <path d="M270 380 Q 380 440 490 380" stroke="#9aa6b8" stroke-width="3" fill="none" class="flowline"/>
+      <text x="380" y="455" text-anchor="middle" font-size="16" fill="#5d6675">canal compartilhado: colisão = cópia perdida</text>
+      <circle r="13" fill="#b03030" class="pkt" style="offset-path: path('M 150 57 L 150 400 Q 380 470 610 400 L 610 57')"/>
+    </svg>
+    <ol class="col small stagger f" data-f="2" style="padding-left:1.2em;margin-top:0">
+      <li>No nó 0, o <code>CrashBurstApp</code> cria cada alerta com DSCP 46, número de sequência e o instante lógico t₀, e envia 8 cópias com offset aleatório.</li>
+      <li>O destino é o multicast <code>224.0.0.1</code>, <b>porta 9001</b>.</li>
+      <li>Nas políticas EDCA, o <code>QosClassifier</code> leva DSCP 46 a UP 6 e à fila Voice (no <span class="pol plain">plain</span>, fila única).</li>
+      <li>Sem ACK nem retransmissão: se a cópia colide, só a próxima repetição salva o alerta.</li>
+      <li>Em cada vizinho, a MAC que <b>ouve</b> o Voice abre a proteção local: o BE <b>dele</b> é adiado (ou descartado na emergency).</li>
+      <li>O <code>CritPacketSender</code> do vizinho, que escuta na porta 9001, aceita a 1ª cópia de cada (origem, sequência) e registra a <b>idade do alerta</b>; as repetições são descartadas.</li>
+    </ol>
+  </div>
+  <p class="tiny f" data-f="3" style="margin-top:4px">Por que o alerta chega no <code>CritPacketSender</code>? Ele é o coletor de KPIs das duas classes em todo veículo; o <code>CrashBurstApp</code> do receptor não registra nada.</p>
+  <aside class="notes">Este é o caminho de um alerta. No veículo acidentado, o CrashBurstApp cria o alerta com DSCP 46, um número de sequência e o instante lógico, e envia oito cópias com um pequeno offset aleatório. Ele envia da porta 9002 para a porta 9001, no grupo multicast. Nas políticas EDCA, o classificador leva o DSCP 46 para a prioridade 6, que é a fila Voice. Não há ACK nem retransmissão: se uma cópia colide, só a próxima repetição salva o alerta. Do outro lado, duas coisas acontecem em cada vizinho. Primeiro, a MAC ouve o frame Voice e, nas políticas adaptativas, abre a janela de proteção local, adiando ou descartando o Best Effort daquele vizinho; é assim que a proteção se espalha sem coordenação. Segundo, o pacote sobe até a porta 9001, onde o CritPacketSender escuta. Ele é o coletor de KPIs das duas classes: aceita a primeira cópia de cada alerta e registra a idade do alerta, descartando as repetições. O CrashBurstApp do receptor não registra nada. <b>~70 s</b></aside>
+</section>
+
+<section class="slide" data-section="Implementação" data-time="70">
   <h2><span class="kicker">Cenário de simulação</span>Uma rodovia, um acidente, dois padrões de carga</h2>
   <svg viewBox="0 0 1408 300" width="1408" height="300" class="f" data-f="1">
     <rect x="0" y="20" width="1408" height="150" rx="14" fill="#2d3442"/>
@@ -1053,7 +1088,7 @@
 </section>
 
 <section class="slide" data-section="Apêndice" data-time="0">
-  <h2><span class="kicker">Backup I</span>Parâmetros e matriz de configurações</h2>
+  <h2><span class="kicker">Backup F</span>Parâmetros e matriz de configurações</h2>
   <div class="row">
     <table class="t compact col f left" data-f="1">
       <tr><th>Parâmetro</th><th>Valor</th></tr>
@@ -1083,7 +1118,7 @@
 </section>
 
 <section class="slide" data-section="Apêndice" data-time="0">
-  <h2><span class="kicker">Backup F</span>A proteção dispara, com ou sem benefício</h2>
+  <h2><span class="kicker">Backup G</span>A proteção dispara, com ou sem benefício</h2>
   <div class="row" style="align-items:center">
     <img src="assets/fig_07_v2x_control_actions_by_load_highway_heavy.svg" class="f zoom" data-f="1" style="height:560px;border-radius:12px;border:1px solid var(--faint)">
     <div class="col">
@@ -1098,41 +1133,6 @@
     </div>
   </div>
   <aside class="notes">Os contadores do controlador confirmam. Sob carga uniforme, stable e guarded ativam a proteção umas 115 mil vezes por execução, e o Voice não ganha nada. A emergency descarta uns 2.500 frames BE sob carga uniforme, contra 16 mil no hotspot. Em resumo: adiar acrescenta atraso, descartar remove tráfego, e descartar só ajuda o Voice quando a carga é concentrada. <b>~40 s</b></aside>
-</section>
-
-<section class="slide" data-section="Apêndice" data-time="0">
-  <h2><span class="kicker">Backup G</span>Caminho end-to-end de um pacote</h2>
-  <div class="row">
-    <svg viewBox="0 0 760 520" width="760" height="520" class="f play" data-f="1">
-      <g font-size="19" font-weight="700" text-anchor="middle">
-        <g><rect x="40" y="20" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="58">App (DSCP 0 / 46)</text></g>
-        <g><rect x="40" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="143">UDP → 224.0.0.1</text></g>
-        <g><rect x="40" y="190" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="216">IPv4 + QosClassifier</text><text x="150" y="240" font-size="15" font-weight="500">DSCP → UserPriorityReq</text></g>
-        <g><rect x="40" y="275" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="301">V2xIeee80211Mac</text><text x="150" y="325" font-size="15" font-weight="500">fila DCF / EDCA (+FSM)</text></g>
-        <g><rect x="40" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="398">rádio 802.11p</text></g>
-        <g><rect x="500" y="20" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="610" y="48">CritPacketSender</text><text x="610" y="72" font-size="15" font-weight="500">porta 9001 · coletor de KPIs</text></g>
-        <g><rect x="500" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="143">UDP</text></g>
-        <g><rect x="500" y="190" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="228">IPv4</text></g>
-        <g><rect x="500" y="275" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="313">MAC</text></g>
-        <g><rect x="500" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="398">rádio</text></g>
-      </g>
-      <text x="150" y="455" text-anchor="middle" font-size="18" fill="#5d6675">emissor</text>
-      <text x="610" y="455" text-anchor="middle" font-size="18" fill="#5d6675">cada receptor</text>
-      <path d="M260 470 Q 380 500 500 470" stroke="#9aa6b8" stroke-width="3" fill="none" class="flowline"/>
-      <text x="380" y="510" text-anchor="middle" font-size="17" fill="#5d6675">meio compartilhado</text>
-      <circle r="14" fill="#1f5f99" class="pkt"/>
-      <circle r="14" fill="#b03030" class="pkt vo-pk"/>
-    </svg>
-    <ol class="col small stagger f" data-f="2" style="padding-left:1.2em">
-      <li>A app cria o payload UDP, um <code>CreationTimeTag</code> e um <code>DscpReq</code> de 0 ou 46.</li>
-      <li>Envio para o multicast <code>224.0.0.1</code> via <code>VeinsInetApplicationBase</code>.</li>
-      <li>Nas políticas EDCA, o <code>QosClassifier</code> converte DSCP em prioridade de usuário.</li>
-      <li>MAC: uma fila DCF (<span class="pol plain">plain</span>) ou ACs EDCA; nas adaptativas, BE <b>novo</b> consulta a FSM antes de pedir o canal.</li>
-      <li>Rádio 802.11p dimensional; os receptores percorrem o caminho inverso.</li>
-      <li>O <code>CritPacketSender</code> classifica a recepção por DSCP em KPIs BE/VO, ignora os próprios pacotes e deduplica repetições VO.</li>
-    </ol>
-  </div>
-  <aside class="notes">Aqui está o caminho de um pacote. A aplicação carimba o instante de criação e marca DSCP 0 ou 46. Ele vai para UDP multicast, depois IPv4, onde nas políticas EDCA o classificador converte DSCP em prioridade de usuário. Minha MAC instrumentada usa uma fila DCF ou as categorias EDCA, e as políticas adaptativas consultam a máquina de estados antes de deixar o Best Effort acessar o canal. No receptor, o mesmo módulo CritPacketSender que envia BE é o coletor de KPIs das duas classes: separa por DSCP, ignora os próprios pacotes e deduplica as repetições Voice. O caminho é idêntico para as duas classes, exceto pela marcação, pelo mapeamento e pelo controle de acesso. <b>~50 s</b></aside>
 </section>
 
 <section class="slide" data-section="Apêndice" data-time="0">
