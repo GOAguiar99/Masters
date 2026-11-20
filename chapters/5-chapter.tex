@@ -407,6 +407,12 @@ This section quantifies what protection costs, first under concentrated load and
 In the high-load hotspot scenario, the Voice improvement cannot be separated from its Best Effort cost.
 Emergency drops about $16.1\times10^{3}$ Best Effort frames while blocked (\autoref{tab:eval:hotspot}).
 Part of that cost falls on the crash node itself, which loses about 40\% of its own Best Effort packets instead of delivering them seconds late (\autoref{sec:eval:hotspot:high}).
+
+A larger Best Effort cost under concentrated load comes from \gls{edca} itself rather than from the adaptive policies.
+Under plain \gls{dcf} the fleet Best Effort delay stays at 1.9~ms mean and 6.1~ms P95, because the three hotspot senders transmit every packet they generate and their queues never overflow.
+Under every \gls{edca}-based policy the same senders obtain the channel for only about 80\% of their packets; their Best Effort queues fill, about $9\times10^{3}$ packets per run are lost to queue overflow, and the delivered ones wait behind a full queue.
+The fleet Best Effort delay then rises to about 370~ms mean and 775~ms P95 under \texttt{edca\_only}, \texttt{stable}, and \texttt{guarded}, and to 325~ms and 737~ms under emergency, whose lower values again reflect dropped rather than faster packets.
+The hotspot channel operates close to saturation, so a small difference in access overhead between the two \gls{mac} modes can decide whether these queues remain stable; this experiment does not isolate that cause.
 \autoref{fig:eval:gain_cost} places the trade-off in $\Delta$-space versus plain \gls{dcf}.
 Under high hotspot load, only emergency moves left on the Voice axis.
 Under high uniform load, the adaptive policies do not reduce Voice P95, while Best Effort P95 rises, most of all under \texttt{stable}.
@@ -493,7 +499,7 @@ The results show that the trade-off between protection and cost depends on the l
 
 Adaptive blocking is harmful when it is active while congestion does not limit Voice service: \texttt{stable} and \texttt{guarded} inflate Best Effort delay while Voice alert age stays the same (\autoref{sec:eval:light}).
 The mechanism should be enabled as an escalation step when the channel is genuinely stressed, and should not permanently replace ordinary EDCA marking.
-Explicit DSCP-to-Voice mapping remains a reasonable default.
+Explicit DSCP-to-Voice mapping remains a reasonable default under uniform load; under concentrated load, enabling \gls{edca} itself raised the fleet Best Effort delay by two orders of magnitude relative to plain \gls{dcf} (\autoref{sec:eval:cost:hotspot}).
 Bounded or emergency suppression should be reserved for concentrated load (\autoref{sec:eval:hotspot}), the only case in which preemption produced a measured Voice benefit instead of only a cost (\autoref{tab:eval:hotspot}).
 
 \label{sec:eval:disc:trigger}
