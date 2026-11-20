@@ -115,6 +115,26 @@ When a few vehicles next to the crash send most of the traffic, the picture chan
 The Voice P95 grows to 18.5--20~ms with plain \gls{dcf} and EDCA, and emergency preemption is the only policy that brings it down, to 14.6~ms.
 This happens only when the alert bursts are frequent enough to keep the protection active for most of the crash window.
 
+\autoref{fig:eval:vo_density} shows where these numbers come from.
+It plots the distribution of the per-packet Voice delay for each policy at high load, with the delay on a logarithmic axis.
+Under uniform load (panel~a) the five curves coincide.
+The alert generator sends half of the copies without any offset (\autoref{sec:eval:light}), and these alerts form the narrow peak near 0.25~ms: the copy was sent at once and received at once.
+The other half spreads between that peak and 2~ms, the largest offset the generator adds at this load, and almost no alert takes longer.
+The shape of the curve is therefore the shape of the generator offset; the channel adds only a short transfer time, and no policy can change it.
+Under hotspot load (panel~b) a large part of the distribution moves beyond 2~ms.
+These are alerts whose first copies were lost, so the receivers had to wait for a later repeat.
+With plain \gls{dcf} and EDCA the median rises from about 0.5~ms to about 2.0~ms, and the \texttt{stable} and \texttt{guarded} curves follow EDCA.
+Emergency is the only policy that moves alerts back into the first peak, and it removes much of the mass between about 3 and 10~ms; its median falls to 0.83~ms.
+The gain of emergency is thus not a uniformly faster channel, but a higher chance that the first copy gets through.
+
+\begin{figure}[htb]
+	\caption{\label{fig:eval:vo_density}Distribution of the per-packet Voice delay (alert age) by policy at high load, heavy density (100~vehicles). (a) Uniform \texttt{netload\_high}: the five curves coincide, and their shape is set by the generator's dispatch offset. (b) \texttt{hotspot\_high}: lost first copies push alerts beyond 2~ms; emergency returns them to the first peak. Samples from all receivers are pooled over the three seeds; the curves are Gaussian kernel density estimates on $\log_{10}$ of the delay (bandwidth 0.04~decade), so equal areas hold equal shares of the alerts. Pooled percentiles can differ slightly from the per-run means in the tables.}
+	\begin{center}
+		\includegraphics[width=0.85\linewidth]{Figs/fig_11_vo_delay_density_highway_heavy.pdf}
+	\end{center}
+	\fonte{Prepared by the author.}
+\end{figure}
+
 This means that protection is useful when the crash switches it on in a congested area, but not as a mode that stays active all the time.
 The next sections give the details: Section~\ref{sec:eval:hotspot} for the concentrated load, Section~\ref{sec:eval:light} for the uniform load, and Section~\ref{sec:eval:cost} for the cost to Best Effort traffic.
 
@@ -182,7 +202,7 @@ The crash source, the alert window, and every metric definition are unchanged; c
 Plain \gls{dcf} and plain EDCA reach Voice P95 of 18.5--20~ms.
 Emergency holds the same tail at 14.6~ms and the Voice mean at 2.78~ms ($-39\%$ mean and $-21\%$ P95 versus plain; $-38\%$ / $-27\%$ versus EDCA).
 Voice-attributed collision losses fall from $25.2\times10^{3}$ to $17.8\times10^{3}$ ($-30\%$ versus EDCA), and the three-seed P95 ranges do not overlap the baselines'.
-Emergency lowers both central tendency and tail, but P95 remains an order of magnitude above the mean because alert age is dominated by occasional late first-copy successes under collision-heavy windows.
+Emergency lowers both central tendency and tail, but P95 remains an order of magnitude above the mean because alert age is dominated by occasional late first-copy successes under collision-heavy windows (panel~b of \autoref{fig:eval:vo_density}).
 The controller counters show how this happens.
 With eight copies every 20~ms, the nodes stay blocked almost continuously, and about $16.1\times10^{3}$ Best Effort frames are dropped while blocked (\autoref{tab:eval:hotspot}).
 The queues of the heavy senders cannot refill the channel during the alert window.
@@ -363,6 +383,7 @@ The floor that every policy shares is set by the alert generator itself rather t
 Each physical copy of a burst, including the first, is dispatched at an offset $\max(0,\,U(-J,\,J))$ after the logical burst timestamp that defines the delay origin, where $J$ is the configured repeat jitter (\autoref{sec:impl:crash}).
 That offset has a point mass at zero and a 95th percentile of $0.9\,J$: about \SI{1.8}{\milli\second} at the high-load setting $J=\SI{2}{\milli\second}$ and about \SI{4.5}{\milli\second} at the low and medium setting $J=\SI{5}{\milli\second}$.
 Adding the sub-millisecond transfer delay measured on the same samples reproduces the observed floors of about 2.2~ms and 4.6--4.9~ms respectively.
+Panel~a of \autoref{fig:eval:vo_density} shows this offset directly: a narrow peak for the copies sent without offset, followed by a plateau that ends at about 2~ms.
 The mean behaves the same way: $\E[\max(0,\,U(-2,2))]=\SI{0.5}{\milli\second}$ accounts for half of the 0.99~ms Voice mean in \autoref{tab:eval:heavy_qos}.
 Only when the first copy is lost does the inter-copy gap~$g$ enter, adding one further quantum per missed repeat; robust vehicular broadcast schemes rely on this kind of application-level repetition~\cite{Robust_Broadcast_Ma,Reliable_Broadcast_Farnoud}.
 At the 95th percentile under diffuse load such losses are rare, so contention changes the delay distribution only slightly above the floor set by the generator.
