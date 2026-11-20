@@ -32,7 +32,7 @@ To achieve the main objective, we define the following specific objectives:
 
 \begin{enumerate}
 	\item To implement a crash-triggered two-class traffic model in Veins/\gls{inet}, in which all vehicles generate periodic BE multicast traffic and a designated crash vehicle emits DSCP~46 alert bursts mapped to the VO access category through an explicit classifier.
-	\item To design and implement a lightweight adaptive MAC controller that extends EDCA with a local three-mode protection mechanism, exposed as a ladder of five policies with increasing aggressiveness, from plain DCF to emergency preemption.
+	\item To design and implement a lightweight adaptive MAC controller that extends EDCA with a local three-mode protection mechanism, organized as five policies of increasing aggressiveness, from plain DCF to emergency preemption.
 	\item To evaluate the five policies across a matrix of vehicle densities (10 and 100 vehicles), offered-load profiles, and spatial concentrations of that load, from a uniform fleet-wide offer to a localized hotspot near the crash source, using class-specific delay, jitter, multicast reach, and MAC-loss metrics.
 	\item To characterize the resulting protection-versus-cost frontier and derive engineering guidance on when adaptive suppression should be enabled.
 \end{enumerate}
