@@ -6,6 +6,7 @@ It also showed that correct \gls{dscp}-to-access-category mapping is not automat
 Those facts define a practical research neighborhood: how to protect rare, high-impact crash alerts under contention without introducing synchronization, infrastructure, or a new MAC standard.
 
 The literature answers that question along several axes.
+The works reviewed below were selected by this question rather than by technology: each either prioritizes urgent traffic over contention-based wireless access or offers another way to bound its delay that a vehicular system designer could adopt instead, which is why cellular sidelink and wired or infrastructure-based \gls{tsn} approaches appear alongside IEEE~802.11 proposals.
 Some proposals pursue \emph{stronger contention control} than plain EDCA through slot scheduling, preemption, cooperative \gls{tdma}, or cellular sidelink allocation.
 Others study \emph{when} traffic is allowed to contend and what ordinary traffic pays when urgent flows are favored.
 A third family regulates offered load \emph{continuously} through adaptive EDCA parameters or \gls{dcc}.
@@ -38,7 +39,7 @@ They rely, however, on assumptions that go beyond the focused crash-protection p
 
 Feraudo, Garbugli, and Bellavista propose TSNCtl, an application-level controller for \gls{v2v} platooning that draws inspiration from \gls{tsn} slotting~\cite{TSNCtl_Feraudo}.
 The controller runs a finite-state machine that manages platoon formation and assigns time slots for message dissemination, aiming to bound collisions that arise when platoon members share a Wi-Fi-like channel.
-In \gls{omnet}/\gls{inet} experiments, short slot lengths (for example, \SI{2}{\milli\second}) are reported to reduce average collision rates relative to a CSMA/CA baseline under the evaluated platooning scenarios~\cite{TSNCtl_Feraudo}.
+In \gls{omnet}/\gls{inet} experiments, short slot lengths (for example, \SI{2}{\milli\second}) are reported to reduce average collision rates relative to a carrier-sense multiple access with collision avoidance (CSMA/CA) baseline under the evaluated platooning scenarios~\cite{TSNCtl_Feraudo}.
 
 The design's effectiveness rests on synchronized operation and on a platoon master that allocates slots.
 Those assumptions are natural for a coordinated platoon with a designated leader.
@@ -46,7 +47,7 @@ They do not hold in a fully decentralized highway fleet, where a single crash so
 TSNCtl is furthermore published as an arXiv work-in-progress preprint and should be read as preliminary rather than as a peer-reviewed standard result~\cite{TSNCtl_Feraudo}.
 For the present dissertation, this work is relevant as motivation: slot-based suppression of contention can protect critical V2V traffic, but only by introducing synchronization and leadership that the crash-aware study deliberately avoids.
 
-\subsection{Preemptive-resume priority in UAV-assisted VANETs}
+\subsection{Preemptive-resume priority in UAV-assisted vehicular networks}
 \label{sec:rw:prp}
 
 Li et al.\ address \gls{bsm} delivery under high vehicle density by combining IEEE~802.11 CSMA/CA with a preemptive-resume priority scheme and an arbitration device.
@@ -54,7 +55,7 @@ In their setting, a \gls{uav} acts as a receiver for BSM uploads toward \gls{rsu
 Higher-priority packets can preempt lower-priority ones; queuing analysis is used to size transmission intervals so that BSM delay meets driving-safety targets under the modeled load~\cite{PRP_MAC_Li}.
 Simulations support the claim that preemption reduces BSM delay relative to non-preemptive baselines in the UAV-assisted topology they study.
 
-The architecture couples richer MAC machinery (preemption and arbitration) with infrastructure assistance (UAV and, in the broader VANET framing, roadside units).
+The architecture couples richer MAC machinery (preemption and arbitration) with infrastructure assistance (UAV and, in the broader \gls{vanet} framing, roadside units).
 Crash-alert dissemination among peer vehicles on an OCB channel has neither an arbiter nor a UAV relay.
 The dissertation keeps the intuition that aggressive prioritization of urgent traffic can compress delay.
 It realizes that aggression, however, as local BE deferral or drop during an alert window, not as a preemptive-resume service discipline under external arbitration~\cite{PRP_MAC_Li}.
@@ -218,7 +219,7 @@ TSN results are therefore cited as contrast, not as transferable mechanisms.
 \subsection{Wireless TSN over Wi-Fi}
 \label{sec:rw:wireless-tsn}
 
-Seliem, Zahran, and Pesch implement wireless TSN extensions that combine prioritization, frame preemption, and credit-based shaping on commodity Wi-Fi for industrial Internet-of-Things scenarios, reporting feasibility alongside the need for NIC or driver support~\cite{seliem2023wirelesstsn}.
+Seliem, Zahran, and Pesch implement wireless TSN extensions that combine prioritization, frame preemption, and credit-based shaping on commodity Wi-Fi for industrial Internet-of-Things scenarios, reporting feasibility alongside the need for network interface card (NIC) or driver support~\cite{seliem2023wirelesstsn}.
 Satka et al.\ experimentally characterize wireless TSN behavior across Wi-Fi, 4G, and 5G links and highlight physical-layer variability that complicates deterministic claims~\cite{satka2023wireless}.
 Schneider, Sofia, and Kovatsch propose time-aware scheduling aligned with Target Wake Time (TWT) cycles for industrial IoT, depending on endpoint participation in schedule synthesis and on Wi-Fi features beyond legacy 802.11p~\cite{schneider2022twt}.
 

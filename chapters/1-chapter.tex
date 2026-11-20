@@ -170,7 +170,7 @@ The lower-priority category behaves as if an external collision had occurred and
 	\fonte{Prepared by the author.}
 \end{figure}
 
-\autoref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by \gls{rfc}~8325 for infrastructure WLANs~\cite{RFC8325_WiFi_QoS}.
+\autoref{tab:bg:edca-params} reports representative EDCA parameter relationships as summarized by \gls{rfc}~8325 for infrastructure wireless local area networks (WLANs)~\cite{RFC8325_WiFi_QoS}.
 The defaults used in this study's INET configuration are listed in \autoref{tab:impl:parameters} and need not coincide with every published draft-era table.
 The essential ordering is stable across revisions: \texttt{AC\_VO} is the most aggressive category, followed by \texttt{AC\_VI}, \texttt{AC\_BE}, and \texttt{AC\_BK}.
 
@@ -277,7 +277,7 @@ This section specializes the background to that environment and introduces \gls{
 \label{sec:bg:ocb}
 
 IEEE~802.11p was designed so that vehicles can exchange frames during brief contact intervals without the overhead of joining a BSS~\cite{jiang2008ieee80211p}.
-In \gls{ocb} mode, frames carry a wildcard BSSID, and stations neither associate nor authenticate with an access point.
+In \gls{ocb} mode, frames carry a wildcard basic service set identifier (BSSID), and stations neither associate nor authenticate with an access point.
 Management procedures that assume a BSS are omitted~\cite{IEEE80211}.
 The physical layer typically uses \SI{10}{\mega\hertz} \gls{ofdm} channels in the \SI{5.9}{\giga\hertz} band, doubling the symbol duration relative to \SI{20}{\mega\hertz} 802.11a and improving robustness to multipath and Doppler at highway speeds~\cite{jiang2008ieee80211p,etsi_en_302663}.
 \autoref{fig:bg:ocb} contrasts BSS-mode infrastructure Wi-Fi with OCB vehicular operation.
@@ -336,7 +336,7 @@ This is why the dissertation distinguishes DSCP~46, the EF per-hop behavior, use
 \autoref{fig:bg:dscp-path} summarizes that cross-layer path and the RFC~8325 Voice-mapping pitfall.
 
 \begin{figure}[htb]
-	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default three-MSB heuristic places EF in Video.}
+	\caption{\label{fig:bg:dscp-path}Cross-layer path from IP DSCP marking to EDCA channel access. Correct Voice treatment of Expedited Forwarding traffic requires an explicit DSCP-to-user-priority mapping; the default heuristic based on the three most significant bits (MSB) places EF in Video.}
 	\begin{center}
 		\includegraphics[width=\linewidth]{Figs/dscp_path.pdf}
 	\end{center}
@@ -484,6 +484,9 @@ It allows the network model to control vehicle entities (for example, stopping a
 
 SUMO itself is an open-source microscopic traffic simulator supporting multi-modal traffic, lane-changing and car-following models, and external coupling interfaces.
 Alvarez Lopez et al.\ provide the reference publication describing its architecture and its validation role in ITS research~\cite{lopez2018sumo}.
+Other frameworks build on the same coupling.
+Artery, for example, extends Veins with an ETSI ITS-G5 protocol stack, including message services such as \glspl{cam} and \glspl{denm} and decentralized congestion control~\cite{riebl2015artery}.
+This study does not need those services, because its traffic model is a synthetic two-class abstraction (\autoref{sec:sys:traffic}); it needs the IEEE~802.11 \gls{edca} \gls{mac} and the IP/DSCP path of \gls{inet}, which the Veins/\gls{inet} coupling exposes directly.
 \autoref{fig:bg:veins} sketches the closed loop used in this work.
 SUMO advances vehicle mobility, TraCI exposes state and control, \gls{veins}/\gls{inet} execute the 802.11p stack and the study's QoS modules, and KPIs are recorded from packet timestamps and MAC counters.
 

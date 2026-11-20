@@ -32,6 +32,11 @@ At high load, that mean corresponds to about 800~packets/s fleet-wide once all o
 Because SUMO injects the fleet progressively, the realized offer in these traces is about 22~thousand Best Effort transmissions per heavy run.
 The crash source adds overlapping Voice repeats during the alert window (eight physical copies, \SI{5}{\milli\second} gap at high load), a sustained stream of roughly 400~physical packets/s while the window is active.
 With a genuine Poisson offer the channel does \emph{not} enter queue overflow: Best Effort P95 stays sub-millisecond under plain \gls{dcf} and EDCA, and overflow counters remain zero.
+An estimate of the channel occupancy is consistent with this.
+At the 12~Mbit/s data rate (\autoref{tab:impl:parameters}), a 420~B Best Effort frame occupies the medium for about 0.37~ms and a 260~B Voice copy for about 0.26~ms, counting the physical-layer preamble and the UDP, IP, LLC, and MAC headers.
+Each frame is decoded by eight to ten neighbors (\autoref{tab:eval:heavy_qos}), so a vehicle near the crash hears about ten Best Effort senders at 8~packets/s each, which occupy about 3\% of its channel time, while the crash source's Voice stream occupies about 10\%.
+With the idle time of AIFS and backoff before each frame, the channel near the crash is busy for roughly one fifth of the time.
+This estimate ignores senders that are sensed but not decoded, but the gap to saturation is large.
 Under this uniform offer, the policies differ mainly in their cost to Best Effort traffic.
 
 \autoref{tab:eval:decisions} summarizes the main experimental decisions of this section and the reason for each.
@@ -412,7 +417,10 @@ A larger Best Effort cost under concentrated load comes from \gls{edca} itself r
 Under plain \gls{dcf} the fleet Best Effort delay stays at 1.9~ms mean and 6.1~ms P95, because the three hotspot senders transmit every packet they generate and their queues never overflow.
 Under every \gls{edca}-based policy the same senders obtain the channel for only about 80\% of their packets; their Best Effort queues fill, about $9\times10^{3}$ packets per run are lost to queue overflow, and the delivered ones wait behind a full queue.
 The fleet Best Effort delay then rises to about 370~ms mean and 775~ms P95 under \texttt{edca\_only}, \texttt{stable}, and \texttt{guarded}, and to 325~ms and 737~ms under emergency, whose lower values again reflect dropped rather than faster packets.
-The hotspot channel operates close to saturation, so a small difference in access overhead between the two \gls{mac} modes can decide whether these queues remain stable; this experiment does not isolate that cause.
+The occupancy estimate of \autoref{sec:eval:setup} shows why this load behaves differently.
+A 1200~B hotspot frame occupies the medium for about 0.89~ms, so the three senders alone, at about 750~frames/s, fill about two thirds of the channel time near the crash.
+With the crash source's Voice stream, the background traffic, and the idle time before each frame, the channel there operates at or near saturation.
+In that regime a small difference in access overhead between the two \gls{mac} modes, such as the one extra slot that \gls{edca} adds to the Best Effort AIFS relative to the \gls{dcf} DIFS, can decide whether these queues remain stable; this experiment does not isolate that cause.
 \autoref{fig:eval:gain_cost} places the trade-off in $\Delta$-space versus plain \gls{dcf}.
 Under high hotspot load, only emergency moves left on the Voice axis.
 Under high uniform load, the adaptive policies do not reduce Voice P95, while Best Effort P95 rises, most of all under \texttt{stable}.
