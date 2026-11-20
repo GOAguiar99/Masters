@@ -105,7 +105,7 @@ It moves to \emph{sending} when its own Voice frames obtain the channel.
 After the Voice transmission ends, or earlier if the send-guard timer fires, it returns to \emph{blocking} while the protection window is still open, and to \emph{listening} once that window has expired.
 Nodes that only overhear Voice traffic never enter \emph{sending}: they remain in \emph{blocking} until the window expires.
 \autoref{fig:sys:fsm} also shows a skip from \emph{listening} directly to \emph{sending} when a local Voice frame wins the channel without a prior demand-triggered block.
-Under \texttt{stable} and \texttt{guarded}, \gls{be} packets remain queued but lose channel-access eligibility while the controller is blocking or sending.
+Under \texttt{stable} and \texttt{guarded}, \gls{be} packets that arrive while the controller is blocking or sending remain queued and do not request the channel until protection ends; a \gls{be} queue that is already contending is not stopped.
 Under \texttt{emergency}, newly arriving \gls{be} packets may additionally be dropped and stale \gls{be} transmission opportunities released.
 The mechanism shapes local contention during the alert period; it does \emph{not} reserve the medium or open scheduled gates.
 

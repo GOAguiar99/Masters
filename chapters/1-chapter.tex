@@ -243,9 +243,9 @@ The policies are defined formally in \autoref{sec:sys:qos}, but the table alread
 			\midrule
 			\texttt{plain} & None: single \gls{dcf} queue, no classifier & Contends normally; every frame receives identical MAC treatment & Not applicable \\
 			\texttt{edca\_only} & DSCP~46 $\rightarrow$ \texttt{AC\_VO}; BE at user priority~0 & Contends normally under standard EDCA parameters & Not applicable \\
-			\texttt{stable} & As \texttt{edca\_only} & Queued, but loses channel-access eligibility while the controller blocks or sends & Comparatively long, sustained \\
-			\texttt{guarded} & As \texttt{edca\_only} & Queued, but loses channel-access eligibility as above & Tighter and shorter \\
-			\texttt{emergency} & As \texttt{edca\_only} & Blocked as above; newly arriving BE packets may additionally be dropped & Aggressive activation \\
+			\texttt{stable} & As \texttt{edca\_only} & Newly arriving BE is queued without requesting the channel while the controller blocks or sends; a queue already contending is not stopped & Comparatively long, sustained \\
+			\texttt{guarded} & As \texttt{edca\_only} & Deferred as above & Tighter and shorter \\
+			\texttt{emergency} & As \texttt{edca\_only} & Newly arriving BE packets may be dropped, and BE channel grants obtained while protection is active are released & Aggressive activation \\
 			\bottomrule
 		\end{tabularx}
 	\end{center}

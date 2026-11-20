@@ -283,7 +283,7 @@ Their semantics match the three-mode controller of \autoref{sec:sys:controller};
 \label{sec:impl:hooks}
 
 \autoref{tab:impl:hooks} summarizes how \texttt{V2xHcf} couples application- and peer-observed Voice activity to Best Effort eligibility.
-The controller does not rewrite backoff arithmetic or introduce scheduled gates; it interposes on channel-access eligibility for Best Effort while Voice frames remain subject to ordinary \gls{edca} contention~\cite{IEEE80211e_2005}.
+The controller does not rewrite backoff arithmetic or introduce scheduled gates; it intercepts the channel-access requests of newly arriving Best Effort frames (and, under \texttt{emergency}, Best Effort channel grants) while Voice frames remain subject to ordinary \gls{edca} contention~\cite{IEEE80211e_2005}.
 
 \begin{table}[htb]
 	\ABNTEXfontereduzida
@@ -304,7 +304,7 @@ The controller does not rewrite backoff arithmetic or introduce scheduled gates;
 			\addlinespace
 			Upper-frame gating &
 			  FSM reports Best Effort blocked (\emph{blocking} or \emph{sending}). &
-			  Best Effort channel-access requests are deferred. \\
+			  Channel-access requests of newly arriving Best Effort frames are deferred; a Best Effort queue that is already contending keeps requesting the channel after each transmission, as in stock \gls*{inet}. \\
 			\addlinespace
 			Own Voice on air &
 			  Start and end of the node's own Voice transmissions. &
@@ -599,7 +599,7 @@ The dissertation experiments use two parallel packages under
   \item \texttt{veins\_inet\_highway\_heavy}: heavy-density corridor with 100~vehicles.
 \end{itemize}
 
-Both packages share the same corridor geometry (\texttt{highway.net.xml}), obstacle file, launchd description, and the same \texttt{omnetpp.ini}, which is byte-for-byte identical in the active tree.
+Both packages share the same corridor geometry (\texttt{highway.net.xml}), obstacle file, launchd description, and the same \texttt{omnetpp.ini}; the two files are identical except that only the heavy package appends the hotspot configurations of \autoref{sec:impl:matrix}.
 Fleet size is selected by the SUMO route file (\texttt{highway.rou.xml}): a fixed vehicle \texttt{node0\_highway} departs at time~0 and becomes OMNeT++ node index~0 (the default crash target), while additional vehicles are injected from SUMO flows.
 Separating density (package) from offered load (ini overlay) is deliberate: the two stress dimensions can be varied independently~\cite{aguiar2026_veins_qos}.
 
