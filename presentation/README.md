@@ -36,3 +36,7 @@ A slide and step can be linked directly: `index.html#/19/3`.
 ## Numbers on the slides
 
 Every number on the slides comes from the dissertation (Chapter 6 tables and text) or from the hotspot `.sca` scalars of the same runs. The hotspot channel-grant shares (DCF 100 %, EDCA/stable/guarded 78 %, emergency 61 %) and the share of the crash node's BE dropped by emergency (≈ 42 %) are three-seed averages of `channelAccessGranted:count` on `edcaf[1]` (or the DCF channel access for `plain`) and `beDroppedWhileBlockedCount`.
+
+## Original source deck
+
+`original/` holds the SBESC 2026 deck this defense deck was trimmed from: the `.pptx`, the full pt-BR HTML (`index.html`, 57 slides) and the English HTML (`index-en.html`, with English figures in `assets/en/`). It is kept as reference only; the defense deck is edited directly in `index.html` above.

@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Priorização de Tráfego Ciente de Acidente em Redes Wi-Fi Veiculares — Defesa de Mestrado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css?v=9">
+<style>
+/* ---------- regras específicas de slides ---------- */
+#s-fsm.step-1 #st-listen rect, #s-fsm.step-2 #st-block rect, #s-fsm.step-3 #st-block rect,
+#s-fsm.step-4 #st-send rect, #s-fsm.step-5 #st-block rect, #s-fsm.step-6 #st-listen rect { fill: #f8eded; stroke: var(--accent); stroke-width: 5; }
+#s-fsm.step-2 #e-demand path, #s-fsm.step-4 #e-txstart path, #s-fsm.step-5 #e-txend path,
+#s-fsm.step-6 #e-expire path, #s-fsm.step-7 #e-skip path, #s-fsm.step-7 #e-closed path { stroke: var(--accent); stroke-width: 5; }
+#s-fsm.step-2 #e-demand text, #s-fsm.step-4 #e-txstart text, #s-fsm.step-5 #e-txend text,
+#s-fsm.step-6 #e-expire text, #s-fsm.step-7 #e-skip text, #s-fsm.step-7 #e-closed text { fill: var(--accent); font-weight: 700; }
+.fsm-caption { position: absolute; left: 96px; right: 96px; bottom: 60px; height: 120px; }
+.fsm-caption > div { position: absolute; inset: 0; opacity: 0; transition: opacity .4s; font-size: 26px; line-height: 1.4; }
+#s-fsm.step-0 .cap0, #s-fsm.step-1 .cap1, #s-fsm.step-2 .cap2, #s-fsm.step-3 .cap3, #s-fsm.step-4 .cap4,
+#s-fsm.step-5 .cap5, #s-fsm.step-6 .cap6, #s-fsm.step-7 .cap7, #s-fsm.step-8 .cap8 { opacity: 1; }
+
+.pkt { offset-path: path('M 150 40 L 150 470 L 610 470 L 610 40'); offset-rotate: 0deg; }
+.play.on .pkt { animation: travel 4.2s var(--ease) infinite; }
+@keyframes travel { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 92% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+.pkt.vo-pk { animation-delay: 2.1s !important; }
+
+.flowline { stroke-dasharray: 10 10; animation: dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -20; } }
+
+.gauge .mk.f { left: 0; } .gauge .mk.f.on { left: var(--x); }
+
+.div-row { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 20px; align-items: center; margin: 14px 0; }
+.div-row .lbl { font-size: 22px; font-weight: 700; }
+.div-row .lbl small { display: block; font-size: 17px; color: var(--muted); font-weight: 500; }
+.div-track { position: relative; height: 44px; background: #f2f0ea; border-radius: 8px; }
+.div-track::before { content: ""; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: #8a93a1; }
+.div-track i { position: absolute; top: 6px; bottom: 6px; border-radius: 6px; transition: width 1s var(--ease); width: 0; }
+.div-track i.neg { right: 50%; background: var(--ok); }
+.div-track i.pos { left: 50%; background: var(--vo); }
+.on .div-track i { width: var(--w); }
+.div-track span { position: absolute; top: 9px; font-size: 19px; font-weight: 800; }
+.sectionlabel span { font-size: 12px; padding: 4px 8px; }
+.card { padding: 20px 24px; }
+.card p, .card li { font-size: 21px; }
+.small, .small li, .small p { font-size: 21px; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- =============================================================== -->
+<!-- 1. TÍTULO -->
+<section class="slide formal-title nochrome" data-time="30">
+  <div class="logos"><img class="ufsc" src="assets/ufsc.png" alt="UFSC"><img class="lisha" src="assets/lisha.png" alt="LISHA"></div>
+  <div class="inst-top"><b>Universidade Federal de Santa Catarina</b><br>Programa de Pós-Graduação em Ciência da Computação<br>Laboratório de Integração Software/Hardware (LISHA)</div>
+  <div class="ttl">
+    <div class="type">Defesa de Dissertação de Mestrado</div>
+    <h1>Crash-Aware Traffic Prioritization in Vehicular Wi-Fi Networks</h1>
+    <div style="font-size:28px;color:#3c4a4a;margin-top:12px">Priorização de Tráfego Ciente de Acidente em Redes Wi-Fi Veiculares</div>
+    <div class="rule"></div>
+  </div>
+  <div class="people"><div class="author">Gabriel de Oliveira Aguiar</div>Orientador: Prof. Dr. Giovani Gracioli<div class="lab">UFSC · PPGCC · LISHA</div></div>
+  <div class="place">Florianópolis, 2026</div>
+  <aside class="notes">Bom dia. Sou o Gabriel e vou apresentar minha dissertação sobre priorização de tráfego ciente de acidente em Wi-Fi veicular, orientada pelo Prof. Giovani Gracioli. A pergunta é simples: um alerta de acidente consegue um serviço sem fio melhor que o tráfego de rotina usando só mecanismos locais e padronizados do 802.11p? E quanto isso custa para o tráfego de rotina? <b>~30 s</b></aside>
+</section>
+
+<!-- APRESENTAÇÃO PESSOAL -->
+<section class="slide" id="s-bio" data-section="Intro" data-time="45" data-anim="bio">
+  <h2><span class="kicker">Apresentação</span>Trajetória</h2>
+  <div class="bio">
+    <div class="me f zoom" data-f="1">
+      <img class="photo" src="assets/foto.webp" alt="Gabriel de Oliveira Aguiar">
+      <div class="nm">Gabriel de Oliveira Aguiar</div>
+      <div class="rl">Engenheiro de IoT &amp; Plataformas de Dados<br>Mestrando em Ciência da Computação (Sistemas Embarcados)</div>
+      <div class="ct">aguiar@lisha.ufsc.br<br>github.com/goaguiar99</div>
+    </div>
+    <div class="tline">
+      <div class="bar"></div>
+      <div class="tstep f left" data-f="1">
+        <div class="yr">até 2023</div>
+        <div class="lg"><img src="assets/ufsc.png" alt="UFSC" style="max-height:58px"></div>
+        <div><h4>Engenharia Eletrônica · UFSC</h4><p>Bacharelado; firmware embarcado em C++ no SpaceLab.</p></div>
+      </div>
+      <div class="tstep f left" data-f="2">
+        <div class="yr">2021 – 2024</div>
+        <div class="lg"><img src="assets/ilha.webp" alt="Ilha Service" style="max-height:46px"></div>
+        <div><h4>Estágio → Engenheiro de Sistemas</h4><p>Servidores Linux, suporte especializado, ITSM/GLPI, monitoramento de SLA e segurança.</p></div>
+      </div>
+      <div class="tstep f left" data-f="3">
+        <div class="yr">2024 – 2026</div>
+        <div class="lg"><img src="assets/lisha.png" alt="LISHA" style="max-height:46px"></div>
+        <div><h4>Mestrado PPGCC · LISHA</h4><p>Aprofundar em sistemas embarcados e redes: QoS em Wi-Fi veicular, TSN sem fio. SBESC 2024 (3º melhor artigo), 2025 e 2026.</p><span class="why">→ querer ir mais fundo nos assuntos</span></div>
+      </div>
+      <div class="tstep f left" data-f="4">
+        <div class="yr">2025 – 2026</div>
+        <div class="lg"><img src="assets/bosch.svg" alt="Bosch" style="max-height:34px"></div>
+        <div><h4>Engenheiro de Software · Bosch</h4><p>Plataforma de provisionamento e telemetria IoT para dispositivos automotivos (AWS, CAN, OBD-II).</p><span class="why">→ a área de estudo na prática</span></div>
+      </div>
+      <div class="tstep now f left" data-f="5">
+        <div class="yr">2026 – hoje</div>
+        <div class="lg"><img src="assets/tractian.svg" alt="Tractian" style="max-height:24px"></div>
+        <div><h4>Engenheiro de IoT / Plataforma · Tractian</h4><p>Indústria 4.0: dados de sensores industriais, Kafka, análise de vibração, AWS e OCI.</p><span class="why">→ IoT industrial em escala</span></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Antes de entrar no trabalho, um pouco de quem eu sou. Me formei em Engenharia Eletrônica na UFSC, onde já trabalhava com firmware embarcado no SpaceLab. Em paralelo comecei como estagiário na Ilha Service e cresci até engenheiro de sistemas, cuidando de servidores Linux, suporte especializado e gestão de serviços de TI. Foi aí que senti vontade de me aprofundar nos fundamentos, e entrei no mestrado do PPGCC, no LISHA, trabalhando com QoS em redes veiculares e TSN sem fio, com artigos no SBESC. Depois fui para a Bosch, aplicando exatamente essa área de estudo: IoT e telemetria para dispositivos automotivos. E hoje estou na Tractian, com IoT industrial e Indústria 4.0, processando dados de sensores em escala. <b>~45 s</b></aside>
+</section>
+
+<!-- 2. ROTEIRO -->
+<section class="slide" data-section="Intro" data-time="30">
+  <h2>Roteiro</h2>
+  <div class="agenda stagger auto">
+    <div>Motivação e problema<small>Alertas de acidente num canal baseado em contenção</small></div>
+    <div>Fundamentação<small>DCF, EDCA, 802.11p/OCB, DSCP→Voice</small></div>
+    <div>Trabalhos relacionados<small>Onde este projeto se posiciona</small></div>
+    <div>Modelo do sistema<small>Rede, tráfego, 5 políticas MAC, controlador</small></div>
+    <div>Implementação<small>Artefato OMNeT++ / INET / Veins / SUMO</small></div>
+    <div>Avaliação<small>Carga uniforme vs. concentrada; proteção vs. custo</small></div>
+    <div>Conclusão<small>Resultados, implicações, limitações, trabalhos futuros</small></div>
+  </div>
+  <aside class="notes">Sete partes. Vou passar rápido pela fundamentação, porque o conteúdo principal é a avaliação, especialmente o contraste entre carga uniforme e carga concentrada. <b>~30 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- MOTIVAÇÃO -->
+<section class="slide" data-section="Motivação" data-time="50">
+  <h2><span class="kicker">Motivação</span>Um acidente na rodovia</h2>
+  <div class="scene" style="height:360px">
+    <div class="lane" style="top:120px"></div>
+    <div class="lane" style="top:240px"></div>
+    <div class="car mover" style="top:45px;--dur:7s;--del:-1s"><span class="bpulse f" data-f="2" style="left:35px;top:17px"></span></div>
+    <div class="car truck mover" style="top:45px;--dur:7s;--del:-4.2s"></div>
+    <div class="car mover" style="top:285px;--dur:8s;--del:-2s"></div>
+    <div class="car mover" style="top:285px;--dur:8s;--del:-6s"></div>
+    <div class="car" style="top:163px;left:300px"></div>
+    <div class="car truck" style="top:163px;left:470px"></div>
+    <div class="car" style="top:163px;left:690px"></div>
+    <div class="car crash f pop" data-f="1" style="top:163px;left:930px"></div>
+    <div class="f" data-f="1" style="position:absolute;left:965px;top:180px">
+      <span class="pulse go" style="--del:0s"></span><span class="pulse go" style="--del:.66s"></span><span class="pulse go" style="--del:1.33s"></span>
+    </div>
+    <div class="f" data-f="2">
+      <span class="bpulse go" style="left:335px;top:180px;--del:.2s"></span>
+      <span class="bpulse go" style="left:525px;top:180px;--del:.9s"></span>
+      <span class="bpulse go" style="left:725px;top:180px;--del:.5s"></span>
+      <span class="bpulse go" style="left:200px;top:300px;--del:1.1s"></span>
+      <span class="bpulse go" style="left:1180px;top:60px;--del:.4s"></span>
+      <span class="bpulse go" style="left:1300px;top:300px;--del:1.3s"></span>
+    </div>
+    <div class="f" data-f="1" style="position:absolute;left:1010px;top:150px;color:#ffd8cf;font-weight:800;font-size:22px">ALERTA DE ACIDENTE (Voice)</div>
+    <div class="f" data-f="2" style="position:absolute;left:30px;top:16px;color:#cfe2fa;font-weight:700;font-size:20px">tráfego de rotina de todos os veículos (Best Effort)</div>
+  </div>
+  <div class="grid2 mt">
+    <div class="f up" data-f="3"><p style="margin:0">Os veículos de trás muitas vezes <b>não enxergam</b> o perigo, encoberto pelo trânsito ou pela geometria da via.<br>Um aviso V2X enviado pelo veículo acidentado pode chegar <b>antes</b> de o perigo ficar visível.</p></div>
+    <div class="f up callout" data-f="4">O alerta é <b>raro</b>, mas só tem valor se chegar <b>a tempo</b>, e ele é enviado justamente quando o canal está <b>mais ocupado</b>.</div>
+  </div>
+  <div class="cite">ETSI EN 302 637-3 (DENM): avisos de perigo na via são enviados pelo veículo que detecta o evento.</div>
+  <aside class="notes">Imaginem uma rodovia. Um veículo se acidenta (clique) e transmite um alerta. Os veículos de trás muitas vezes não enxergam o perigo, porque o trânsito ou a via o escondem, então o aviso pelo rádio pode chegar antes de eles verem. Mas (clique) todos os outros veículos continuam enviando mensagens de rotina no mesmo canal. Na Europa esse é o mecanismo DENM. Ponto-chave: o alerta é raro, o valor dele depende quase todo da pontualidade, e ele é enviado justamente quando o canal está mais carregado. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="45">
+  <h2><span class="kicker">O que é chegar "a tempo"?</span>3GPP TS 22.186: requisitos de platooning</h2>
+  <table class="t">
+    <tr><th>Grau de automação</th><th>Req.</th><th class="num">Payload (B)</th><th class="num">Taxa (msg/s)</th><th class="num">Latência máx.</th><th class="num">Confiabilidade</th><th class="num">Alcance mín.</th></tr>
+    <tr class="f left hl" data-f="1"><td>Mais baixo</td><td>[R.5.2-004]</td><td class="num">300–400</td><td class="num">30</td><td class="num"><b>25 ms</b></td><td class="num">90 %</td><td class="num">—</td></tr>
+    <tr class="f left" data-f="2"><td>Baixo</td><td>[R.5.2-005]</td><td class="num">6500</td><td class="num">50</td><td class="num">20 ms</td><td class="num">—</td><td class="num">350 m</td></tr>
+    <tr class="f left" data-f="2"><td>Mais alto</td><td>[R.5.2-006]</td><td class="num">50–1200</td><td class="num">30</td><td class="num"><b>10 ms</b></td><td class="num">99,99 %</td><td class="num">80 m</td></tr>
+    <tr class="f left" data-f="2"><td>Alto</td><td>[R.5.2-007]</td><td class="num">—</td><td class="num">—</td><td class="num">20 ms</td><td class="num">—</td><td class="num">180 m</td></tr>
+  </table>
+  <div class="grid2 mt2">
+    <div class="f up callout" data-f="3"><b>25 ms end-to-end</b> é um limite de referência conservador e muito citado, não a linha mais rigorosa.</div>
+    <div class="f up callout gray" data-f="4">São metas <b>de aplicação, end-to-end</b>. Dão a <b>ordem de grandeza</b> para ler as tails medidas na MAC; não são um teste de aprovação da MAC.</div>
+  </div>
+  <div class="cite">3GPP TS 22.186, Tabela 5.2-1 (troca de informação dentro do pelotão; 130 km/h). A TS 22.261 remete os KPIs concretos de V2X à TS 22.186.</div>
+  <aside class="notes">O que significa "a tempo"? A 3GPP TS 22.186 dá números para platooning. O menor grau de automação pede 25 ms end-to-end com 90% de confiabilidade; o maior chega a 10 ms com 99,99%. Uso 25 ms como limite de referência em toda a apresentação. Importante: são budgets de aplicação, end-to-end. Uso apenas para colocar em perspectiva as tails que meço na MAC, não como critério de aprovação. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="45">
+  <h2><span class="kicker">Tecnologia de acesso</span>Por que IEEE 802.11p?</h2>
+  <p class="muted" style="margin-top:-18px">Os avisos precisam funcionar onde quer que os veículos se encontrem, inclusive em trechos <b>sem unidades de beira de estrada nem cobertura celular</b>.</p>
+  <div class="grid4 mt stagger auto">
+    <div class="card dim"><span class="tag red">✕</span><h3 class="mt">Cabeado / TSN</h3><p>Consegue limitar o atraso, mas <b>não conecta veículos em movimento</b>.</p></div>
+    <div class="card dim"><span class="tag red">✕</span><h3 class="mt">Celular via estação-base</h3><p>Depende de cobertura; toda mensagem <b>passa pela infraestrutura</b>.</p></div>
+    <div class="card dim"><span class="tag">~</span><h3 class="mt">Sidelink NR-V2X (Modo 2)</h3><p>Troca direta, mas usa sensoriamento + escalonamento semipersistente: <b>outra tecnologia de rádio</b>.</p></div>
+    <div class="card hot"><span class="tag green">✓</span><h3 class="mt">IEEE 802.11p / 11bd</h3><p>Troca direta, <b>sem infraestrutura e sem sincronização</b>. 5,9 GHz, 10 MHz; camada de acesso do ITS-G5.</p></div>
+  </div>
+  <div class="f up callout mt2">Mas o 802.11p (e o sucessor 802.11bd) mantêm <b>acesso totalmente distribuído, baseado em contenção</b>: <b>não há scheduler central</b> que reserve transmissões para tráfego urgente.</div>
+  <aside class="notes">Por que 802.11p? TSN cabeado limita atraso, mas não entre carros em movimento. Celular via estação-base precisa de cobertura. O sidelink NR-V2X permite troca direta, mas é outra tecnologia de rádio, com escalonamento próprio. O 802.11p funciona sem infraestrutura nem sincronização e já é padronizado; o 802.11bd o melhora e mantém compatibilidade. O problema (clique): o acesso ao canal continua totalmente distribuído e aleatório. Ninguém consegue reservar o canal para o alerta. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="55">
+  <h2><span class="kicker">O problema</span>O alerta espera atrás dos frames de rotina</h2>
+  <div class="f play" data-f="1" style="position:relative;margin:20px 0 0 170px;width:1180px">
+    <div class="tl" style="margin-bottom:30px">
+      <div class="tl-label">Vizinhos (BE)</div>
+      <div class="blk be seq" style="left:0;width:140px;--d:0s">BE</div>
+      <div class="blk be seq" style="left:240px;width:140px;--d:.9s">BE</div>
+      <div class="blk be seq" style="left:480px;width:140px;--d:1.8s">BE</div>
+      <div class="blk be seq" style="left:900px;width:140px;--d:3.2s">BE</div>
+    </div>
+    <div class="tl">
+      <div class="tl-label">Alerta (VO)</div>
+      <div class="seq" style="position:absolute;left:52px;bottom:58px;--d:.3s;font-size:18px;color:var(--vo);font-weight:800">▼ alerta pronto</div>
+      <div class="blk difs seq" style="left:140px;width:60px;--d:.6s">DIFS</div>
+      <div class="blk slot seq" style="left:200px;width:40px;--d:.75s">4</div>
+      <div class="blk freeze seq" style="left:240px;width:140px;--d:.9s">congelado</div>
+      <div class="blk difs seq" style="left:380px;width:60px;--d:1.4s">DIFS</div>
+      <div class="blk slot seq" style="left:440px;width:40px;--d:1.6s">3</div>
+      <div class="blk freeze seq" style="left:480px;width:140px;--d:1.8s">congelado</div>
+      <div class="blk difs seq" style="left:620px;width:60px;--d:2.3s">DIFS</div>
+      <div class="blk slot seq" style="left:680px;width:40px;--d:2.5s">2</div>
+      <div class="blk slot seq" style="left:720px;width:40px;--d:2.65s">1</div>
+      <div class="blk vo seq" style="left:760px;width:140px;--d:2.85s">TX ALERTA</div>
+    </div>
+    <div class="seq" style="--d:3.4s;position:absolute;left:60px;width:700px;top:190px;border-top:3px solid var(--vo);text-align:center;color:var(--vo);font-weight:800;font-size:22px;padding-top:6px">o atraso de acesso cresce com a carga ao redor</div>
+  </div>
+  <ul class="mt2" style="margin-top:80px">
+    <li class="f up" data-f="2">Com mais carga, <b>atraso e jitter</b> ficam instáveis; o <b>backoff do alerta congela</b> toda vez que outra estação transmite.</li>
+    <li class="f up" data-f="3">Marcações de QoS <b>não são tratadas de forma consistente</b> entre implantações.</li>
+    <li class="f up" data-f="4">Cada milissegundo de espera tira tempo de reação dos veículos de trás.</li>
+  </ul>
+  <div class="cite">RFC 8325; Wu et al. (congelamento contínuo do backoff no 802.11p).</div>
+  <aside class="notes">Aqui está o problema no tempo. Os vizinhos continuam enviando frames Best Effort (clique para tocar). O alerta fica pronto, espera o canal, espera um DIFS, decrementa um slot, e outro frame ocupa o meio, então o contador congela. Isso se repete, e o alerta só sai depois de vários períodos congelados. O atraso de acesso cresce com a carga ao redor, justamente quando o alerta mais importa. Além disso, as marcações de QoS não são tratadas de forma consistente na prática; volto a isso adiante. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="55">
+  <h2><span class="kicker">Ferramentas existentes e a lacuna</span>Os mecanismos padrão existem, mas não bastam</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1">
+      <h3>Camada de rede: DSCP 46 (EF)</h3>
+      <p>O codepoint Expedited Forwarding marca o tráfego mais sensível a atraso.</p>
+      <p class="f up" data-f="3" style="color:var(--vo)">✕ O mapeamento DSCP→802.11 é uma <b>política local</b>, e os padrões são <b>ambíguos</b>.</p>
+    </div>
+    <div class="card f right" data-f="2">
+      <h3>Camada de enlace: EDCA</h3>
+      <p>Quatro access categories (BK, BE, VI, <b class="vo">VO</b>); Voice recebe os parâmetros de contenção mais favoráveis.</p>
+      <p class="f up" data-f="4" style="color:var(--vo)">✕ Oferece <b>preferência estatística</b>, não garantias, e o tráfego urgente só ganha às custas dos outros.</p>
+    </div>
+  </div>
+  <div class="row mt2">
+    <div class="col card f up" data-f="5"><h3>Abordagens mais fortes na literatura</h3><p>Schedulers por slots inspirados em TSN, MACs preemptivos/cooperativos, alocação de recursos no sidelink celular…</p><p>…mas exigem <b>sincronização, infraestrutura ou mais maquinário de protocolo</b>, difíceis de garantir numa VANET descentralizada.</p></div>
+    <div class="col card hot f up" data-f="6"><h3>A lacuna</h3><p>Um projeto <b>local e orientado a eventos</b> que isole <b>um fluxo disparado pelo acidente</b> do tráfego background e meça <b>tanto</b> a proteção <b>quanto</b> a penalidade.</p><p>Só 802.11p padrão, portanto <b>implantável nó a nó</b>.</p></div>
+  </div>
+  <aside class="notes">Existem ferramentas padrão. Na camada IP, o DSCP 46, Expedited Forwarding, marca tráfego urgente. Na camada de enlace, o EDCA tem quatro access categories, e Voice disputa o canal de forma mais agressiva. Mas (clique) o mapeamento DSCP→802.11 é política local e os padrões são ambíguos; (clique) o EDCA é preferência estatística, não garantia, e o tráfego urgente ganha às custas de alguém. A literatura propõe controle mais forte, mas com sincronização ou infraestrutura. A lacuna: um projeto local e orientado a eventos para um único fluxo de acidente, que meça o ganho e o custo, só com 802.11p padrão. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="50">
+  <h2><span class="kicker">Este trabalho</span>Uma estratégia focada de priorização ciente de acidente</h2>
+  <div class="row" style="align-items:stretch">
+    <div class="col">
+      <div class="card f left" data-f="1" style="border-left:8px solid var(--be)"><h3 class="be-t">Todos os veículos</h3><p><b>Multicast Best Effort</b> periódico, DSCP 0, durante todo o cenário.</p></div>
+      <div class="card f left mt" data-f="2" style="border-left:8px solid var(--vo)"><h3 class="vo-t">Um veículo acidentado</h3><p><b>Rajadas de alerta</b> temporárias, DSCP 46, mapeadas explicitamente para <b>Voice</b>, sobrepostas ao seu próprio BE.</p></div>
+      <div class="card f left mt" data-f="4"><h3>Simulado</h3><p>Pilha de rede OMNeT++ + INET, acoplada ao tráfego rodoviário do SUMO via Veins.</p></div>
+    </div>
+    <div class="col f right" data-f="3">
+      <h3>Cinco políticas MAC, construídas com mecanismos padrão</h3>
+      <div class="stack mt">
+        <div class="layer"><span><span class="pol plain">plain</span>&nbsp; baseline DCF</span><span class="tiny">sem diferenciação</span></div>
+        <div class="layer"><span><span class="pol edca">edca_only</span>&nbsp; EDCA + DSCP 46→VO</span><span class="tiny">QoS padrão</span></div>
+        <div class="layer study"><span><span class="pol stable">stable</span>&nbsp; janelas de proteção longas</span><span class="tiny">retém BE</span></div>
+        <div class="layer study"><span><span class="pol guarded">guarded</span>&nbsp; janelas curtas e justas</span><span class="tiny">retém BE</span></div>
+        <div class="layer study"><span><span class="pol emergency">emergency</span>&nbsp; ativação agressiva</span><span class="tiny">retém + <b>descarta</b> BE</span></div>
+      </div>
+      <p class="small mt">Perfis adaptativos = pontos fixos de projeto numa <b>fronteira proteção versus custo</b>. O objetivo é latência <b>estatística</b> melhor sob congestionamento, não garantias determinísticas.</p>
+    </div>
+  </div>
+  <aside class="notes">O que proponho é uma estratégia de priorização feita com peças padrão, não um novo protocolo MAC. Todo veículo envia multicast Best Effort periódico. Um veículo designado como acidentado envia bursts temporários de alerta marcados com DSCP 46 e mapeadas explicitamente para Voice. Sobre isso, comparo cinco políticas MAC: DCF puro, EDCA padrão com o mapeamento explícito, e três extensões adaptativas, stable, guarded e emergency, que seguram o Best Effort concorrente enquanto há alertas; a emergency também pode descartá-lo. São pontos fixos de projeto. O objetivo é melhora estatística sob congestionamento, não garantias rígidas. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="45">
+  <h2><span class="kicker">Objetivos</span>O que a dissertação se propõe a fazer</h2>
+  <div class="callout f up" data-f="1"><b>Objetivo geral.</b> Avaliar, por simulação, se o tráfego Voice disparado por acidente consegue um serviço sem fio <b>mensuravelmente melhor</b> que o Best Effort comum em Wi-Fi veicular descentralizado, usando apenas mecanismos MAC <b>locais e compatíveis com o padrão</b>, e <b>quantificar o custo</b> para o tráfego comum.</div>
+  <div class="grid2 stagger f" data-f="2" style="margin-top:18px;gap:20px">
+    <div class="card"><h3>1 · Modelo de tráfego</h3><p>Modelo de duas classes disparado por acidente no Veins/INET: multicast BE em todos + bursts de alerta DSCP 46 mapeados para VO por um classificador explícito.</p></div>
+    <div class="card"><h3>2 · Controlador adaptativo</h3><p>Extensão local leve do EDCA com três modos, exposta como uma escada de cinco políticas, do DCF à emergency preemption.</p></div>
+    <div class="card"><h3>3 · Matriz de avaliação</h3><p>10 / 100 veículos × perfis de carga × concentração espacial (uniforme vs. hotspot); atraso, jitter, reach, perdas na MAC.</p></div>
+    <div class="card"><h3>4 · Diretrizes de engenharia</h3><p>Caracterizar a fronteira proteção-versus-custo e dizer <b>quando</b> a supressão deve ser ligada.</p></div>
+  </div>
+  <p class="tiny f" data-f="3" style="margin-top:18px">Escopo: uma fonte de acidente, duas classes, multicast one-hop numa rodovia, sem APs/RSUs/coordenação central, sem pilha ITS completa, sem limites determinísticos.</p>
+  <aside class="notes">O objetivo geral: avaliar por simulação se o Voice disparado por acidente consegue um serviço mensuravelmente melhor que o Best Effort com mecanismos apenas locais e padronizados, e quantificar o custo. Quatro objetivos específicos: construir o modelo de tráfego de duas classes, projetar o controlador adaptativo como uma escada de cinco políticas, avaliá-lo em densidade, carga e concentração espacial, e transformar os resultados em orientação sobre quando ligar a supressão. Escopo: uma fonte de acidente, duas classes, one-hop, sem infraestrutura, e resultados apenas estatísticos. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Motivação" data-time="45">
+  <h2><span class="kicker">Contribuições</span>Três contribuições</h2>
+  <div class="grid3 stagger auto">
+    <div class="card"><div class="big" style="color:var(--accent)">1</div><h3 class="mt">Controlador MAC adaptativo</h3><p>Construído só com mecanismos padrão: mapeamento explícito DSCP 46→Voice mais uma extensão local de três modos do EDCA, aplicado a um modelo de duas classes disparado por acidente.</p></div>
+    <div class="card"><div class="big" style="color:var(--accent)">2</div><h3 class="mt">Artefato open-source</h3><p>Simulação Veins/INET comparando DCF, EDCA e três perfis adaptativos em matrizes de densidade e carga.</p><p class="tiny mono">github.com/GOAguiar99/veins-inet-qos</p></div>
+    <div class="card hot"><div class="big" style="color:var(--accent)">3</div><h3 class="mt">Quando ligar a supressão</h3><p>Uma fronteira proteção-versus-custo que <b>depende de como a carga está distribuída</b>: nenhum ganho de Voice sob carga uniforme; ganho real sob contenção concentrada perto do acidente.</p></div>
+  </div>
+  <aside class="notes">Três contribuições: o controlador, feito só com mecanismos padrão; o artefato de simulação open-source; e, principalmente, orientação de engenharia. O benefício da proteção depende de como a carga está distribuída em torno do acidente. Volto a esses números no final. <b>~45 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- FUNDAMENTAÇÃO -->
+<section class="slide" data-section="Fundamentação" data-time="55">
+  <h2><span class="kicker">Fundamentação · IEEE 802.11 DCF</span>CSMA/CA com backoff exponencial binário</h2>
+  <div class="f play" data-f="1" style="position:relative;margin:10px 0 0 170px;width:1100px">
+    <div class="tl" style="margin-bottom:22px">
+      <div class="tl-label">Estação A</div>
+      <div class="blk difs seq" style="left:160px;width:80px;--d:.4s">DIFS</div>
+      <div class="blk slot seq" style="left:240px;width:40px;--d:.6s">5</div>
+      <div class="blk slot seq" style="left:280px;width:40px;--d:.8s">4</div>
+      <div class="blk freeze seq" style="left:320px;width:200px;--d:1s">congelado em 3</div>
+      <div class="blk difs seq" style="left:520px;width:80px;--d:1.5s">DIFS</div>
+      <div class="blk slot seq" style="left:600px;width:40px;--d:1.7s">3</div>
+      <div class="blk slot seq" style="left:640px;width:40px;--d:1.9s">2</div>
+      <div class="blk slot seq" style="left:680px;width:40px;--d:2.1s">1</div>
+      <div class="blk be seq" style="left:720px;width:200px;--d:2.3s">A transmite</div>
+    </div>
+    <div class="tl" style="margin-bottom:22px">
+      <div class="tl-label">Estação B</div>
+      <div class="blk difs seq" style="left:160px;width:80px;--d:.4s">DIFS</div>
+      <div class="blk slot seq" style="left:240px;width:40px;--d:.6s">2</div>
+      <div class="blk slot seq" style="left:280px;width:40px;--d:.8s">1</div>
+      <div class="blk vo seq" style="left:320px;width:200px;--d:1s;background:#7b8494">B transmite</div>
+    </div>
+    <div class="tl">
+      <div class="tl-label">Meio</div>
+      <div class="blk seq" style="left:0;width:160px;--d:0s;background:#3b4659">ocupado</div>
+      <div class="blk seq" style="left:320px;width:200px;--d:1s;background:#3b4659">ocupado</div>
+      <div class="blk seq" style="left:720px;width:200px;--d:2.3s;background:#3b4659">ocupado</div>
+    </div>
+  </div>
+  <div class="grid2 mt2">
+    <ul class="small">
+      <li class="f up" data-f="2">Meio livre por um <b>DIFS</b> → transmite; senão sorteia backoff uniforme em [0, W−1].</li>
+      <li class="f up" data-f="2">A contagem só avança com o meio livre; fica <b>congelada</b> com o meio ocupado.</li>
+      <li class="f up" data-f="3">Unicast: sem ACK → a CW dobra (CW<sub>min</sub> → CW<sub>max</sub>). Quadros de grupo <b>não têm ACK</b>, então isso nunca ocorre com eles.</li>
+    </ul>
+    <div>
+      <div class="callout f up" data-f="4" style="font-size:24px"><b>O congelamento não é anomalia.</b> Faz parte do DCF básico e domina o atraso de acesso quando o canal fica ocupado repetidamente.</div>
+      <div class="callout gray f up mt" data-f="5" style="font-size:24px">Toda estação com a mesma CW tem a <b>mesma prioridade</b>: o DCF <b>não diferencia QoS</b>. Esse é o baseline <span class="pol plain">plain</span>.</div>
+    </div>
+  </div>
+  <div class="cite">Bianchi (2000); IEEE 802.11; Wu et al.</div>
+  <aside class="notes">Revisão rápida do DCF (clique para tocar). O meio está ocupado; as duas estações esperam um DIFS e sorteiam backoffs aleatórios: A sorteia 5, B sorteia 2. Elas decrementam juntas; B chega a zero e transmite, então o contador de A congela em 3. Depois que B termina, outro DIFS, A retoma do 3 e finalmente transmite. Duas coisas importam: o congelamento é normal e domina o atraso sob carga; e o DCF trata todo frame igual, então não oferece diferenciação. Esse é o baseline plain. Em multicast não há ACK, então a contention window nunca dobra. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="35">
+  <h2><span class="kicker">Fundamentação · Análise de saturação</span>O que o modelo de Bianchi nos diz</h2>
+  <p class="muted" style="margin-top:-16px">Cadeia de Markov 2-D sobre (estágio de backoff, contador) com probabilidade de colisão constante <i>p</i> → probabilidade de transmissão por slot τ → throughput de saturação.</p>
+  <div class="grid3 mt stagger f" data-f="1">
+    <div class="card"><div class="big">①</div><h3 class="mt">Um teto de capacidade</h3><p>O throughput de saturação é a carga estável máxima; além dela, filas e atraso crescem sem limite.</p></div>
+    <div class="card"><div class="big">②</div><h3 class="mt">Mais estações, pior</h3><p>No <b>Basic Access</b>, único modo para frames curtos e de grupo (sem RTS/CTS), colisões desperdiçam intervalos longos.</p></div>
+    <div class="card hot"><div class="big">③</div><h3 class="mt">Parâmetros fixos</h3><p>A melhor CW depende do tamanho da rede, mas CW<sub>min</sub> e <i>m</i> são fixos, então o throughput pode ficar bem abaixo do máximo possível. Isso motiva <b>controle local e adaptativo</b>.</p></div>
+  </div>
+  <div class="callout gray mt2 f up" data-f="2">No <span class="pol plain">plain</span>, qualquer diferença de atraso BE/VO vem dos <b>processos de tráfego</b> (emissores, janela de atividade, payload), <b>não</b> de priorização.</div>
+  <aside class="notes">O modelo clássico de saturação de Bianchi dá três resultados úteis: um teto de throughput além do qual o atraso explode; degradação à medida que as estações aumentam, no Basic Access, que é o modo dos frames curtos e multicast; e o fato de que a melhor contention window depende do tamanho da rede, enquanto o padrão a fixa. Esse último ponto é a motivação mais antiga para controle adaptativo local. Além disso, no DCF puro, qualquer diferença entre o atraso do alerta e do background vem do próprio tráfego, não de prioridade. <b>~35 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="55">
+  <h2><span class="kicker">Fundamentação · IEEE 802.11e EDCA</span>Quatro access categories, quatro entidades de backoff</h2>
+  <div class="row">
+    <div class="col" style="flex:1.25">
+      <div class="callout blue" style="font-size:26px;text-align:center">AIFS[AC] = SIFS + AIFSN[AC] · slot</div>
+      <div class="race f mt" data-f="1">
+        <div class="lab" style="color:#9aa2ae">AC_BK</div><div class="track" style="opacity:.45"><div class="aifs" style="width:245px"></div><span style="left:12px">AIFSN 7</span><span style="left:270px">CW 15–1023 · vazia no estudo</span></div>
+        <div class="lab be-t">AC_BE</div><div class="track"><div class="aifs" style="width:105px"></div><div class="bo" style="left:105px;width:520px;--c:var(--be);--t:2.6s"></div><span style="left:12px">AIFSN 3</span><span style="left:640px">CW 15–1023</span></div>
+        <div class="lab" style="color:#9aa2ae">AC_VI</div><div class="track" style="opacity:.45"><div class="aifs" style="width:70px"></div><span style="left:12px">2</span><span style="left:270px">CW 7–15 · vazia no estudo</span></div>
+        <div class="lab vo-t">AC_VO</div><div class="track"><div class="aifs" style="width:70px"></div><div class="bo" style="left:70px;width:105px;--c:var(--vo);--t:.6s"></div><span style="left:12px">2</span><span style="left:200px">CW 3–7</span><span class="win" style="--t:.8s">vence primeiro ✓</span></div>
+      </div>
+      <p class="tiny mt">Valores configurados (padrões QoS de BSS do INET): AIFSN BK/BE/VI/VO = 7/3/2/2; CW<sub>min</sub>–CW<sub>max</sub>: BK, BE 15–1023; VI 7–15; VO 3–7. Filas 128/128/64/32.</p>
+    </div>
+    <div class="col">
+      <ul class="small">
+        <li class="f up" data-f="2">Cada AC: fila própria, AIFSN, CW<sub>min</sub>, CW<sub>max</sub>, TXOP opcional.</li>
+        <li class="f up" data-f="3">AIFSN / CW menores → maior chance de vencer a contenção.</li>
+        <li class="f up" data-f="4"><b>Colisão virtual</b>: duas ACs locais expiram juntas → vence a de maior prioridade; a perdedora age como se tivesse colidido.</li>
+        <li class="f up" data-f="5">UP→AC: UP 6,7 → <b class="vo">VO</b>; 4,5 → VI; 0,3 → <b class="be">BE</b>; 1,2 → BK.</li>
+      </ul>
+      <div class="callout mt f up" data-f="6" style="font-size:24px">A política <span class="pol edca">edca_only</span> e todas as adaptativas herdam <b>exatamente</b> esses parâmetros.</div>
+    </div>
+  </div>
+  <div class="cite">IEEE 802.11e; Mangold et al. (2003); Kong et al. (2004); RFC 8325.</div>
+  <aside class="notes">O EDCA introduz quatro access categories, cada uma com fila e parâmetros de contenção próprios. O tempo de espera antes do backoff é o AIFS: SIFS mais AIFSN slots. Aqui (clique) uma corrida com os valores que configurei: Voice espera dois slots e sorteia numa janela de 3 a 7; Best Effort espera três slots e sorteia de 15 até 1023. Em média Voice vence primeiro, mas é aleatório: o Best Effort ainda pode sortear um número pequeno. Dentro de uma estação, se duas categorias expiram juntas, vence a mais alta. A edca_only e todos os perfis adaptativos usam exatamente esses parâmetros; os adaptativos nunca os reajustam. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="50">
+  <h2><span class="kicker">Fundamentação · Limites do EDCA</span>Prioridade estatística, sem garantias</h2>
+  <div class="grid3 stagger auto">
+    <div class="card"><p class="quote">Os atrasos do EDCA “increase unpredictably” com a carga.<span class="who">Mangold et al. (2003)</span></p></div>
+    <div class="card"><p class="quote">O EDCA oferece “only performance differentiation among the categories”.<span class="who">Kosek-Szott et al. (2012)</span></p></div>
+    <div class="card"><p class="quote">Prioridade estrita pode levar fluxos de baixa prioridade a “zero-valued throughput”.<span class="who">Malik et al.</span></p></div>
+  </div>
+  <div class="grid2 mt2">
+    <div class="card f left" data-f="1"><h3>Consequência 1</h3><p>Mapear alertas para AC_VO deve ajudá-los, mas o ganho é <b>condicionado ao regime de contenção</b>, nunca um limite.</p></div>
+    <div class="card f right" data-f="2"><h3>Consequência 2</h3><p>Sacrificar o tráfego de menor prioridade é o <b>custo normal</b> da priorização. Os perfis adaptativos tornam esse custo <b>limitado, disparado por evento e medido</b>.</p></div>
+  </div>
+  <div class="row mt f up" data-f="3">
+    <div class="col callout gray" style="font-size:22px"><b>EDCA adaptativo</b> (ex.: Adaptive EDCF) <b>reajusta</b> CW/persistência <b>continuamente</b> a partir de medições.</div>
+    <div class="col callout" style="font-size:22px"><b>Este trabalho</b> mantém os parâmetros do EDCA <b>inalterados</b> e só controla <b>quem pode disputar</b> (BE), e apenas <b>enquanto há um alerta ativo</b>.</div>
+  </div>
+  <aside class="notes">A literatura é clara: os atrasos do EDCA crescem de forma imprevisível com a carga, o EDCA oferece diferenciação e não limites, e prioridade estrita pode zerar as classes mais baixas. Duas consequências: colocar alertas em Voice deve ajudar, mas depende do regime; e prejudicar o Best Effort é o preço normal da prioridade, então eu o torno limitado, disparado pelo evento e medido. Isso também separa meu trabalho do EDCA adaptativo, que reajusta parâmetros continuamente. Eu não mexo nos parâmetros; só controlo quem pode disputar, e só durante o alerta. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="55">
+  <h2><span class="kicker">Fundamentação · IEEE 802.11p</span>Operação OCB e frames endereçados a grupo</h2>
+  <div class="row">
+    <div class="col">
+      <svg viewBox="0 0 660 300" width="660" height="300">
+        <g class="f" data-f="1">
+          <text x="150" y="26" text-anchor="middle" font-size="22" font-weight="700" fill="#5d6675">BSS com infraestrutura</text>
+          <rect x="125" y="60" width="50" height="40" rx="6" fill="#004A4A"/><text x="150" y="86" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">AP</text>
+          <g stroke="#9aa6b8" stroke-width="3"><line x1="150" y1="100" x2="60" y2="220"/><line x1="150" y1="100" x2="150" y2="230"/><line x1="150" y1="100" x2="240" y2="220"/></g>
+          <g fill="#8fb3e3"><rect x="30" y="220" width="60" height="28" rx="7"/><rect x="120" y="230" width="60" height="28" rx="7"/><rect x="210" y="220" width="60" height="28" rx="7"/></g>
+          <text x="150" y="290" text-anchor="middle" font-size="16" fill="#5d6675">associação, coordenador, GCR…</text>
+        </g>
+        <g class="f" data-f="2">
+          <text x="500" y="26" text-anchor="middle" font-size="22" font-weight="700" fill="#980000">OCB (802.11p)</text>
+          <g stroke="#980000" stroke-width="2.5" stroke-dasharray="6 6" class="flowline"><line x1="420" y1="120" x2="560" y2="110"/><line x1="420" y1="120" x2="480" y2="230"/><line x1="560" y1="110" x2="480" y2="230"/><line x1="560" y1="110" x2="620" y2="220"/></g>
+          <g fill="#8fb3e3"><rect x="390" y="106" width="60" height="28" rx="7"/><rect x="530" y="96" width="60" height="28" rx="7"/><rect x="450" y="216" width="60" height="28" rx="7"/><rect x="590" y="206" width="60" height="28" rx="7"/></g>
+          <text x="520" y="290" text-anchor="middle" font-size="16" fill="#5d6675">BSSID curinga · sem assoc./autent.</text>
+        </g>
+      </svg>
+      <ul class="small">
+        <li class="f up" data-f="3">5,9 GHz, <b>OFDM de 10 MHz</b>: símbolos mais longos, mais robustez a multipercurso/Doppler.</li>
+        <li class="f up" data-f="3">Multicanal IEEE 1609.4 (CCH/SCH) <b>não é modelado</b>: um canal compartilhado, PHY fixa entre as políticas.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="callout f up" data-f="4" style="font-size:23px"><b>Quadros de grupo (RFC 9119):</b> sem ACK → sem retransmissão e sem backoff por perda; costumam ir numa taxa básica baixa, ocupando mais tempo de ar. Perdas ≥ 5 % não são incomuns.</div>
+      <table class="t compact mt f up" data-f="5">
+        <tr><th>Mecanismo</th><th>BSS</th><th>OCB (aqui)</th></tr>
+        <tr><td>ACK / retransmissão de frames de grupo</td><td>Não</td><td>Não</td></tr>
+        <tr><td>GCR Retry / Block Ack (802.11aa)</td><td>Sim*</td><td>Não</td></tr>
+        <tr><td>Multicast direcionado (AP)</td><td>Sim</td><td>Não</td></tr>
+        <tr><td>Prioridade EDCA via UP→AC</td><td>Sim</td><td><b>Sim</b></td></tr>
+        <tr><td>Controle de carga agregada DCC</td><td>N/A</td><td>Possível (desl.)</td></tr>
+        <tr class="hl"><td>Supressão de BE disparada por evento</td><td>N/A</td><td>Avaliada</td></tr>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">O 802.11p opera fora do contexto de um BSS (OCB): não há access point nem associação; os veículos simplesmente trocam frames em canais de 10 MHz em 5,9 GHz. Não modelo o multicanal do 1609.4; uso um canal compartilhado e mantenho a PHY idêntica entre as políticas. O importante: os alertas são multicast, e frames de grupo não têm ACK nem retransmissão, então o emissor nunca fica sabendo das perdas. As correções do 802.11aa, como o GCR, precisam de access point e não existem em OCB. Dessa lista, a única ferramenta disponível em OCB é a prioridade do EDCA, mais a supressão que eu avalio. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="35">
+  <h2><span class="kicker">Fundamentação · ITS-G5</span>DCC vs. supressão disparada por evento</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1"><span class="tag blue">DCC (ETSI)</span><h3 class="mt">Sempre ativo, agregado</h3><ul class="small"><li>Mede a <b>Channel Busy Ratio</b>.</li><li>Controle de potência / taxa / acesso.</li><li>Mantém a carga <b>total</b> de cada estação numa região-alvo, <b>em todas as classes</b>.</li></ul></div>
+    <div class="card hot f right" data-f="2"><span class="tag red">Este trabalho</span><h3 class="mt">Disparado por evento, por classe</h3><ul class="small"><li>Atua <b>só enquanto há um alerta ativo</b>.</li><li>Diferencia <b>BE de VO</b> em vez de reduzir tudo.</li><li>Remodela temporariamente <b>quem disputa</b>.</li></ul></div>
+  </div>
+  <div class="callout green mt2 f up" data-f="3"><b>Complementares:</b> o DCC mantém o ponto de operação de longo prazo longe do colapso; a supressão remodela a contenção durante uma janela curta de alerta. O DCC está <b>desligado</b> na avaliação para isolar as cinco políticas, então <b>não há alegação de superioridade</b> sobre o DCC.</div>
+  <aside class="notes">As implantações europeias também têm o DCC, que mede a taxa de ocupação do canal e reduz a carga total de cada estação, sempre ligado e em todas as classes. Meu mecanismo é diferente: atua só durante o alerta e só sobre o Best Effort. Eles são complementares. Desligo o DCC de propósito para isolar as políticas, então não afirmo superar o DCC. <b>~35 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="60">
+  <h2><span class="kicker">Fundamentação · Do DSCP à interface aérea</span>O mapeamento para Voice não é automático</h2>
+  <div class="row" style="align-items:center">
+    <div style="width:380px">
+      <p class="small" style="margin:0">Alerta marcado como <b>EF</b> (RFC 3246): DSCP <b>46</b></p>
+      <div class="mt" id="bits-wrap"><div class="bits"><span>1</span><span>0</span><span>1</span><span>1</span><span>1</span><span>0</span></div></div>
+      <p class="tiny">RFC 4594: tráfego inelástico e de baixo atraso → EF, pré-marcado na origem. Alertas de acidente não são telefonia, mas têm o mesmo perfil de tráfego.</p>
+    </div>
+    <div class="col">
+      <div class="f left" data-f="1">
+        <p class="small" style="margin:0 0 8px"><b>Heurística comum:</b> prioridade de usuário = os 3 MSBs do DSCP</p>
+        <div class="flow"><div class="node">DSCP 46<b>101110</b></div><div class="arrow">→</div><div class="node">3 MSB<b>101 = 5</b></div><div class="arrow">→</div><div class="node">UP <b>5</b></div><div class="arrow">→</div><div class="node bad">AC_VI<b>Video ✕</b></div></div>
+      </div>
+      <div class="f left mt2" data-f="2">
+        <p class="small" style="margin:0 0 8px"><b>Recomendação da RFC 8325</b> (não padrão): EF → UP 6</p>
+        <div class="flow"><div class="node">DSCP 46<b>EF</b></div><div class="arrow">→</div><div class="node">mapa explícito<b>QosClassifier</b></div><div class="arrow">→</div><div class="node">UP <b>6</b></div><div class="arrow">→</div><div class="node good">AC_VO<b>Voice ✓</b></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2 mt2">
+    <div class="callout f up" data-f="3" style="font-size:23px"><b>Nenhum padrão define o mapeamento DSCP→UP default.</b> As tabelas do 802.11 são exemplos, não recomendações. O BE fica DSCP 0 → UP 0 → AC_BE.</div>
+    <div class="callout gray f up" data-f="4" style="font-size:23px">RFC 8325: o 802.11 <b>não consegue oferecer um PHB EF</b>, porque a contenção é aleatória. O mapeamento é <b>necessário, mas não suficiente</b>, e qualquer nó que marque alta prioridade pode monopolizar o tempo de ar (vetor de DoS).</div>
+  </div>
+  <aside class="notes">Como a intenção de "urgente" chega ao rádio? O alerta é marcado como Expedited Forwarding, DSCP 46, binário 101110. Muitas pilhas (clique) pegam os três bits mais significativos como prioridade de usuário: 101 é 5, que cai em Video, não em Voice. A RFC 8325 (clique) recomenda mapear EF explicitamente para a prioridade 6, que cai em Voice; é o que meu QosClassifier faz. E não existe padrão default, por isso digo que não é automático. A mesma RFC alerta que, mesmo com o mapeamento certo, o 802.11 não consegue entregar um serviço EF de verdade, porque a contenção continua aleatória. Essa lacuna residual é o motivo de existirem os perfis adaptativos. Ela também aponta o risco de negação de serviço, que retomo na discussão. <b>~60 s</b></aside>
+</section>
+
+<section class="slide" data-section="Fundamentação" data-time="40">
+  <h2><span class="kicker">Fundamentação · Metodologia</span>Simulação com acoplamento bidirecional</h2>
+  <svg viewBox="0 0 1400 420" width="1400" height="420" class="f" data-f="1">
+    <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5d6675"/></marker></defs>
+    <rect x="20" y="120" width="300" height="170" rx="18" fill="#fff" stroke="#cfd5de" stroke-width="2"/>
+    <text x="170" y="175" text-anchor="middle" font-size="34" font-weight="800" fill="#004A4A">SUMO</text>
+    <text x="170" y="212" text-anchor="middle" font-size="19" fill="#5d6675">microssimulação rodoviária</text>
+    <text x="170" y="240" text-anchor="middle" font-size="19" fill="#5d6675">faixas · car-following · parada</text>
+    <rect x="530" y="140" width="250" height="130" rx="18" fill="#fbf4f4" stroke="#980000" stroke-width="2"/>
+    <text x="655" y="198" text-anchor="middle" font-size="30" font-weight="800" fill="#980000">Veins</text>
+    <text x="655" y="232" text-anchor="middle" font-size="18" fill="#5d6675">acoplamento TraCI</text>
+    <rect x="990" y="40" width="390" height="340" rx="18" fill="#fff" stroke="#cfd5de" stroke-width="2"/>
+    <text x="1185" y="88" text-anchor="middle" font-size="30" font-weight="800" fill="#004A4A">OMNeT++</text>
+    <text x="1185" y="116" text-anchor="middle" font-size="17" fill="#5d6675">motor de eventos discretos</text>
+    <rect x="1020" y="140" width="330" height="210" rx="14" fill="#eef5fc" stroke="#1f5f99" stroke-width="2"/>
+    <text x="1185" y="185" text-anchor="middle" font-size="28" font-weight="800" fill="#1f5f99">INET</text>
+    <text x="1185" y="218" text-anchor="middle" font-size="17" fill="#5d6675">IPv4 / UDP · MAC + PHY 802.11p</text>
+    <text x="1185" y="244" text-anchor="middle" font-size="17" fill="#5d6675">propagação de rádio</text>
+    <text x="1185" y="290" text-anchor="middle" font-size="17" fill="#980000" font-weight="700">+ módulos do estudo: apps, classificador,</text>
+    <text x="1185" y="314" text-anchor="middle" font-size="17" fill="#980000" font-weight="700">MAC instrumentada, HCF adaptativa</text>
+    <path d="M320 180 L530 180" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <text x="425" y="168" text-anchor="middle" font-size="17" fill="#5d6675">posições, direções</text>
+    <path d="M530 240 L320 240" stroke="#980000" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <text x="425" y="270" text-anchor="middle" font-size="17" fill="#980000">parar veículo acidentado</text>
+    <path d="M780 205 L990 205" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <path d="M990 225 L780 225" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+  </svg>
+  <div class="grid2 mt">
+    <p class="small f up" data-f="2">Um acidente muda <b>tanto</b> o padrão de tráfego <b>quanto</b> a vizinhança de rádio, então o modelo de rede precisa <b>controlar</b> veículos (parar o nó acidentado) enquanto o SUMO devolve a mobilidade.</p>
+    <p class="small f up" data-f="3">A PHY é fixa entre as políticas (free-space, obstáculos binários, threshold SNIR fixo), então <b>as diferenças isolam contenção e queueing</b>.</p>
+  </div>
+  <div class="cite">Varga (OMNeT++); INET Framework; Sommer, German &amp; Dressler (Veins, 2011); Alvarez Lopez et al. (SUMO, 2018).</div>
+  <aside class="notes">Método: simulação. O OMNeT++ é o motor e o INET fornece a pilha de rede e a MAC e PHY do 802.11p. O Veins acopla tudo ao SUMO, o simulador de tráfego rodoviário, via TraCI, nos dois sentidos: o SUMO envia posições e o lado de rede pode comandar um veículo, o que uso para parar o veículo acidentado. A PHY é idêntica para todas as políticas, então as diferenças medidas vêm de contenção e queueing. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- TRABALHOS RELACIONADOS -->
+<section class="slide" data-section="Trabalhos relacionados" data-time="50">
+  <h2><span class="kicker">Trabalhos relacionados</span>Posicionamento no espaço de projeto</h2>
+  <div class="row">
+    <svg viewBox="0 0 900 620" width="810" height="558" class="tax">
+      <rect x="80" y="357" width="319" height="183" fill="#f3e6e6" class="f" data-f="5" rx="6"/>
+      <text x="90" y="530" font-size="17" fill="#980000" class="f" data-f="5" font-weight="700">região de operação da dissertação</text>
+      <line x1="80" y1="540" x2="860" y2="540" stroke="#17202e" stroke-width="2"/>
+      <line x1="80" y1="540" x2="80" y2="50" stroke="#17202e" stroke-width="2"/>
+      <line x1="460" y1="540" x2="460" y2="50" stroke="#cfd5de" stroke-dasharray="6 6"/>
+      <line x1="80" y1="300" x2="860" y2="300" stroke="#cfd5de" stroke-dasharray="6 6"/>
+      <text x="80" y="575" font-size="18" fill="#5d6675">local / sem infraestrutura</text>
+      <text x="860" y="575" font-size="18" fill="#5d6675" text-anchor="end">sincronização / infra / celular →</text>
+      <text x="40" y="540" font-size="18" fill="#5d6675" transform="rotate(-90 40 540)">por evento / curta duração</text>
+      <text x="40" y="200" font-size="18" fill="#5d6675" transform="rotate(-90 40 200)">sempre ativo →</text>
+      <g class="f pop" data-f="1"><circle cx="247" cy="146" r="10" fill="#7b8494"/><text x="264" y="152">EDCA adaptativo</text></g>
+      <g class="f pop" data-f="1"><circle cx="293" cy="98" r="10" fill="#7b8494"/><text x="310" y="104">DCC</text></g>
+      <g class="f pop" data-f="2"><circle cx="612" cy="276" r="10" fill="#1f5f99"/><text x="596" y="282" text-anchor="end">TSNCtl</text></g>
+      <g class="f pop" data-f="2"><circle cx="658" cy="242" r="10" fill="#1f5f99"/><text x="676" y="248">CFC-MAC</text></g>
+      <g class="f pop" data-f="2"><circle cx="718" cy="310" r="10" fill="#1f5f99"/><text x="736" y="316">PRP-MAC</text></g>
+      <g class="f pop" data-f="2"><circle cx="779" cy="166" r="10" fill="#1f5f99"/><text x="762" y="172" text-anchor="end">NR-V2X Modo 2</text></g>
+      <g class="f pop" data-f="2"><circle cx="810" cy="118" r="10" fill="#1f5f99"/><text x="794" y="124" text-anchor="end">TSN sem fio / OFDMA</text></g>
+      <g class="f pop" data-f="3"><circle cx="369" cy="386" r="10" fill="#2a8080"/><text x="386" y="392">SkipCCH</text></g>
+      <g class="f pop" data-f="4"><circle cx="186" cy="473" r="15" fill="#980000"/><text x="210" y="480" font-weight="800" font-size="22" fill="#980000">Este trabalho</text></g>
+    </svg>
+    <div class="col">
+      <div class="card f right" data-f="1" style="border-left:6px solid #7b8494"><h3>Regulação sempre ativa</h3><p>EDCA adaptativo, DCC: contínuos, agregados.</p></div>
+      <div class="card f right" data-f="2" style="border-left:6px solid #1f5f99;margin-top:14px"><h3>Coordenação mais forte</h3><p>Slots, preemption + árbitro, TDMA, celular, TSN/OFDMA: exigem sincronização ou infraestrutura.</p></div>
+      <div class="card f right" data-f="3" style="border-left:6px solid #2a8080;margin-top:14px"><h3>Momento da contenção / custo</h3><p><i>Quando</i> o tráfego disputa importa tanto quanto <i>qual</i> AC.</p></div>
+      <p class="tiny f" data-f="4" style="margin-top:10px">Posições qualitativas, a partir das premissas declaradas por cada trabalho.</p>
+    </div>
+  </div>
+  <aside class="notes">Organizo os trabalhos relacionados num espaço de projeto: na horizontal, local versus exigir sincronização, infraestrutura ou maquinário celular; na vertical, disparado por evento versus sempre ativo. EDCA adaptativo e DCC são locais mas sempre ativos. A família de coordenação mais forte, TSNCtl, CFC-MAC, PRP-MAC, sidelink NR-V2X, TSN sem fio e OFDMA, exige sincronização ou infraestrutura. O SkipCCH trata de quando o tráfego pode disputar. Meu trabalho fica no canto local e disparado por evento. As posições são qualitativas. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Trabalhos relacionados" data-time="50">
+  <h2><span class="kicker">Trabalhos relacionados · Controle de contenção mais forte</span>Funcionam, mas pressupõem mais</h2>
+  <table class="t compact stagger f" data-f="1">
+    <tr><th>Abordagem</th><th>Mecanismo</th><th>Exige</th><th>Relação com este trabalho</th></tr>
+    <tr><td><b>TSNCtl</b> (Feraudo et al.)</td><td>Escala de slots tipo TSN na aplicação + FSM para pelotões (slots de 2 ms ↓ colisões)</td><td>Sincronização, líder do pelotão</td><td>Líder + sincronização; preprint arXiv</td></tr>
+    <tr><td><b>PRP-MAC</b> (Li et al.)</td><td>Prioridade preemptiva com retomada + árbitro; UAV recebe BSMs</td><td>Apoio de UAV / RSU</td><td>Infraestrutura + MAC mais complexa</td></tr>
+    <tr><td><b>CFC-MAC</b> (Linn et al.)</td><td>TDMA cooperativo sem contenção, estimativa de trajetória, reparo de slots</td><td>Sincronização de slots, sinalização</td><td>Contrato TDMA</td></tr>
+    <tr><td><b>NR-V2X Modo 2</b> (Thabet et al.)</td><td>Seleção autônoma adaptativa de recursos / SPS</td><td>Sidelink celular</td><td>Outra tecnologia de acesso de rádio</td></tr>
+    <tr class="hlb"><td><b>SBESC 2025 anterior</b> (Aguiar &amp; Gracioli)</td><td>TSN sem fio: escalas do Time-Aware Shaper para QoS V2X</td><td>Sincronização, gate-control lists</td><td>Precursor: TAS e sincronização <b>abandonados</b> aqui</td></tr>
+  </table>
+  <div class="callout mt2 f up" data-f="2">Nenhum isola a pergunta específica: uma <b>pilha EDCA local e padrão</b>, mais mapeamento explícito DSCP→Voice e <b>supressão breve de BE</b>, protege um burst multicast de acidente? E <b>a que custo</b>?</div>
+  <aside class="notes">O controle de contenção mais forte de fato reduz colisões e atraso: o TSNCtl com slots sincronizados para pelotões, o PRP-MAC com preemption sob um árbitro em UAV, o CFC-MAC com TDMA cooperativo, e o sidelink NR-V2X. Meu próprio artigo anterior, do SBESC 2025, explorou TSN sem fio com escalas do Time-Aware Shaper, que exigem sincronização; esta dissertação abandona isso. Nenhum deles responde à pergunta específica: o que EDCA local mais supressão breve consegue fazer, e a que custo. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Trabalhos relacionados" data-time="50">
+  <h2><span class="kicker">Trabalhos relacionados · Outras famílias</span>Dinâmica de contenção, regulação de carga, TSN/OFDMA</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><span class="tag">dinâmica de contenção</span><h3 class="mt">Congelamento de backoff (Wu et al.)</h3><p>Congelamentos repetidos ⇒ mais atraso de acesso; atraso e PDR pioram com a densidade. <b>A tendência se transfere</b>; os números absolutos, não.</p><h3 class="mt">SkipCCH (Garrido Abenza et al.)</h3><p>Evita bursts CCH→SCH no 1609.4: <b>quando</b> o tráfego disputa importa.</p></div>
+    <div class="card f up" data-f="2"><span class="tag">custo da proteção</span><h3 class="mt">Surveys de QoS</h3><p>Proteção sempre tem custo, inclusive starvation das ACs baixas. Reportar só ganhos de Voice é <b>incompleto</b>.</p><p class="small"><b>⇒ a fronteira proteção-vs-custo é um resultado principal aqui.</b></p><h3 class="mt">Adaptive EDCF, DCC</h3><p>Reguladores maduros, <b>sempre ativos</b> e agregados: complementares.</p></div>
+    <div class="card f up" data-f="3"><span class="tag">só contraste</span><h3 class="mt">TSN cabeado</h3><p>Portas 802.1Qbv, síntese de escalas, shapers híbridos: Ethernet comutada + sincronização.</p><h3 class="mt">TSN sem fio / OFDMA</h3><p>Preempção, TWT, alocação de RUs, trigger frames: BSS industrial, Wi-Fi 6/7 + AP.</p></div>
+  </div>
+  <div class="callout gray mt f up" data-f="4" style="font-size:22px">Juntos, motivam um projeto que <b>(i)</b> atua quando a contenção é relevante para o acidente, <b>(ii)</b> remodela <i>quem</i> disputa, não só o mapeamento de filas, e <b>(iii)</b> reporta as penalidades do BE com a mesma seriedade dos ganhos de Voice.</div>
+  <aside class="notes">Outras três famílias. Dinâmica de contenção: Wu et al. mostram que o congelamento aumenta o atraso com a densidade, e o SkipCCH mostra que o momento importa. Custo da proteção: os surveys de QoS insistem que priorizar tem custo, por isso trato a penalidade do Best Effort como resultado principal. Reguladores sempre ativos como Adaptive EDCF e DCC são complementares. TSN e OFDMA cito apenas como contraste: exigem rede cabeada, sincronização ou pontos de acesso. Juntos, motivam os três princípios de projeto embaixo. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Trabalhos relacionados" data-time="40">
+  <h2><span class="kicker">Lacuna de pesquisa</span>Um mecanismo local com quatro propriedades</h2>
+  <ul class="check stagger f" data-f="1" style="font-size:30px">
+    <li>Usa só <b>filas EDCA padrão</b> e um mapeamento <b>explícito DSCP→Voice</b>.</li>
+    <li>Adiciona supressão de BE <b>apenas enquanto há atividade Voice relacionada ao acidente</b>.</li>
+    <li>Não precisa de <b>sincronização de relógio, RSU, UAV ou sidelink celular</b>.</li>
+    <li>É avaliado <b>em conjunto</b> quanto à proteção de Voice <b>e</b> ao custo para o BE, em densidade e carga.</li>
+  </ul>
+  <table class="t compact mt2 f up" data-f="2">
+    <tr><th>Este trabalho</th><th>Mecanismo</th><th>Exige</th><th>Alvo</th><th>Vantagem</th></tr>
+    <tr class="hl"><td>EDCA ciente de acidente</td><td>DSCP→VO + supressão de BE por evento</td><td>Apenas EDCA OCB local</td><td>VO do acidente vs multicast BE</td><td>Fronteira proteção–custo; sem sincronização / infra / sidelink</td></tr>
+  </table>
+  <aside class="notes">Então a lacuna é um mecanismo local com quatro propriedades: EDCA padrão mais mapeamento explícito; supressão só enquanto o alerta está ativo; sem sincronização nem infraestrutura; e uma avaliação conjunta de proteção e custo. É a última linha da tabela comparativa da dissertação. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- MODELO DO SISTEMA -->
+<section class="slide" data-section="Modelo do sistema" data-time="45">
+  <h2><span class="kicker">Modelo do sistema · Rede</span>Multicast one-hop em canal compartilhado</h2>
+  <div class="row">
+    <svg viewBox="0 0 760 420" width="760" height="420">
+      <rect x="0" y="150" width="760" height="150" rx="16" fill="#2d3442"/>
+      <line x1="0" y1="225" x2="760" y2="225" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-dasharray="30 30"/>
+      <circle cx="420" cy="190" r="10" fill="none" stroke="#b03030" stroke-width="3" class="f" data-f="2"><animate attributeName="r" from="10" to="250" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" from="1" to="0" dur="2.4s" repeatCount="indefinite"/></circle>
+      <g fill="#8fb3e3"><rect x="70" y="175" width="70" height="32" rx="8"/><rect x="230" y="175" width="70" height="32" rx="8"/><rect x="560" y="245" width="70" height="32" rx="8"/><rect x="150" y="245" width="70" height="32" rx="8"/><rect x="640" y="175" width="70" height="32" rx="8"/></g>
+      <rect x="385" y="175" width="70" height="32" rx="8" fill="#b03030" class="f pop" data-f="2"/>
+      <text x="420" y="160" text-anchor="middle" font-size="18" font-weight="800" fill="#b03030" class="f" data-f="2">fonte do acidente</text>
+      <g class="f" data-f="3">
+        <rect x="80" y="40" width="60" height="50" rx="8" fill="#c3cbd8"/><text x="110" y="72" text-anchor="middle" font-size="18" font-weight="700">AP</text>
+        <rect x="320" y="40" width="70" height="50" rx="8" fill="#c3cbd8"/><text x="355" y="72" text-anchor="middle" font-size="18" font-weight="700">RSU</text>
+        <rect x="550" y="40" width="160" height="50" rx="8" fill="#c3cbd8"/><text x="630" y="72" text-anchor="middle" font-size="18" font-weight="700">scheduler</text>
+        <g stroke="#b03030" stroke-width="4" stroke-opacity=".75"><line x1="70" y1="30" x2="150" y2="100"/><line x1="150" y1="30" x2="70" y2="100"/><line x1="310" y1="30" x2="400" y2="100"/><line x1="400" y1="30" x2="310" y2="100"/><line x1="540" y1="30" x2="720" y2="100"/><line x1="720" y1="30" x2="540" y2="100"/></g>
+      </g>
+      <text x="380" y="340" text-anchor="middle" font-size="20" fill="#5d6675" class="f" data-f="1">um canal IEEE 802.11p, OCB, toda estação disputa</text>
+    </svg>
+    <div class="col">
+      <ul class="small">
+        <li class="f up" data-f="1">Os veículos trocam frames <b>diretamente</b>; nenhum AP, RSU ou coordenador encaminha ou aloca.</li>
+        <li class="f up" data-f="2"><b>Multicast one-hop</b>: todo frame pode ser recebido por todos os veículos ao alcance. Sem ACK, sem retransmissão.</li>
+        <li class="f up" data-f="4">PHY: 5,9 GHz, 10 MHz; free-space path loss, obstrução <b>binária</b>; sem fading/shadowing.</li>
+        <li class="f up" data-f="5"><b>A conectividade é fixa</b> entre as cinco políticas ⇒ diferenças BE/VO refletem <b>queueing e contenção</b>.</li>
+      </ul>
+      <p class="tiny mt f" data-f="6">Fora do escopo: DCC, gating estilo TSN, múltiplas fontes de acidente, &gt;2 classes, alegações de latência determinística ou de pior caso.</p>
+    </div>
+  </div>
+  <aside class="notes">O modelo do sistema, começando pela rede. Os veículos compartilham um canal 802.11p em modo OCB. Sem access point, RSU ou scheduler. A comunicação é multicast one-hop: o que o veículo acidentado envia pode ser recebido por todos ao alcance, sem ACKs. A PHY é simples, free-space com obstrução binária, e idêntica para todas as políticas, então as diferenças vêm de contenção e queueing. Fora do escopo: DCC, gating, múltiplos acidentes, mais de duas classes e limites de pior caso. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Modelo do sistema" data-time="55">
+  <h2><span class="kicker">Modelo do sistema · Tráfego</span>Duas classes: background + overlay do acidente</h2>
+  <div class="f play" data-f="1" style="position:relative;height:200px;margin-left:170px;width:1180px">
+    <div class="tl" style="height:60px;margin-bottom:28px">
+      <div class="tl-label">todo veículo</div>
+      <div class="blk be seq" style="left:20px;width:14px;height:36px;--d:.0s"></div><div class="blk be seq" style="left:95px;width:14px;height:36px;--d:.1s"></div>
+      <div class="blk be seq" style="left:130px;width:14px;height:36px;--d:.15s"></div><div class="blk be seq" style="left:260px;width:14px;height:36px;--d:.25s"></div>
+      <div class="blk be seq" style="left:310px;width:14px;height:36px;--d:.3s"></div><div class="blk be seq" style="left:455px;width:14px;height:36px;--d:.4s"></div>
+      <div class="blk be seq" style="left:520px;width:14px;height:36px;--d:.5s"></div><div class="blk be seq" style="left:610px;width:14px;height:36px;--d:.55s"></div>
+      <div class="blk be seq" style="left:700px;width:14px;height:36px;--d:.6s"></div><div class="blk be seq" style="left:790px;width:14px;height:36px;--d:.7s"></div>
+      <div class="blk be seq" style="left:880px;width:14px;height:36px;--d:.75s"></div><div class="blk be seq" style="left:930px;width:14px;height:36px;--d:.8s"></div>
+      <div class="blk be seq" style="left:1060px;width:14px;height:36px;--d:.9s"></div><div class="blk be seq" style="left:1140px;width:14px;height:36px;--d:.95s"></div>
+      <div class="seq" style="--d:1s;position:absolute;right:0;top:-26px;font-size:18px;color:var(--be);font-weight:700">Poisson: intervalo exponencial sorteado antes de cada pacote · DSCP 0</div>
+    </div>
+    <div class="tl" style="height:80px">
+      <div class="tl-label">veículo acidentado</div>
+      <div class="seq" style="--d:1.2s;position:absolute;left:300px;bottom:60px;font-size:17px;color:var(--vo);font-weight:800">▼ alerta lógico t₀</div>
+      <div class="blk vo seq" style="left:310px;width:16px;--d:1.4s"></div>
+      <div class="blk vo seq" style="left:356px;width:16px;--d:1.55s"></div>
+      <div class="blk vo seq" style="left:398px;width:16px;--d:1.7s"></div>
+      <div class="seq" style="--d:1.8s;position:absolute;left:300px;top:84px;font-size:17px;color:var(--muted)">cópia i em max(0, i·gap + U(−J, J))</div>
+      <div class="seq" style="--d:2.0s;position:absolute;left:620px;bottom:60px;font-size:17px;color:var(--vo);font-weight:800">▼ próximo alerta (período)</div>
+      <div class="blk vo seq" style="left:630px;width:16px;--d:2.2s"></div>
+      <div class="blk vo seq" style="left:676px;width:16px;--d:2.35s"></div>
+      <div class="blk vo seq" style="left:720px;width:16px;--d:2.5s"></div>
+      <div class="blk be seq" style="left:180px;width:14px;height:36px;--d:.2s"></div><div class="blk be seq" style="left:500px;width:14px;height:36px;--d:.45s"></div><div class="blk be seq" style="left:960px;width:14px;height:36px;--d:.85s"></div>
+    </div>
+  </div>
+  <table class="t compact mt2 f up" data-f="2" style="margin-top:56px">
+    <tr><th>Perfil</th><th>BE (todo veículo)</th><th>Alerta VO (veículo acidentado, durante a janela)</th></tr>
+    <tr><td><code>low</code></td><td>exp. média 500 ms, 200 B</td><td>a cada 120 ms, 150 B · 3 cópias · gap 20 ms · jitter 5 ms</td></tr>
+    <tr><td><code>medium</code></td><td>exp. média 250 ms, 320 B</td><td>a cada 75 ms, 180 B · 4 cópias · gap 15 ms · jitter 5 ms</td></tr>
+    <tr class="hl"><td><code>high</code></td><td>exp. média 125 ms, 420 B</td><td>a cada 20 ms, 260 B · <b>8 cópias · gap 5 ms</b> · jitter 2 ms</td></tr>
+  </table>
+  <p class="small f up" data-f="3">Sintético de propósito (não segue escalas CAM/DENM): isolar os trade-offs da MAC. O alerta é <b>sobreposto</b>: o veículo acidentado continua enviando seu próprio BE. A repetição segue a prática de broadcast robusto.</p>
+  <aside class="notes">Tráfego. Todo veículo envia multicast Best Effort com chegadas de Poisson: o intervalo exponencial é sorteado de novo antes de cada pacote. Durante a janela do acidente, o veículo acidentado também envia alertas. Cada alerta lógico é repetido algumas vezes, com um intervalo e um jitter aleatório, prática comum em broadcast robusto. Três perfis de carga: na carga alta cada veículo envia em média um pacote BE a cada 125 ms, e o alerta vem a cada 20 ms com oito cópias a 5 ms de distância. É intencionalmente um caso de estresse. O tráfego é sintético para isolar os efeitos da MAC. Notem que o alerta é somado: o nó acidentado continua enviando seu próprio BE. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Modelo do sistema" data-time="50">
+  <h2><span class="kicker">Modelo do sistema · QoS</span>Cinco políticas MAC, uma escada de comparação</h2>
+  <div class="ladder">
+    <div class="stepbox f up" data-f="1" style="left:0;height:150px;background:var(--plain)"><h3>plain</h3><p>DCF sem QoS. Fila única, sem classificador: todo frame tratado igual.</p></div>
+    <div class="stepbox f up" data-f="2" style="left:286px;height:220px;background:var(--edca)"><h3>edca_only</h3><p>EDCA padrão. DSCP 46 → AC_VO; todo o resto UP 0 (BE).</p></div>
+    <div class="stepbox f up" data-f="3" style="left:572px;height:300px;background:var(--stable)"><h3>stable</h3><p>edca_only + controlador adaptativo com janelas de proteção <b>longas e sustentadas</b>. O BE fica na fila, mas não pode acessar o canal.</p></div>
+    <div class="stepbox f up" data-f="3" style="left:858px;height:380px;background:var(--guarded)"><h3>guarded</h3><p>Mesmo controlador com janelas <b>mais curtas e justas</b> (supressão limitada).</p></div>
+    <div class="stepbox f up" data-f="4" style="left:1144px;height:470px;background:var(--emergency)"><h3>emergency</h3><p>Ativação <b>agressiva</b>. BE recém-chegado <b>pode ser descartado</b>; grants BE obsoletos são liberados.</p></div>
+    <div class="f" data-f="5" style="position:absolute;left:0;top:10px;font-size:24px;color:var(--muted)">mais agressivo com o Best Effort ⟶</div>
+  </div>
+  <p class="small f up" data-f="5" style="margin-top:14px">Os perfis adaptativos (<code>edca_v2x_vo_*</code>) <b>herdam o edca_only sem alterações</b> e só acrescentam o controlador local; eles moldam a contenção, <b>não</b> reservam o meio.</p>
+  <aside class="notes">Esta é a escada de comparação. DCF puro: sem diferenciação. edca_only: EDCA padrão com o alerta mapeado para Voice. Depois, três perfis adaptativos que acrescentam o mesmo controlador local com configurações diferentes: stable mantém janelas de proteção longas, guarded usa janelas curtas e justas, e os dois apenas seguram o Best Effort. A emergency ativa de forma agressiva e também pode descartar o Best Effort que chega. Cada degrau acrescenta um mecanismo, para que eu possa atribuir os efeitos. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" id="s-fsm" data-section="Modelo do sistema" data-time="75">
+  <h2><span class="kicker">Modelo do sistema · Controlador adaptativo</span>FSM local de três modos</h2>
+  <span class="f" data-f="1"></span><span class="f" data-f="2"></span><span class="f" data-f="3"></span><span class="f" data-f="4"></span>
+  <span class="f" data-f="5"></span><span class="f" data-f="6"></span><span class="f" data-f="7"></span><span class="f" data-f="8"></span>
+  <svg viewBox="0 0 1400 560" width="1400" height="560" class="fsm" style="margin-top:-20px">
+    <defs><marker id="arf" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 z" fill="#5d6675"/></marker></defs>
+    <g class="edge" id="e-skip"><path d="M220 210 C 220 40, 1180 40, 1180 210" stroke-dasharray="10 8" marker-end="url(#arf)"/><text x="700" y="58" text-anchor="middle">início de TX VO própria sem blocking prévio</text></g>
+    <g class="edge" id="e-closed"><path d="M1180 350 C 1180 545, 220 545, 220 350" stroke-dasharray="10 8" marker-end="url(#arf)"/><text x="700" y="536" text-anchor="middle">fim de TX VO / send-guard, janela já fechada</text></g>
+    <g class="edge" id="e-demand"><path d="M380 265 L 535 265" marker-end="url(#arf)"/><text x="458" y="168" text-anchor="middle">demanda VO</text><text x="458" y="192" text-anchor="middle" font-size="15">(fila local ≥ threshold ou VO ouvido)</text></g>
+    <g class="edge" id="e-txstart"><path d="M860 250 L 1015 250" marker-end="url(#arf)"/><text x="938" y="236" text-anchor="middle">início TX VO própria</text></g>
+    <g class="edge" id="e-txend"><path d="M1020 310 C 965 360, 915 360, 865 310" marker-end="url(#arf)"/><text x="940" y="378" text-anchor="middle" font-size="15">fim TX / guard, janela aberta</text></g>
+    <g class="edge" id="e-expire"><path d="M700 350 C 700 460, 260 460, 250 355" marker-end="url(#arf)"/><text x="475" y="468" text-anchor="middle">janela de proteção expira</text></g>
+    <g class="state" id="st-listen"><rect x="60" y="210" width="320" height="140" rx="20"/><text x="220" y="262" text-anchor="middle">listening</text><text class="d" x="220" y="294" text-anchor="middle">padrão · EDCA comum</text><text class="d" x="220" y="318" text-anchor="middle">monitora fila VO + o ar</text></g>
+    <g class="state" id="st-block"><rect x="540" y="210" width="320" height="140" rx="20"/><text x="700" y="262" text-anchor="middle">blocking</text><text class="d" x="700" y="294" text-anchor="middle">BE adiado (emergency descarta)</text><text class="d" x="700" y="318" text-anchor="middle">janela finita, com teto</text></g>
+    <g class="state" id="st-send"><rect x="1020" y="210" width="320" height="140" rx="20"/><text x="1180" y="262" text-anchor="middle">sending</text><text class="d" x="1180" y="294" text-anchor="middle">frames VO próprios no ar</text><text class="d" x="1180" y="318" text-anchor="middle">BE continua bloqueado</text></g>
+  </svg>
+  <div class="fsm-caption">
+    <div class="cap0">Uma máquina de estados local controla <b>a elegibilidade do BE para acessar o canal</b>. Os parâmetros das filas EDCA não mudam.</div>
+    <div class="cap1"><b>listening</b>: o modo padrão. O nó roda EDCA comum e observa sua própria fila Voice e o ar.</div>
+    <div class="cap2"><b>Um único frame Voice ouvido</b> basta para iniciar ou estender a proteção. O threshold de fila vale só para Voice gerado <b>localmente</b>.</div>
+    <div class="cap3">Em <b>blocking</b>: <span class="pol stable">stable</span>/<span class="pol guarded">guarded</span> mantêm o BE na fila, mas inelegível; <span class="pol emergency">emergency</span> também pode <b>descartar</b> BE novo e liberar grants BE obsoletos.</div>
+    <div class="cap4">O nó acidentado entra em <b>sending</b> quando seu próprio frame Voice obtém o canal. O BE continua bloqueado.</div>
+    <div class="cap5">Ao fim da TX Voice, ou quando o timer send-guard dispara, volta para <b>blocking</b> se a janela ainda está aberta.</div>
+    <div class="cap6">Quando a janela de proteção (mais o guard) expira → volta para <b>listening</b>. Nós que só <b>ouvem</b> Voice nunca entram em <i>sending</i>.</div>
+    <div class="cap7">Transições extras: um frame Voice local pode ganhar o canal direto de <i>listening</i> e voltar para lá se a janela já estiver fechada.</div>
+    <div class="cap8">O mecanismo <b>molda a contenção local</b> durante o alerta. Ele <b>não</b> reserva o meio nem abre janelas escalonadas.</div>
+  </div>
+  <aside class="notes">O coração das políticas adaptativas: uma máquina de três estados por nó. Passo a passo. Listening é o padrão; o nó roda EDCA normal. Quando há demanda Voice, seja a fila Voice local passando de um threshold, seja o nó ouvindo qualquer frame Voice, ele vai para blocking. Um frame ouvido basta. Em blocking, stable e guarded mantêm o BE na fila sem poder disputar; a emergency pode descartar BE novo. Quando o próprio frame Voice do nó acidentado obtém o canal, ele está em sending; após a transmissão, ou um guard timer, volta para blocking se a janela está aberta e para listening quando ela expira. Nós que só ouvem nunca entram em sending. As arestas tracejadas são os atalhos. Importante: isso molda a contenção; não reserva o meio. <b>~75 s</b></aside>
+</section>
+
+<section class="slide" data-section="Modelo do sistema" data-time="40">
+  <h2><span class="kicker">Modelo do sistema · Eventos</span>Três fases numa execução de 70 s</h2>
+  <svg viewBox="0 0 1400 330" width="1400" height="330">
+    <g font-size="20" fill="#5d6675"><text x="100" y="315" text-anchor="middle">0 s</text><text x="640" y="315" text-anchor="middle">30 s</text><text x="1180" y="315" text-anchor="middle">60 s</text><text x="1360" y="315" text-anchor="middle">70 s</text></g>
+    <line x1="100" y1="290" x2="1360" y2="290" stroke="#17202e" stroke-width="2"/>
+    <text x="10" y="70" font-size="20" font-weight="700" fill="#1f5f99">BE</text>
+    <rect x="100" y="45" width="1260" height="40" rx="8" fill="#1f5f99" class="f" data-f="1"/>
+    <text x="10" y="150" font-size="20" font-weight="700" fill="#b03030">VO</text>
+    <rect x="640" y="125" width="540" height="40" rx="8" fill="#b03030" class="f left" data-f="2"/>
+    <text x="910" y="152" text-anchor="middle" fill="#fff" font-size="20" font-weight="700">bursts de alerta · veículo parado (TraCI)</text>
+    <text x="10" y="230" font-size="20" font-weight="700" fill="#980000">ctrl</text>
+    <rect x="100" y="205" width="540" height="40" rx="8" fill="#e8ebf0" class="f" data-f="3"/>
+    <text x="370" y="232" text-anchor="middle" font-size="19" class="f" data-f="3">listening</text>
+    <rect x="640" y="205" width="560" height="40" rx="8" fill="#f6e3e3" stroke="#980000" stroke-width="2" stroke-dasharray="8 5" class="f" data-f="3"/>
+    <text x="920" y="232" text-anchor="middle" font-size="19" class="f" data-f="3">blocking ⇄ sending (políticas adaptativas)</text>
+    <rect x="1200" y="205" width="160" height="40" rx="8" fill="#e8ebf0" class="f" data-f="4"/>
+    <text x="1280" y="232" text-anchor="middle" font-size="19" class="f" data-f="4">listening</text>
+  </svg>
+  <div class="grid3 mt">
+    <div class="card f up" data-f="1"><h3>1 · Normal (0–30 s)</h3><p>Só multicast BE periódico; controladores em <i>listening</i>.</p></div>
+    <div class="card f up" data-f="2"><h3>2 · Janela do acidente (30–60 s)</h3><p>O nó 0 para e envia bursts VO; o BE <b>continua em todos</b>, inclusive no nó acidentado.</p></div>
+    <div class="card f up" data-f="4"><h3>3 · Recuperação (60–70 s)</h3><p>Os alertas param. A proteção pode <b>durar um pouco mais</b> que o burst, até expirar janela + guard.</p></div>
+  </div>
+  <aside class="notes">Cada execução dura 70 segundos. O Best Effort roda o tempo todo. Aos 30 s, o nó 0 se acidenta: o SUMO o para e ele começa os bursts Voice por 30 s, enquanto o Best Effort continua em todos, inclusive no nó acidentado. Nas políticas adaptativas, os controladores alternam entre blocking e sending durante a janela, e a proteção pode durar um pouco além do fim, até a janela e o guard expirarem. Depois tudo volta ao normal. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- IMPLEMENTAÇÃO -->
+<section class="slide" data-section="Implementação" data-time="45">
+  <h2><span class="kicker">Implementação</span>Arquitetura do artefato</h2>
+  <div class="row" style="align-items:stretch">
+    <div style="width:330px" class="f left" data-f="1">
+      <div class="card"><h3>SUMO</h3><p class="small">Corredor de 5 km, 3+3 faixas, 120 km/h; passo 0,1 s.</p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">veins_launchd</h3><p class="small">TraCI em TCP 9999; atualização do manager a cada 1 s.</p></div>
+    </div>
+    <div class="col card f zoom" data-f="2" style="background:#f6f7f9;padding:18px 22px">
+      <h3>Kernel OMNeT++ 6.1</h3>
+      <div class="grid2" style="margin-top:12px;gap:16px">
+        <div class="card"><h3 style="font-size:22px">Veins 5.3.1 <span class="tag">submódulo</span></h3><p class="small">VeinsInetManager: cliente TraCI, cria/atualiza veículos</p></div>
+        <div class="card"><h3 style="font-size:22px">INET 4.5.4 <span class="tag">submódulo</span></h3><p class="small">UDP/IPv4 · MAC/PHY 802.11 · meio de rádio dimensional · Hcf original</p></div>
+        <div class="card"><h3 style="font-size:22px">veins_inet <span class="tag">vendorizado</span></h3><p class="small">Host VeinsInetCar, mobilidade, ApplicationBase</p></div>
+        <div class="card hot"><h3 style="font-size:22px">veins_qos <span class="tag red">código do estudo</span></h3><p class="small">CritPacketSender · CrashBurstApp · QosClassifier · V2xIeee80211Mac · V2xHcf + FSM · cenários</p></div>
+      </div>
+    </div>
+    <div style="width:290px" class="f right" data-f="3">
+      <div class="card"><h3 class="mono" style="font-size:22px">omnetpp.ini</h3><p class="small">sobreposições de política × carga × hotspot via <code>extends</code></p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">.sca / .vec</h3><p class="small">vetores por pacote + escalares</p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">kpi_dashboard</h3><p class="small">Rust, offline: KPIs → tabelas e figuras</p></div>
+    </div>
+  </div>
+  <p class="tiny f up" data-f="4" style="margin-top:12px;font-size:19px">Frameworks = <b>submódulos somente leitura</b>; único vendorizado modificado: <code>VeinsInetApplicationBase</code>. Público: <span class="mono">github.com/GOAguiar99/veins-inet-qos</span></p>
+  <aside class="notes">A implementação. OMNeT++ 6.1, INET 4.5.4 e Veins 5.3.1, todos como submódulos git somente leitura, fixados nos commits de release. O SUMO roda uma rodovia reta de 5 km com três faixas em cada sentido, iniciada pelo veins_launchd. Todo o código do estudo fica em veins_qos: duas aplicações, o classificador, uma MAC instrumentada e a HCF adaptativa com sua máquina de estados. A configuração compõe sobreposições de política, carga e hotspot. Os resultados vão para arquivos de escalares e vetores, processados offline por um dashboard em Rust. O único arquivo vendorizado que modifiquei é a base das aplicações. Tudo é público. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Implementação" data-time="50">
+  <h2><span class="kicker">Implementação</span>Caminho end-to-end de um pacote</h2>
+  <div class="row">
+    <svg viewBox="0 0 760 520" width="760" height="520" class="f play" data-f="1">
+      <g font-size="19" font-weight="700" text-anchor="middle">
+        <g><rect x="40" y="20" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="58">App (DSCP 0 / 46)</text></g>
+        <g><rect x="40" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="143">UDP → 224.0.0.1</text></g>
+        <g><rect x="40" y="190" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="216">IPv4 + QosClassifier</text><text x="150" y="240" font-size="15" font-weight="500">DSCP → UserPriorityReq</text></g>
+        <g><rect x="40" y="275" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="150" y="301">V2xIeee80211Mac</text><text x="150" y="325" font-size="15" font-weight="500">fila DCF / EDCA (+FSM)</text></g>
+        <g><rect x="40" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="398">rádio 802.11p</text></g>
+        <g><rect x="500" y="20" width="220" height="62" rx="12" fill="#fbf4f4" stroke="#980000" stroke-width="2"/><text x="610" y="48">CritPacketSender</text><text x="610" y="72" font-size="15" font-weight="500">porta 9001 · coletor de KPIs</text></g>
+        <g><rect x="500" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="143">UDP</text></g>
+        <g><rect x="500" y="190" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="228">IPv4</text></g>
+        <g><rect x="500" y="275" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="313">MAC</text></g>
+        <g><rect x="500" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="398">rádio</text></g>
+      </g>
+      <text x="150" y="455" text-anchor="middle" font-size="18" fill="#5d6675">emissor</text>
+      <text x="610" y="455" text-anchor="middle" font-size="18" fill="#5d6675">cada receptor</text>
+      <path d="M260 470 Q 380 500 500 470" stroke="#9aa6b8" stroke-width="3" fill="none" class="flowline"/>
+      <text x="380" y="510" text-anchor="middle" font-size="17" fill="#5d6675">meio compartilhado</text>
+      <circle r="14" fill="#1f5f99" class="pkt"/>
+      <circle r="14" fill="#b03030" class="pkt vo-pk"/>
+    </svg>
+    <ol class="col small stagger f" data-f="2" style="padding-left:1.2em">
+      <li>A app cria o payload UDP, um <code>CreationTimeTag</code> e um <code>DscpReq</code> de 0 ou 46.</li>
+      <li>Envio para o multicast <code>224.0.0.1</code> via <code>VeinsInetApplicationBase</code>.</li>
+      <li>Nas políticas EDCA, o <code>QosClassifier</code> converte DSCP em prioridade de usuário.</li>
+      <li>MAC: uma fila DCF (<span class="pol plain">plain</span>) ou ACs EDCA; as adaptativas consultam a FSM antes de liberar acesso ao <b>BE</b>.</li>
+      <li>Rádio 802.11p dimensional; os receptores percorrem o caminho inverso.</li>
+      <li>O <code>CritPacketSender</code> classifica a recepção por DSCP em KPIs BE/VO, ignora os próprios pacotes e deduplica repetições VO.</li>
+    </ol>
+  </div>
+  <aside class="notes">Aqui está o caminho de um pacote. A aplicação carimba o instante de criação e marca DSCP 0 ou 46. Ele vai para UDP multicast, depois IPv4, onde nas políticas EDCA o classificador converte DSCP em prioridade de usuário. Minha MAC instrumentada usa uma fila DCF ou as categorias EDCA, e as políticas adaptativas consultam a máquina de estados antes de deixar o Best Effort acessar o canal. No receptor, o mesmo módulo CritPacketSender que envia BE é o coletor de KPIs das duas classes: separa por DSCP, ignora os próprios pacotes e deduplica as repetições Voice. O caminho é idêntico para as duas classes, exceto pela marcação, pelo mapeamento e pelo controle de acesso. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Implementação" data-time="55">
+  <h2><span class="kicker">Implementação · Aplicações</span>Dois geradores de tráfego e a métrica "alert age"</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1" style="border-top:6px solid var(--be)"><h3 class="mono">CritPacketSender</h3><ul class="small"><li>BE periódico em todo veículo (<code>app[0]</code>, porta 9001).</li><li>Na recepção: vetores de atraso BE/VO, contagens; recorte BE do nó acidentado.</li><li>Deduplicação VO por (origem, sequência), durante toda a execução.</li></ul></div>
+    <div class="card f right" data-f="2" style="border-top:6px solid var(--vo)"><h3 class="mono">CrashBurstApp</h3><ul class="small"><li>Só atua o <code>targetNodeIndex</code> = 0, em <code>crashAt</code> = 30 s.</li><li>TraCI <code>setSpeed(0)</code>, depois bursts DSCP 46; <code>resumeAfter</code> = 30 s.</li><li><code>repeatCount</code>, <code>repeatGap</code>, <code>repeatJitter</code>; contadores de TX lógica e física.</li></ul></div>
+  </div>
+  <div class="card f up" data-f="3" style="margin-top:16px;padding:10px 20px">
+    <svg viewBox="0 0 1380 190" width="1300" height="150">
+      <line x1="60" y1="120" x2="1340" y2="120" stroke="#17202e" stroke-width="2"/>
+      <line x1="200" y1="40" x2="200" y2="130" stroke="#b03030" stroke-width="3"/><text x="200" y="30" text-anchor="middle" font-size="19" font-weight="800" fill="#b03030">t₀ burst lógico (origem do atraso)</text>
+      <rect x="260" y="88" width="30" height="32" fill="#b03030" opacity=".35"/><text x="275" y="150" text-anchor="middle" font-size="16">cópia 0</text><text x="230" y="80" font-size="15" fill="#5d6675">jitter</text>
+      <line x1="290" y1="104" x2="330" y2="104" stroke="#980000" stroke-width="3"/><text x="310" y="98" font-size="20" fill="#980000" text-anchor="middle">✕</text>
+      <rect x="560" y="88" width="30" height="32" fill="#b03030"/><text x="575" y="150" text-anchor="middle" font-size="16">cópia 1 (+gap)</text>
+      <rect x="860" y="88" width="30" height="32" fill="#b03030" opacity=".35"/><text x="875" y="150" text-anchor="middle" font-size="16">cópia 2</text>
+      <line x1="620" y1="40" x2="620" y2="130" stroke="#2a9d6f" stroke-width="3"/><text x="620" y="30" text-anchor="middle" font-size="19" font-weight="800" fill="#2a9d6f">primeira cópia aceita no receptor</text>
+      <path d="M200 175 L620 175" stroke="#004A4A" stroke-width="4" marker-end="url(#ar)"/><text x="410" y="168" text-anchor="middle" font-size="20" font-weight="800" fill="#004A4A">alert age</text>
+    </svg>
+  </div>
+  <div class="grid2 mt">
+    <p class="small f up" data-f="4">A cópia <i>i</i> sai em <b>max(0, i·gap + U(−J, J))</b>: o jitter atinge também a <b>primeira</b> cópia. Seu percentil 95 é <b>0,9 J</b>, um floor que <b>nenhuma política MAC consegue remover</b>.</p>
+    <p class="small f up" data-f="5">O atraso BE começa em cada envio físico; o atraso VO = <b>alert age</b>: de t₀ até a <b>primeira cópia aceita</b> no receptor. "O alerta só é tão pontual quanto a aplicação o faz."</p>
+  </div>
+  <aside class="notes">Duas aplicações. O CritPacketSender gera Best Effort em todos e também é o receptor das duas classes. O CrashBurstApp atua só no nó 0: aos 30 s ele para o carro via TraCI e envia os bursts. A definição-chave é o alert age. Para Voice, o atraso é medido do instante lógico do burst até a primeira cópia que o receptor aceita. Se a cópia 0 se perde e a cópia 1 chega, o intervalo também conta. E como o jitter também se aplica à primeira cópia, existe um floor: seu percentil 95 é 0,9 vezes o jitter. Guardem isso; explica um resultado importante adiante. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Implementação" data-time="55">
+  <h2><span class="kicker">Implementação · Módulos de QoS e MAC</span>Classificador, MAC instrumentada, HCF adaptativa</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><h3 class="mono" style="font-size:22px">QosClassifier</h3><p class="small">Implementa a <code>IIeee8021dQosClassifier</code> do INET: <code>crashDscp</code> 46 → UP de Voice; todo o resto <code>defaultUp</code> 0. Só nas políticas EDCA.</p></div>
+    <div class="card f up" data-f="2"><h3 class="mono" style="font-size:22px">V2xIeee80211Mac</h3><p class="small">Usada por <b>todas</b> as políticas. Assina o <code>packetDroppedSignal</code>: drops por AC (BK/BE/VI/VO/não classificado) e por motivo (overflow, retry, congestionamento, recepção incorreta…).</p></div>
+    <div class="card hot f up" data-f="3"><h3 class="mono" style="font-size:22px">V2xHcf + FSM</h3><p class="small">Substitui a <code>Hcf</code> do INET (só adaptativas). Mesma árvore EDCA + <code>V2xEdcaFsmController</code>. Intercepta a <b>elegibilidade do BE para acessar o canal</b>; sem reescrever o backoff, sem portas.</p></div>
+  </div>
+  <table class="t compact mt f up" data-f="4">
+    <tr><th>Perfil</th><th class="num">blockDuration</th><th class="num">maxContinuousBlock</th><th class="num">sendingGuardTimeout</th><th class="num">voQueueThreshold</th><th class="num">emergencyPreemption</th></tr>
+    <tr><td><span class="pol stable">stable</span></td><td class="num">15 ms</td><td class="num">80 ms</td><td class="num">5 ms</td><td class="num">2</td><td class="num">false</td></tr>
+    <tr><td><span class="pol guarded">guarded</span></td><td class="num">4 ms</td><td class="num">20 ms</td><td class="num">4 ms</td><td class="num">3</td><td class="num">false</td></tr>
+    <tr class="hl"><td><span class="pol emergency">emergency</span></td><td class="num">10 ms</td><td class="num">60 ms</td><td class="num">5 ms</td><td class="num">1</td><td class="num">true</td></tr>
+  </table>
+  <p class="tiny mt f" data-f="5">Hooks: demanda VO (queueing local ≥ threshold ou VO ouvido) → <code>onVoDemandDetected</code> estende a janela em <code>blockDuration</code>, com teto <code>maxContinuousBlock</code>. Contadores: <code>beDroppedWhileBlocked</code>, <code>beGrantSuppressedWhileBlocked</code>, <code>voProtectionActivation</code>; vetor <code>v2xState</code> (0/1/2).</p>
+  <aside class="notes">Três módulos. O classificador mapeia DSCP 46 para a prioridade de Voice e todo o resto para 0, só nas políticas EDCA. A MAC instrumentada é usada em todas e registra drops por access category e por motivo. E a V2xHcf substitui a HCF do INET só nas políticas adaptativas; mantém a mesma árvore EDCA e acrescenta a máquina de estados, que apenas controla se o Best Effort pode pedir o canal. A tabela mostra os três pontos de projeto: duração do blocking por evento de demanda, teto do blocking contínuo, send guard, threshold da fila Voice e se a emergency preemption está ligada. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Implementação" data-time="50">
+  <h2><span class="kicker">Implementação · Cenário</span>Parâmetros e matriz de configurações</h2>
+  <div class="row">
+    <table class="t compact col f left" data-f="1">
+      <tr><th>Parâmetro</th><th>Valor</th></tr>
+      <tr><td>Tempo sim. · acidente</td><td>70 s · nó 0, 30–60 s</td></tr>
+      <tr><td>Pacotes de densidade</td><td><b>10</b> (leve) / <b>100</b> (pesada) veículos</td></tr>
+      <tr><td>Rádio</td><td>802.11p, canal 3, 5,9 GHz, 10 MHz, 20 mW</td></tr>
+      <tr><td>Taxa de dados</td><td>12 Mbit/s (modo obrigatório mais rápido, padrão INET)</td></tr>
+      <tr><td>Propagação</td><td>Espaço livre + IdealObstacleLoss; SNIR 4 dB; sens. −85 dBm; ruído −110 dBm</td></tr>
+      <tr><td>EDCA (BK/BE/VI/VO)</td><td>AIFSN 7/3/2/2; CW 15–1023, 15–1023, 7–15, 3–7</td></tr>
+      <tr><td>Gravação</td><td>todos os vetores + escalares</td></tr>
+    </table>
+    <div class="col">
+      <div class="card f right" data-f="2"><h3>Matriz</h3>
+        <p class="small"><b>5 políticas × 3 cargas</b> = 15 configurações por pacote de densidade <code>&lt;policy&gt;_netload_&lt;low|medium|high&gt;</code></p>
+        <p class="small">× 2 densidades = <b>30</b> experimentos nomeados</p>
+        <p class="small"><b>+ 15 configurações hotspot</b> (pesada) <code>&lt;policy&gt;_hotspot_&lt;profile&gt;</code>: nós 1–3 enviam em massa 1200 B a cada 4 ms (Poisson) ≈ <b>2,4 Mbit/s cada</b></p>
+      </div>
+      <div class="callout gray mt f up" data-f="3" style="font-size:21px"><b>Ressalvas de fidelidade:</b> o <code>AdhocHost</code> aproxima o OCB; o conjunto EDCA é o padrão QoS de BSS, enquanto o padrão OCB dá ao BE AIFSN 6, então aqui o BE disputa <b>com mais força</b> (conservador). Quadros de grupo a 12 Mbit/s em vez de uma taxa básica.</div>
+    </div>
+  </div>
+  <aside class="notes">Parâmetros principais: execuções de 70 segundos, acidente de 30 a 60 s, pacotes leve e pesado com 10 e 100 veículos, 802.11p em 5,9 GHz, taxa de 12 Mbit/s, propagação free-space com obstáculos ideais, e o conjunto EDCA que mostrei antes. A matriz: cinco políticas vezes três cargas, vezes duas densidades, dá 30 experimentos, mais 15 configurações de hotspot, em que três nós logo atrás do acidente transmitem cerca de 2,4 Mbit/s cada. Duas ressalvas de fidelidade: o AdhocHost aproxima o OCB, e usei os padrões EDCA de BSS, nos quais o BE é mais agressivo que no padrão OCB, o que é conservador para este problema. <b>~50 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- AVALIAÇÃO -->
+<section class="slide" data-section="Avaliação" data-time="55">
+  <h2><span class="kicker">Avaliação</span>Como a avaliação chegou à forma final</h2>
+  <div class="row" style="gap:18px;align-items:stretch">
+    <div class="col card f up" data-f="1"><span class="tag">etapa 1</span><h3 class="mt">Primeira campanha uniforme</h3><p class="small">Reportada no artigo do SBESC 2026.</p></div>
+    <div class="col card f up" data-f="2" style="border-color:var(--vo)"><span class="tag red">etapa 2 · auditoria</span><h3 class="mt">Dois erros de medição</h3><ul class="small" style="padding-left:.9em"><li>Intervalo BE sorteado <b>uma vez por veículo</b> → emissores quase gananciosos.</li><li>Atraso VO medido de cada <b>repetição física</b>, não do início do alerta.</li></ul></div>
+    <div class="col card f up" data-f="3"><span class="tag blue">etapa 3</span><h3 class="mt">Corrigir, descartar, refazer</h3><p class="small">Sorteio Poisson por pacote; relógio de alert age. Traces antigos descartados.</p></div>
+    <div class="col card f up" data-f="4"><span class="tag">etapa 4</span><h3 class="mt">Resultado nulo</h3><p class="small">Sob carga uniforme as cinco políticas <b>deixam de diferir</b> no serviço Voice.</p></div>
+    <div class="col card hot f up" data-f="5"><span class="tag green">etapa 5</span><h3 class="mt">Por quê? → hotspot</h3><p class="small">Hipótese sobre carga difusa → um experimento de <b>carga concentrada</b>.</p></div>
+  </div>
+  <div class="callout mt f up" data-f="6" style="font-size:23px">O resultado negativo moldou o trabalho: entender <b>por que</b> a proteção não tinha efeito levou à condição em que ela <b>ajuda</b>. A dissertação <b>substitui</b> os números do artigo.</div>
+  <aside class="notes">Antes dos resultados, uma nota honesta sobre como eles surgiram. A primeira campanha, a do artigo do SBESC 2026, tinha dois problemas de medição que encontrei numa auditoria: cada veículo sorteava seu intervalo de Best Effort uma única vez, então alguns viravam emissores quase gananciosos, e o atraso Voice era medido a partir de cada repetição física em vez do início do alerta. Corrigi os dois, descartei os traces e refiz tudo. Com as medições corretas, as políticas deixaram de diferir para Voice sob carga uniforme. Perguntar o porquê levou ao experimento de hotspot. Por isso a dissertação substitui os números do artigo. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="50">
+  <h2><span class="kicker">Avaliação · Configuração</span>Matrizes, métricas, agregação</h2>
+  <div class="grid2">
+    <div>
+      <div class="card f left" data-f="1"><h3>Execuções</h3><p class="small">Uniforme: 15 configurações × 2 densidades × <b>3 seeds</b> (#0–#2)<br>Hotspot (pesada): 15 configurações × 3 seeds = <b>45 execuções</b></p></div>
+      <div class="card f left mt" data-f="2"><h3>Offered load (pesada, alta)</h3><p class="small">≈ 800 pacotes BE/s na frota quando os 100 carros estão na via → ≈ <b>22 mil TX BE por execução</b> (injeção progressiva). VO: 8 cópias, gap de 5 ms ≈ <b>400 pacotes/s</b> durante a janela.<br>Poisson genuíno ⇒ <b>sem overflow de fila</b>; P95 BE abaixo de 1 ms no DCF/EDCA.</p></div>
+    </div>
+    <div>
+      <div class="card f right" data-f="3"><h3>Métricas</h3><ul class="small"><li>Atraso (VO = alert age), <b>P95</b>, jitter absoluto médio</li><li>Alcance: <b>RX/alerta</b> VO, <b>RX/TX</b> BE (fan-out do multicast)</li><li>Drops na MAC por AC (atribuídos a VO; n.a. no plain; guard ÷2 no parser)</li><li>Controlador: ativações, drops / holds de BE em blocking</li><li>Recorte BE do nó acidentado: comparação com o mesmo emissor</li></ul></div>
+      <div class="callout gray mt f up" data-f="4" style="font-size:21px">Médias entre seeds; tails = <b>média dos P95 por execução</b> sobre amostras agrupadas dos receptores; faixa mín–máx exibida. <b>Sem testes de significância</b> → verificações qualitativas do mecanismo. Δ vs <span class="pol plain">plain</span> salvo indicação.</div>
+    </div>
+  </div>
+  <aside class="notes">Configuração. A matriz uniforme roda 15 configurações nas duas densidades com três seeds cada; a matriz hotspot acrescenta 45 execuções na densidade pesada. Na densidade pesada e carga alta, a frota oferece cerca de 800 pacotes BE por segundo, cerca de 22 mil por execução, e o nó acidentado soma cerca de 400 pacotes Voice por segundo durante a janela. Com tráfego Poisson de verdade, as filas nunca dão overflow. Métricas: alert age, percentil 95, jitter, multicast reach, drops na MAC atribuídos a Voice e os contadores do controlador. A agregação é a média de três seeds, sem testes de significância, então leio isso como verificação do mecanismo, não como tamanho de efeito. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="60">
+  <h2><span class="kicker">Avaliação · Visão geral</span>A resposta depende de como a carga está distribuída</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center">P95 de Voice em carga alta, 100 veículos (ms)</h3>
+      <div style="display:flex;gap:30px">
+        <div class="col">
+          <div class="chart axis f" data-f="1" style="height:290px"><div class="gl" style="bottom:0%"><span>0</span></div><div class="gl" style="bottom:20%"><span>5</span></div><div class="gl" style="bottom:40%"><span>10</span></div><div class="gl" style="bottom:60%"><span>15</span></div><div class="gl" style="bottom:80%"><span>20</span></div><div class="gl" style="bottom:100%"><span>25</span></div>
+            <div class="refline" style="bottom:100%"><span>ref. 25 ms</span></div>
+            <div class="b c-plain" style="--h:9%"><span class="v">2,25</span><i></i></div>
+            <div class="b c-edca" style="--h:9%"><span class="v">2,24</span><i></i></div>
+            <div class="b c-stable" style="--h:9%"><span class="v">2,25</span><i></i></div>
+            <div class="b c-guarded" style="--h:9%"><span class="v">2,24</span><i></i></div>
+            <div class="b c-emergency" style="--h:8.8%"><span class="v">2,21</span><i></i></div>
+          </div>
+          <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stab.</span><span>guard.</span><span>emer.</span></div>
+          <p class="center small" style="margin:6px 0 0 56px">Poisson <b>uniforme</b></p>
+        </div>
+        <div class="col">
+          <div class="chart f" data-f="2" style="height:290px"><div class="gl" style="bottom:0%"><span></span></div><div class="gl" style="bottom:20%"><span></span></div><div class="gl" style="bottom:40%"><span></span></div><div class="gl" style="bottom:60%"><span></span></div><div class="gl" style="bottom:80%"><span></span></div><div class="gl" style="bottom:100%"><span></span></div>
+            <div class="refline" style="bottom:100%"><span></span></div>
+            <div class="b c-plain" style="--h:73.8%"><span class="v">18,5</span><i></i></div>
+            <div class="b c-edca" style="--h:79.8%"><span class="v">20,0</span><i></i></div>
+            <div class="b c-stable" style="--h:84.2%"><span class="v">21,0</span><i></i></div>
+            <div class="b c-guarded" style="--h:80.2%"><span class="v">20,0</span><i></i></div>
+            <div class="b c-emergency" style="--h:58.2%"><span class="v">14,6</span><i></i></div>
+          </div>
+          <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stab.</span><span>guard.</span><span>emer.</span></div>
+          <p class="center small" style="margin:6px 0 0"><b>Hotspot</b> perto do acidente</p>
+        </div>
+      </div>
+    </div>
+    <div style="width:470px">
+      <div class="card f right" data-f="1"><h3>Uniforme</h3><p class="small">≈ 2,2 ms em <b>todas</b> as políticas, em grande parte o jitter floor do gerador. Só o custo para o BE muda.</p></div>
+      <div class="card hot f right" data-f="2" style="margin-top:16px"><h3>Hotspot, alta</h3><p class="small">DCF/EDCA 18,5–20 ms; <b>emergency 14,6 ms</b>: −39 % média, −21 % P95 vs DCF; −29 % perdas VO vs EDCA.</p></div>
+      <div class="card f right" data-f="3" style="margin-top:16px"><h3>Hotspot, média/baixa</h3><p class="small">Sem ganho: bursts esparsos demais; P95 ≈ 29–31 ms em todas.</p></div>
+    </div>
+  </div>
+  <aside class="notes">A resposta numa imagem, o P95 de Voice na mesma escala, com a referência de 25 ms no topo. Sob carga uniforme (clique), todas as políticas ficam em cerca de 2,2 ms: nenhuma diferença. No hotspot (clique), DCF e EDCA sobem para 18,5 a 20 ms, perto do budget, e só a emergency traz para baixo, a 14,6 ms: média 39% menor e P95 21% menor que o DCF, e 29% menos perdas Voice por colisão que o EDCA. Com bursts mais esparsos (clique) o ganho desaparece. Os próximos slides detalham cada parte. <b>~60 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="60">
+  <h2><span class="kicker">Avaliação · Carga uniforme, 100 veículos, alta</span>Voice fica igual; o Best Effort paga</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center vo-t">P95 de Voice (ms) · linear 0–3</h3>
+      <div class="chart axis f" data-f="1" style="height:330px"><div class="gl" style="bottom:0%"><span>0</span></div><div class="gl" style="bottom:33.33%"><span>1</span></div><div class="gl" style="bottom:66.67%"><span>2</span></div><div class="gl" style="bottom:100%"><span>3</span></div>
+        <div class="b c-plain" style="--h:75%"><span class="v">2,249</span><i></i></div>
+        <div class="b c-edca" style="--h:74.7%"><span class="v">2,242</span><i></i></div>
+        <div class="b c-stable" style="--h:74.8%"><span class="v">2,245</span><i></i></div>
+        <div class="b c-guarded" style="--h:74.7%"><span class="v">2,241</span><i></i></div>
+        <div class="b c-emergency" style="--h:73.7%"><span class="v">2,211</span><i></i></div>
+      </div>
+      <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+    <div class="col">
+      <h3 class="center be-t">P95 de Best Effort (ms) · escala log</h3>
+      <div class="chart axis f" data-f="2" style="height:330px"><div class="gl" style="bottom:0%"><span>0,1</span></div><div class="gl" style="bottom:33.33%"><span>1</span></div><div class="gl" style="bottom:66.67%"><span>10</span></div><div class="gl" style="bottom:100%"><span>100</span></div>
+        <div class="b c-plain" style="--h:23.6%"><span class="v">0,51</span><i></i></div>
+        <div class="b c-edca" style="--h:24%"><span class="v">0,52</span><i></i></div>
+        <div class="b c-stable" style="--h:82.8%"><span class="v">30,5</span><i></i></div>
+        <div class="b c-guarded" style="--h:53%"><span class="v">3,9</span><i></i></div>
+        <div class="b c-emergency" style="--h:18.9%"><span class="v">0,37</span><i></i></div>
+      </div>
+      <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="grid3 mt">
+    <p class="small f up" data-f="1">Média, P95 e jitter VO a <b>dezenas de µs</b> uns dos outros. O EDCA <b>não</b> é melhor que o DCF. RX/alerta VO = 9,95 em todos.</p>
+    <p class="small f up" data-f="2"><span class="pol stable">stable</span> multiplica por 60 o P95 BE (0,51 → 30 ms); <span class="pol guarded">guarded</span> → 3,9 ms. Bloquear <b>sem descartar</b> só acrescenta atraso.</p>
+    <p class="small f up" data-f="3">Drops VO na MAC ≈ 3,7 mil em toda política com QoS; emergency ≈ EDCA. Overflow BE = 0. <b>Contenção difusa: nada sobre o que a supressão possa agir.</b></p>
+  </div>
+  <aside class="notes">Carga uniforme, 100 veículos, carga alta. À esquerda: o P95 de Voice numa escala linear ampliada. Os cinco ficam a dezenas de microssegundos uns dos outros, e o EDCA nem é melhor que o DCF. À direita, em escala logarítmica: Best Effort. O stable multiplica a tail BE por sessenta, de 0,51 para 30 ms; o guarded vai a 3,9. A emergency parece melhor que o plain, com 0,37 ms, mas tem um porém, no próximo slide. Os drops Voice na MAC são os mesmos, cerca de 3.700, em toda política com QoS. Sob contenção difusa, a supressão não muda nem quantos alertas chegam nem quantos colidem. <b>~60 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="50">
+  <h2><span class="kicker">Avaliação · Carga uniforme</span>Atraso BE menor não é serviço BE melhor</h2>
+  <div class="row">
+    <div class="col">
+      <div class="callout f up" data-f="1">O atraso é medido sobre pacotes <b>entregues</b>. A emergency descarta BE durante o blocking, o que tira a tail lenta da amostra. O custo aparece como <b>perda de reach</b>.</div>
+      <div class="mt f up" data-f="2" style="display:flex;align-items:center;gap:30px">
+        <div class="center"><div class="big be-t">8,06</div><div class="small">RX/TX BE · DCF</div></div>
+        <div style="font-size:50px;color:#9aa2ae">→</div>
+        <div class="center"><div class="big vo-t">6,93</div><div class="small">RX/TX BE · emergency</div></div>
+      </div>
+      <p class="small mt f up" data-f="3">P95 BE do nó acidentado em carga alta: DCF 0,63 · EDCA 0,77 · <b>stable 13,8</b> · guarded 3,9 · emergency 0,44 ms.</p>
+    </div>
+    <div class="col f right" data-f="4">
+      <h3>Densidade leve (10 veículos), carga alta</h3>
+      <table class="t compact">
+        <tr><th>Política</th><th class="num">Δ média VO</th><th class="num">Δ P95 VO</th><th class="num">P95 BE (ms)</th></tr>
+        <tr><td><span class="pol plain">plain</span></td><td class="num">—</td><td class="num">—</td><td class="num">0,44</td></tr>
+        <tr><td><span class="pol edca">EDCA</span></td><td class="num">+1,3 %</td><td class="num">−0,0 %</td><td class="num">0,42</td></tr>
+        <tr class="hl"><td><span class="pol stable">stable</span></td><td class="num">+0,9 %</td><td class="num">+0,5 %</td><td class="num">49</td></tr>
+        <tr><td><span class="pol guarded">guarded</span></td><td class="num">−1,3 %</td><td class="num">−1,3 %</td><td class="num">9,0</td></tr>
+        <tr><td><span class="pol emergency">emergency</span></td><td class="num">+2,4 %</td><td class="num">+0,2 %</td><td class="num">0,37</td></tr>
+      </table>
+      <p class="tiny">Plain: média VO 0,786 ms, P95 VO 2,078 ms.</p>
+      <div class="callout gray f up" data-f="5" style="font-size:22px">Mesmo padrão com poucos veículos: as janelas de proteção abrem mesmo com pouco estresse, e <b>bloquear sem descartar já prejudica o BE</b>.</div>
+    </div>
+  </div>
+  <aside class="notes">Por que o atraso BE menor da emergency não é boa notícia? Porque o atraso é medido só sobre os pacotes que chegam. A emergency descarta Best Effort durante o blocking, o que remove os lentos da amostra. O custo real é o reach: as cópias recebidas por transmissão BE caem de 8,06 para 6,93. Na densidade leve, 10 veículos, o padrão é o mesmo: Voice a cerca de 2% do plain, enquanto o stable leva a tail BE de 0,44 para 49 ms. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="55">
+  <h2><span class="kicker">Avaliação · Por que ≈ 2,2 ms?</span>O floor vem do gerador de alertas</h2>
+  <div class="row">
+    <svg viewBox="0 0 700 380" width="700" height="380">
+      <line x1="60" y1="300" x2="660" y2="300" stroke="#17202e" stroke-width="2"/>
+      <line x1="60" y1="300" x2="60" y2="30" stroke="#17202e" stroke-width="2"/>
+      <text x="60" y="330" text-anchor="middle" font-size="19">0</text><text x="600" y="330" text-anchor="middle" font-size="19">J</text>
+      <text x="360" y="365" text-anchor="middle" font-size="19" fill="#5d6675">dispatch offset de uma cópia, max(0, U(−J, J))</text>
+      <g class="f" data-f="1"><rect x="52" y="60" width="16" height="240" fill="#b03030"/><text x="80" y="70" font-size="18" font-weight="700" fill="#b03030">50 % de massa pontual em 0</text></g>
+      <rect x="60" y="230" width="540" height="70" fill="#f4a8a1" class="f left" data-f="2"/>
+      <text x="330" y="222" text-anchor="middle" font-size="18" class="f" data-f="2">uniforme em (0, J]: os outros 50 %</text>
+      <g class="f" data-f="3"><line x1="546" y1="40" x2="546" y2="300" stroke="#004A4A" stroke-width="4" stroke-dasharray="8 6"/><text x="546" y="32" text-anchor="middle" font-size="20" font-weight="800" fill="#004A4A">P95 = 0,9 J</text></g>
+    </svg>
+    <div class="col">
+      <div class="f up" data-f="4">
+        <h3>Carga alta, J = 2 ms</h3>
+        <div style="display:flex;height:56px;border-radius:10px;overflow:hidden;font-weight:800;color:#fff;font-size:20px">
+          <div style="width:82%;background:var(--vo);display:flex;align-items:center;justify-content:center">P95 do jitter ≈ 1,8 ms</div>
+          <div style="width:18%;background:var(--be);display:flex;align-items:center;justify-content:center">~0,4</div>
+        </div>
+        <p class="small">= P95 VO observado ≈ <b>2,2 ms</b> (transferência abaixo de 1 ms por cima)</p>
+      </div>
+      <div class="f up mt" data-f="5">
+        <h3>Baixa/média, J = 5 ms</h3>
+        <p class="small" style="margin-top:0">0,9 · 5 = 4,5 ms → floors observados ≈ <b>4,6–4,9 ms</b></p>
+      </div>
+      <div class="f up" data-f="6"><p class="small">Média: E[max(0, U(−2, 2))] = <b>0,5 ms</b> = metade da média VO de 0,99 ms. Perder a primeira cópia acrescenta um gap por perda, o que é raro no P95 sob carga difusa.</p></div>
+      <div class="callout f up" data-f="7" style="font-size:23px">2,2 ms <b>não</b> é uma medida pura de acesso ao meio, e <b>nenhuma política MAC poderia alterá-lo</b>.</div>
+    </div>
+  </div>
+  <aside class="notes">Por que exatamente 2,2 ms para todos? Por causa do gerador. Cada cópia, inclusive a primeira, sai no máximo entre zero e uma uniforme entre menos J e J. Metade das vezes isso é zero; na outra metade é uniforme até J. Então o percentil 95 é 0,9 J. Na carga alta J é 2 ms, então 1,8 dos 2,2 ms vêm do gerador, e o canal acrescenta algumas centenas de microssegundos. Nas cargas baixa e média, J é 5 ms, dando 4,5, e observamos 4,6 a 4,9. Até a média: metade dos 0,99 ms é jitter. Então esse número não é uma medida do canal, e nenhuma política MAC conseguiria mexer nele. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="45">
+  <h2><span class="kicker">Avaliação · Do resultado nulo à hipótese</span>Por que a supressão não ajuda sob carga uniforme?</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card f up" data-f="1"><h3>Estrutura da contenção</h3><p class="small">Os frames que podem colidir com um alerta vêm de <b>≈ 100 emissores</b>, cada um com uma fatia mínima da carga. Suprimir o BE num nó remove uma parte <b>desprezível</b> dela.</p></div>
+      <div class="card f up mt" data-f="2"><h3>Reativa por construção</h3><p class="small">Os vizinhos só começam a suprimir <b>depois de decodificar</b> uma primeira cópia Voice, tarde demais para essa cópia.</p></div>
+    </div>
+    <div class="col">
+      <h3 class="f" data-f="3">Duas previsões</h3>
+      <div class="card f right" data-f="3" style="border-left:8px solid var(--ok)"><p class="small"><b>P1.</b> Nenhuma política muda o serviço Voice sob carga uniforme, em qualquer densidade ou carga.</p><span class="tag green">confirmada (slides anteriores)</span></div>
+      <div class="card hot f right mt" data-f="4"><p class="small"><b>P2.</b> A proteção <b>deve</b> ajudar quando <b>poucos veículos ao lado do acidente</b> dominam o canal: suprimi-los remove a maior parte da carga concorrente.</p><span class="tag red">testada a seguir: hotspot</span></div>
+    </div>
+  </div>
+  <aside class="notes">Então por que não há efeito? Sob carga uniforme, os frames que podem colidir com um alerta vêm de uns cem emissores, cada um com uma fatia minúscula. Suprimir num nó remove quase nada. E a supressão é reativa: os vizinhos só começam depois de ouvir uma primeira cópia Voice. Isso dá duas previsões. Primeira: nenhuma política deve importar sob carga uniforme, o que acabamos de confirmar. Segunda: a proteção deve ajudar quando poucos veículos ao lado do acidente dominam o canal, porque aí suprimi-los remove a maior parte da carga. Esse é o experimento de hotspot. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="45">
+  <h2><span class="kicker">Avaliação · Carga concentrada</span>O hotspot overlay</h2>
+  <div class="scene" style="height:300px">
+    <div class="lane" style="top:100px"></div><div class="lane" style="top:200px"></div>
+    <div class="car mover" style="top:35px;--dur:9s;--del:-2s"></div>
+    <div class="car mover" style="top:235px;--dur:8s;--del:-5s"></div>
+    <div class="car mover" style="top:235px;--dur:8s;--del:-1s"></div>
+    <div class="car crash" style="top:133px;left:900px"></div>
+    <div style="position:absolute;left:935px;top:150px"><span class="pulse go"></span><span class="pulse go" style="--del:.6s"></span><span class="pulse go" style="--del:1.2s"></span></div>
+    <div class="f" data-f="1">
+      <div class="car hot" style="top:133px;left:760px"></div><div class="car hot" style="top:35px;left:700px"></div><div class="car hot" style="top:235px;left:620px"></div>
+      <div style="position:absolute;left:795px;top:150px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.4s"></span></div>
+      <div style="position:absolute;left:735px;top:52px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.2s"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.8s"></span></div>
+      <div style="position:absolute;left:655px;top:252px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.5s"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:1.1s"></span></div>
+      <div style="position:absolute;left:400px;top:10px;color:#ffd79a;font-weight:800;font-size:20px">nós 1–3: 1200 B a cada 4 ms (Poisson) ≈ 2,4 Mbit/s cada, toda a execução</div>
+    </div>
+  </div>
+  <div class="grid3 mt">
+    <div class="card center f up" data-f="2"><div class="small muted">Transmissões BE / execução</div><div class="big" style="font-size:50px">22 mil → 72 mil</div><div class="small">≈ ×3</div></div>
+    <div class="card center f up" data-f="3"><div class="small muted">Perdas MAC atribuídas a VO (EDCA)</div><div class="big vo-t" style="font-size:50px">3,7 mil → 25 mil</div><div class="small">antes de qualquer política adaptativa</div></div>
+    <div class="card center f up" data-f="4"><div class="small muted">Inalterados</div><div class="small" style="margin-top:10px">fonte do acidente, janela do alerta, definições das métricas. Configurações <code>&lt;policy&gt;_hotspot_&lt;profile&gt;</code>.</div></div>
+  </div>
+  <aside class="notes">O hotspot overlay: os três veículos que entram logo depois do veículo acidentado enviam em massa pacotes de 1200 bytes a cada 4 ms em média, cerca de 2,4 Mbit/s cada, durante toda a execução. O total de transmissões BE por execução triplica, de 22 para 72 mil, e as perdas Voice na MAC sob EDCA saltam de 3,7 para 25 mil. Todo o resto fica igual: mesmo acidente, mesma janela, mesmas métricas. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="60">
+  <h2><span class="kicker">Avaliação · Hotspot, carga alta, 100 veículos</span>Só a emergency recupera o serviço Voice</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center">Média VO (ms)</h3>
+      <div class="chart axis f" data-f="1" style="height:290px"><div class="gl" style="bottom:0%"><span>0</span></div><div class="gl" style="bottom:33.33%"><span>2</span></div><div class="gl" style="bottom:66.67%"><span>4</span></div><div class="gl" style="bottom:100%"><span>6</span></div>
+        <div class="b c-plain" style="--h:75.7%"><span class="v">4,54</span><i></i></div>
+        <div class="b c-edca" style="--h:74.1%"><span class="v">4,45</span><i></i></div>
+        <div class="b c-stable" style="--h:76.8%"><span class="v">4,61</span><i></i></div>
+        <div class="b c-guarded" style="--h:74%"><span class="v">4,44</span><i></i></div>
+        <div class="b c-emergency" style="--h:46.4%"><span class="v">2,78</span><i></i></div>
+      </div>
+      <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+    <div class="col">
+      <h3 class="center">P95 VO (ms) · faixa entre seeds</h3>
+      <div class="chart axis f" data-f="2" style="height:290px"><div class="gl" style="bottom:0%"><span>0</span></div><div class="gl" style="bottom:20%"><span>5</span></div><div class="gl" style="bottom:40%"><span>10</span></div><div class="gl" style="bottom:60%"><span>15</span></div><div class="gl" style="bottom:80%"><span>20</span></div><div class="gl" style="bottom:100%"><span>25</span></div>
+        <div class="refline" style="bottom:100%"><span>25 ms</span></div>
+        <div class="b c-plain" style="--h:73.8%"><span class="v">18,5 <small>[16,1–19,9]</small></span><i></i></div>
+        <div class="b c-edca" style="--h:79.8%"><span class="v">20,0</span><i></i></div>
+        <div class="b c-stable" style="--h:84.2%"><span class="v">21,0</span><i></i></div>
+        <div class="b c-guarded" style="--h:80.2%"><span class="v">20,0</span><i></i></div>
+        <div class="b c-emergency" style="--h:58.2%"><span class="v">14,6 <small>[11,8–16,0]</small></span><i></i></div>
+      </div>
+      <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="grid4 mt">
+    <div class="card center f up" data-f="3"><div class="big ok-t">−39 %</div><div class="small">média VO vs DCF<br>(−38 % vs EDCA)</div></div>
+    <div class="card center f up" data-f="3"><div class="big ok-t">−21 %</div><div class="small">P95 VO vs DCF<br>(−27 % vs EDCA)</div></div>
+    <div class="card center f up" data-f="4"><div class="big ok-t">−29 %</div><div class="small">drops VO na MAC vs EDCA<br>25,2 mil → 17,8 mil</div></div>
+    <div class="card center f up" data-f="5"><div class="big">≈ 10</div><div class="small">receptores por alerta, todas as políticas: limitado pela geometria</div></div>
+  </div>
+  <p class="tiny f" data-f="5" style="margin:8px 0 0">Faixas de P95 da emergency não se sobrepõem às dos baselines. P95 ≫ média: sucessos tardios ocasionais em janelas com muitas colisões.</p>
+  <aside class="notes">Hotspot, carga alta. Idade média do alerta: DCF, EDCA, stable e guarded em torno de 4,5 ms; emergency 2,78. P95: os baselines entre 18,5 e 21 ms, a emergency em 14,6, e sua faixa entre seeds não se sobrepõe às outras. Em números: média 39% menor e P95 21% menor que o DCF, e 29% menos perdas Voice na MAC que o EDCA. O reach fica em cerca de dez receptores por alerta em todas as políticas; isso é limitado pela geometria. A proteção reduz atraso e perdas, mas não alcança mais veículos. <b>~60 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="55">
+  <h2><span class="kicker">Avaliação · Hotspot, carga alta</span>Descartar é o que importa; adiar não basta</h2>
+  <div class="row">
+    <div class="col">
+      <div class="callout f up" data-f="1"><span class="pol stable">stable</span> e <span class="pol guarded">guarded</span> deixam o P95 VO no nível do EDCA (20–21 ms): bloquear sem descartar <b>nunca esvazia</b> as filas dos emissores pesados.</div>
+      <div class="callout green mt f up" data-f="2">Com 8 cópias a cada 20 ms, os nós ficam bloqueados <b>quase continuamente</b>; a emergency descarta ≈ <b>16,1 mil</b> frames BE durante o blocking, então os emissores pesados não conseguem reocupar o canal na janela.</div>
+    </div>
+    <div class="col f right" data-f="3">
+      <h3 class="center">Atraso BE <u>do nó acidentado</u> (média, ms log)</h3>
+      <div class="chart axis" style="height:300px"><div class="gl" style="bottom:0%"><span>0,1 ms</span></div><div class="gl" style="bottom:20%"><span>1 ms</span></div><div class="gl" style="bottom:40%"><span>10 ms</span></div><div class="gl" style="bottom:60%"><span>100 ms</span></div><div class="gl" style="bottom:80%"><span>1 s</span></div><div class="gl" style="bottom:100%"><span>10 s</span></div>
+        <div class="b c-plain" style="--h:23.8%"><span class="v">1,5 ms</span><i></i></div>
+        <div class="b c-edca" style="--h:83.2%"><span class="v">1,45 s</span><i></i></div>
+        <div class="b c-stable" style="--h:82.8%"><span class="v">1,39 s</span><i></i></div>
+        <div class="b c-guarded" style="--h:79.8%"><span class="v">0,98 s</span><i></i></div>
+        <div class="b c-emergency" style="--h:30.5%"><span class="v">3,3 ms</span><i></i></div>
+      </div>
+      <div class="chart-x axis"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="callout gray mt f up" data-f="4"><b>Segundo benefício:</b> as políticas baseadas em EDCA <b>deixam o próprio BE do nó acidentado em starvation</b> (esperas de ≈ 1–1,5 s). A preemption o mantém fluindo (3,3 ms) quando a demanda contínua do hotspot ocuparia o canal.</div>
+  <aside class="notes">O que torna a emergency diferente? Stable e guarded só adiam o Best Effort, e as filas dos emissores do hotspot nunca esvaziam, então o Voice fica no nível do EDCA. Com alertas a cada 20 ms, os nós ficam bloqueados quase continuamente, e a emergency descarta uns 16 mil frames BE, então os emissores pesados não conseguem reocupar o canal. Há um segundo benefício, inesperado. Sob EDCA, stable e guarded, os pacotes Best Effort do próprio nó acidentado ficam em starvation: esperam de um a um segundo e meio. A emergency os mantém em 3,3 ms. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="50">
+  <h2><span class="kicker">Avaliação · Hotspot</span>O ganho exige bursts de alerta densos</h2>
+  <div class="row">
+    <div class="col f up" data-f="1">
+      <div class="div-row"><div></div><div class="center small muted">Δ média VO (emergency vs DCF)</div><div class="center small muted">Δ P95 VO</div></div>
+      <div class="div-row"><div class="lbl">alta<small>20 ms × 8 cópias</small></div>
+        <div class="div-track"><i class="neg" style="--w:39%"></i><span style="left:4%;color:var(--ok)">−39 %</span></div>
+        <div class="div-track"><i class="neg" style="--w:21%"></i><span style="left:22%;color:var(--ok)">−21 %</span></div></div>
+      <div class="div-row"><div class="lbl">média<small>75 ms × 4 cópias</small></div>
+        <div class="div-track"><i class="pos" style="--w:10%"></i><span style="left:63%;color:var(--vo)">+10 %</span></div>
+        <div class="div-track"><i class="pos" style="--w:5%"></i><span style="left:58%;color:var(--vo)">+5 %</span></div></div>
+      <div class="div-row"><div class="lbl">baixa<small>120 ms × 3 cópias</small></div>
+        <div class="div-track"><i class="pos" style="--w:16%"></i><span style="left:69%;color:var(--vo)">+16 %</span></div>
+        <div class="div-track"><i class="pos" style="--w:0.5%"></i><span style="left:54%;color:var(--muted)">+0 %</span></div></div>
+    </div>
+    <div style="width:470px"><img src="assets/fig_09_hotspot_vo_p95_by_load_highway_heavy.svg" class="f zoom" data-f="2" style="width:100%;border-radius:12px;border:1px solid var(--faint)"></div>
+  </div>
+  <p class="small f up" data-f="2" style="margin:10px 0 0">Na média/baixa o P95 VO fica em <b>≈ 29–31 ms para DCF e emergency</b> (inclui o jitter floor de 4,5 ms), <b>acima</b> da referência de 25 ms.</p>
+  <div class="callout f up" data-f="3" style="margin-top:16px">Média/baixa: o duty cycle de blocking cai para <b>≈ ⅓ ou menos</b>; os emissores pesados reocupam os intervalos entre blocks. O Voice só melhora quando <b>as duas</b> condições valem: carga <b>concentrada</b> perto do acidente <b>e</b> alertas <b>frequentes o bastante</b> para manter a proteção ativa.</div>
+  <aside class="notes">O ganho depende da frequência dos alertas. Com o perfil alto, 20 ms e oito cópias, a emergency dá menos 39 e menos 21%. Com os perfis médio e baixo, o duty cycle de blocking cai para um terço ou menos, os emissores pesados reocupam os intervalos, e a emergency chega a aumentar a média em 10 e 16%. Notem na figura que, nesses perfis, o P95 fica em 29 a 31 ms para as duas políticas, acima dos 25 ms de referência. Então o Voice só melhora quando duas coisas valem juntas: carga concentrada perto do acidente e alertas frequentes o bastante para manter a proteção ligada. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="45">
+  <h2><span class="kicker">Avaliação · Custo</span>Proteção vs. custo no espaço Δ (vs DCF, carga alta)</h2>
+  <div class="row" style="align-items:center">
+    <img src="assets/fig_04_vo_gain_vs_be_cost_highway_heavy.svg" class="f zoom" data-f="1" style="height:640px;border-radius:12px;border:1px solid var(--faint)">
+    <div class="col">
+      <p class="small f up" data-f="2"><b>Esquerda, uniforme:</b> ninguém vai para a esquerda (Δ VO ≤ 0,04 ms). <span class="pol stable">stable</span> (+30 ms) e <span class="pol guarded">guarded</span> (+3,4 ms) sobem: penalidade BE. A <span class="pol emergency">emergency</span> desce um pouco (−0,14 ms) só porque descarta BE.</p>
+      <p class="small f up" data-f="3"><b>Direita, hotspot:</b> só a <span class="pol emergency">emergency</span> vai para a <b>esquerda</b> (−3,9 ms). Mas <b>todas</b> as políticas EDCA ficam no alto: P95 BE da frota ≈ 737–779 ms vs 6,1 ms no DCF (overflow de fila BE ≈ 11 mil; 6,7 mil na emergency).</p>
+      <div class="callout f up mt" data-f="4" style="font-size:23px">No hotspot, o ganho de Voice <b>não se separa</b> do custo para o BE: ≈ 16,1 mil frames BE descartados por execução, a mesma preemption que evita a starvation do nó acidentado.</div>
+      <p class="tiny">Δ P95 VO negativo = melhora; Δ P95 BE positivo = penalidade. Painéis com eixos independentes.</p>
+    </div>
+  </div>
+  <aside class="notes">Esta é a fronteira no espaço de deltas em relação ao DCF. À esquerda, carga uniforme: ninguém vai para a esquerda, então não há ganho de Voice; stable e guarded sobem, o que é penalidade para o Best Effort, e a emergency desce um pouco só porque descarta. À direita, hotspot: só a emergency vai para a esquerda. Mas atenção ao eixo vertical: no hotspot, todas as políticas com EDCA levam o P95 do Best Effort da frota de 6 ms no DCF para 737 a 779 ms, com cerca de 11 mil overflows de fila; a emergency não escapa desse custo. E no hotspot o ganho de Voice e o custo para o Best Effort vêm juntos: cerca de 16 mil frames descartados por execução. <b>~45 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="40">
+  <h2><span class="kicker">Avaliação · Instrumentação do controlador</span>A proteção dispara, com ou sem benefício</h2>
+  <div class="row" style="align-items:center">
+    <img src="assets/fig_07_v2x_control_actions_by_load_highway_heavy.svg" class="f zoom" data-f="1" style="height:560px;border-radius:12px;border:1px solid var(--faint)">
+    <div class="col">
+      <table class="t compact f up" data-f="2">
+        <tr><th>Uniforme, alta</th><th class="num">Proteção VO</th><th class="num">BE descartado em blocking</th><th class="num">BE hold</th></tr>
+        <tr><td><span class="pol stable">stable</span></td><td class="num">115 mil</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td><span class="pol guarded">guarded</span></td><td class="num">115 mil</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr class="hl"><td><span class="pol emergency">emergency</span></td><td class="num">127 mil</td><td class="num">2,53 mil</td><td class="num">12</td></tr>
+      </table>
+      <p class="small mt f up" data-f="3">≈ 1,1×10⁵ ativações por execução sob carga uniforme <b>sem nenhum benefício para Voice</b>.</p>
+      <div class="callout f up" data-f="4" style="font-size:23px">Drops da emergency: <b>≈ 2,5 mil</b> (uniforme) vs <b>≈ 16,1 mil</b> (hotspot). <b>Adiar acrescenta atraso; descartar remove tráfego</b>, e descartar só ajuda o Voice sob carga concentrada.</div>
+    </div>
+  </div>
+  <aside class="notes">Os contadores do controlador confirmam. Sob carga uniforme, stable e guarded ativam a proteção umas 115 mil vezes por execução, e o Voice não ganha nada. A emergency descarta uns 2.500 frames BE sob carga uniforme, contra 16 mil no hotspot. Em resumo: adiar acrescenta atraso, descartar remove tráfego, e descartar só ajuda o Voice quando a carga é concentrada. <b>~40 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="55">
+  <h2><span class="kicker">Discussão</span>Ativando a proteção adaptativa na prática</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><span class="tag blue">implantação</span><h3 class="mt">Escalonamento, não sempre ligado</h3><p>Mapeamento explícito DSCP→Voice é um <b>padrão razoável</b>. Blocking/emergency devem ser um <b>passo de escalonamento</b> para canais realmente estressados e concentrados, não um modo permanente.</p></div>
+    <div class="card f up" data-f="2"><span class="tag green">ideia</span><h3 class="mt">Um trigger online</h3><p>Ligar a emergency só enquanto <b>taxa recente de alertas × blocking window limitada</b> preenche o blocking budget, ou seja, um critério de <b>duty cycle de blocking</b>. O controlador já registra ativações e <code>maxContinuousBlock</code>.</p></div>
+    <div class="card hot f up" data-f="3"><span class="tag red">segurança</span><h3 class="mt">Risco de negação de serviço</h3><p>Quadros Voice <b>ouvidos e não autenticados</b> disparam o blocking. Um nó defeituoso/malicioso poderia manter os vizinhos bloqueados. Limitado pelas janelas finitas (20–80 ms + guard), só o próprio BE é afetado, mas exige <b>autenticação, limitação de taxa e checagens de plausibilidade</b>.</p></div>
+  </div>
+  <aside class="notes">O que isso significa na prática? Primeiro, o mapeamento explícito para Voice é um bom padrão, mas o blocking, e especialmente a emergency, devem ser um passo de escalonamento para congestionamento concentrado, não algo sempre ligado. Segundo, o resultado de dose-resposta sugere um trigger que o nó poderia medir online: ligar a emergency só quando a taxa de alertas vezes a blocking window preenche o blocking budget, um critério de duty cycle; o controlador já registra o necessário. Terceiro, segurança: qualquer nó que envie frames Voice faz os vizinhos bloquearem. As janelas são finitas, mas a implantação exigiria autenticação, limitação de taxa e checagens de plausibilidade. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="50">
+  <h2><span class="kicker">Discussão</span>Custo, justiça e leitura dos números</h2>
+  <div class="grid2">
+    <div>
+      <h3 class="f" data-f="1">Custo e justiça</h3>
+      <ul class="small">
+        <li class="f up" data-f="1">Todo BE é tratado como suprimível ⇒ as penalidades são um <b>limite de pior caso</b>; BE real pode ser relevante à segurança → classes mais finas necessárias.</li>
+        <li class="f up" data-f="2">O custo é <b>espacialmente concentrado</b> perto do acidente (algo desejável); médias agregadas <b>subestimam</b> o custo para os veículos mais afetados.</li>
+        <li class="f up" data-f="3">Sob carga concentrada, descartar ajuda o Voice <b>e</b> evita a starvation do BE do nó acidentado.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="f" data-f="4">Interpretação</h3>
+      <ul class="small">
+        <li class="f up" data-f="4">No <span class="pol plain">plain</span>, a diferença VO–BE reflete <b>processos de tráfego diferentes</b>, não diferenciação do DCF.</li>
+        <li class="f up" data-f="5">RX/alerta VO &gt; RX/TX BE: denominadores diferentes, vizinhança mais densa em torno do nó acidentado parado.</li>
+        <li class="f up" data-f="6">Comparações controladas: <b>dentro de uma classe, entre políticas</b> (mais o recorte BE do nó acidentado).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt f up" data-f="7">Contra os 25 ms da TS 22.186: sob carga uniforme <b>não há tail a recuperar</b>; no hotspot alto as tails <b>se aproximam do budget</b> e a emergency as reduz; no hotspot médio/baixo passam de 25 ms em todas as políticas. <b>A fronteira em si é o resultado principal.</b></div>
+  <aside class="notes">Algumas ressalvas sobre custo e interpretação. Todo Best Effort é tratado como suprimível, então as penalidades são um pior caso; em pilhas reais parte dele pode ser relevante à segurança. O custo se concentra perto do acidente, o que as médias agregadas escondem. Sobre interpretação: no DCF puro, a diferença entre Voice e BE vem de processos de tráfego diferentes, não de qualquer diferenciação. As comparações justas são dentro de uma classe entre políticas. E em relação ao budget de 25 ms, o resultado principal é a fronteira: nenhuma tail a recuperar sob carga uniforme, e uma redução real quando as tails se aproximam do budget. <b>~50 s</b></aside>
+</section>
+
+<section class="slide" data-section="Avaliação" data-time="45">
+  <h2><span class="kicker">Ameaças à validade</span>Limitações</h2>
+  <div class="grid2 stagger f" data-f="1">
+    <div class="card"><h3>Estatística e escopo</h3><p class="small">3 seeds, só mín–máx, sem CIs/testes → verificações do mecanismo. Apenas simulação. Uma fonte de acidente, one-hop; janelas sobrepostas de alertas concorrentes não avaliadas.</p></div>
+    <div class="card"><h3>Fidelidade de rádio e MAC</h3><p class="small">Espaço livre, obstáculos binários, SNIR fixo; sem fading/shadowing. Padrões EDCA de BSS (não o conjunto OCB); frames de grupo a 12 Mbit/s. Uniforme entre políticas, mas pode deslocar valores absolutos.</p></div>
+    <div class="card"><h3>Tráfego e baselines</h3><p class="small">Modelo sintético de duas classes; o perfil de burst <code>high</code> é um caso de estresse. Sem baseline de EDCA adaptativo / DCC ⇒ sem alegação de superioridade. Nenhum prazo de segurança de aplicação avaliado.</p></div>
+    <div class="card"><h3>Pontos de projeto e geometria</h3><p class="small">Três perfis fixos, triggers sem ablação (blocking 4–15 ms, threshold 1–3 = escada grosseira). Nós do hotspot posicionados pela ordem de injeção → a alegação é a <b>direção</b> do efeito, não os valores exatos.</p></div>
+  </div>
+  <div class="callout green f up" data-f="2" style="margin-top:16px;font-size:23px">Dentro desse escopo a comparação é <b>internamente justa</b>: mesma pilha PHY, mesmo trace de mobilidade e mesma matriz de carga para toda política ⇒ as diferenças isolam os efeitos da política MAC.</div>
+  <aside class="notes">Limitações. Três seeds sem confidence intervals, então são verificações do mecanismo. Apenas simulação, uma fonte de acidente, one-hop. Rádio simplificado, padrões EDCA de BSS e taxa fixa de 12 Mbit/s, o que pode deslocar valores absolutos. Tráfego sintético, sem baseline de DCC ou EDCA adaptativo, então sem alegação de superioridade. Pontos de projeto fixos sem ablação, e posicionamento do hotspot pela ordem de injeção, então afirmo a direção do efeito, não os números exatos. Dentro desse escopo a comparação é justa: tudo, exceto a política MAC, é idêntico. <b>~45 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- CONCLUSÃO -->
+<section class="slide" data-section="Conclusão" data-time="55">
+  <h2><span class="kicker">Conclusão</span>Principais resultados</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><div class="big" style="color:var(--plain)">1</div><h3 class="mt">Carga uniforme: nenhum ganho de Voice</h3><p class="small">P95 VO ≈ 2,2 ms para toda política com 100 veículos. O EDCA não é melhor que o DCF; os 2,21 da emergency vs ≈ 2,24 ms são uma diferença pequena demais para importar.</p></div>
+    <div class="card f up" data-f="2"><div class="big" style="color:var(--stable)">2</div><h3 class="mt">…apenas custo para o BE</h3><p class="small"><span class="pol stable">stable</span> 0,51 → 30 ms de P95 BE; <span class="pol guarded">guarded</span> 3,9 ms; emergency 0,37 ms descartando ≈ 2,5 mil frames. Mesmo padrão com 10 veículos.</p></div>
+    <div class="card hot f up" data-f="3"><div class="big" style="color:var(--emergency)">3</div><h3 class="mt">Carga concentrada: a emergency ajuda</h3><p class="small">−39 % na média / −21 % no P95 do alert age vs DCF; −29 % de perdas VO por colisão vs EDCA; ≈ 16 mil drops BE. Exige <b>concentração + bursts densos</b>.</p></div>
+  </div>
+  <div class="callout mt2 f up" data-f="4" style="font-size:30px">O resultado negativo moldou o trabalho: se a proteção ajuda ou não <b>depende de como a carga está distribuída em torno do acidente</b>.</div>
+  <aside class="notes">Três resultados. Um: sob carga uniforme, nenhuma política melhora o Voice; tudo fica em 2,2 ms. Dois: nesse caso as políticas só diferem no custo para o Best Effort. Três: quando a carga é concentrada perto do acidente e os alertas são densos, a emergency preemption ajuda: média 39% menor, P95 21% menor, 29% menos perdas por colisão, ao preço de uns 16 mil frames descartados. A resposta geral é condicional: depende de como a carga está distribuída em torno do acidente. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Conclusão" data-time="55">
+  <h2><span class="kicker">Implicações práticas</span>O que um projetista de V2X deve fazer?</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><h3>✓ Marcar e mapear</h3><p class="small">DSCP 46 + mapeamento explícito para Voice: a fila certa, quase sem custo para o tráfego comum.</p></div>
+    <div class="card f up" data-f="2"><h3>⚡ Escalonar sob demanda</h3><p class="small">Bloquear/descartar só quando o <b>acidente ocorre numa área congestionada</b> e os alertas estão de fato fluindo; desligar depois.</p></div>
+    <div class="card f up" data-f="3"><h3>🔒 Proteger o trigger</h3><p class="small">Autenticação, limitação de taxa e checagens de plausibilidade antes que frames Voice possam suprimir vizinhos.</p></div>
+  </div>
+  <h3 class="mt2 f" data-f="4">P95 de Voice contra a referência da TS 22.186 (ms)</h3>
+  <div class="gauge">
+    <div class="axis"></div>
+    <div class="tick" style="left:0">0</div><div class="tick" style="left:20%">5</div><div class="tick" style="left:40%">10</div><div class="tick" style="left:60%">15</div><div class="tick" style="left:80%">20</div><div class="tick" style="left:100%">25 ms</div>
+    <div class="mk f" data-f="4" style="--x:8.8%;color:var(--ok)"><span>uniforme 2,2</span><i></i></div>
+    <div class="mk f" data-f="5" style="--x:77%;color:var(--vo)"><span>DCF/EDCA hotspot 18,5–20</span><i></i></div>
+    <div class="mk f" data-f="6" style="--x:58.4%;color:var(--accent)"><span>emergency 14,6</span><i></i></div>
+    <div class="mk f" data-f="4" style="--x:100%;color:var(--navy)"><span>budget</span><i></i></div>
+  </div>
+  <aside class="notes">Para quem projeta o sistema: marque os alertas com DSCP 46 e mapeie explicitamente para Voice; isso é barato. Escalone para blocking ou drop só quando o acidente ocorre numa área congestionada, e desligue depois. E proteja o trigger antes. Contra a referência de 25 ms: sob carga uniforme estamos em 2,2 ms e o risco real é o custo para o Best Effort; no hotspot, DCF e EDCA chegam perto do budget, 18,5 a 20, e a emergency traz de volta para 14,6. É uma medida na camada MAC, não uma afirmação sobre desfechos de acidentes. <b>~55 s</b></aside>
+</section>
+
+<section class="slide" data-section="Conclusão" data-time="50">
+  <h2><span class="kicker">Publicações e trabalhos futuros</span>O que já existe e o que vem a seguir</h2>
+  <div class="row">
+    <div style="width:520px">
+      <div class="card f left" data-f="1"><span class="tag red">SBESC 2026</span><h3 class="mt" style="font-size:22px">Estudo de priorização ciente de acidente</h3><p class="small">Precursor direto; campanha anterior só uniforme, números <b>substituídos</b> aqui.</p></div>
+      <div class="card f left" data-f="1" style="margin-top:14px"><span class="tag">SBESC 2025</span><h3 class="mt" style="font-size:22px">TSN sem fio / QoS para V2X</h3><p class="small">Precursor com TAS + sincronização, do qual este trabalho se afasta.</p></div>
+      <div class="card f left" data-f="1" style="margin-top:14px"><span class="tag blue">artefato</span><p class="small mono" style="margin:8px 0 0">github.com/GOAguiar99/veins-inet-qos</p></div>
+    </div>
+    <div class="col">
+      <div class="grid2">
+        <div class="card f up" data-f="2"><h3>Evidência mais forte</h3><p class="small">Mais seeds + CIs/testes; fading, shadowing, capture; varreduras contínuas de densidade/carga; escalas CAM/DENM; multi-hop; vínculo com um prazo de segurança.</p></div>
+        <div class="card f up" data-f="3"><h3>Baselines e parâmetros</h3><p class="small">Ablações dos triggers, varreduras de parâmetros; baselines de EDCA adaptativo, DCC e sidelink; alertas concorrentes.</p></div>
+        <div class="card hot f up" data-f="4"><h3>Trigger em malha fechada</h3><p class="small">Critério de duty cycle (cadência de alertas × blocking window) para ligar a emergency só onde compensa. O pre-blocking preditivo não mostrou benefício com bursts esparsos.</p></div>
+        <div class="card f up" data-f="5"><h3>Implantação</h3><p class="small">Segurança do trigger, classes mais finas, justiça por veículo, HIL/testbed. Artigo de periódico consolidando os resultados completos.</p></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Publicações: o artigo do SBESC 2026 é o precursor direto, com a campanha anterior que esta dissertação substitui; o SBESC 2025 foi o precursor de TSN sem fio; e o artefato é público. Trabalhos futuros: estatística mais forte e modelos de rádio e tráfego mais ricos; ablações e os baselines que faltam, como o DCC; um trigger de ciclo em malha fechada, o próximo passo mais direto; e questões de implantação como segurança, classes mais finas, justiça e validação em testbed. Um artigo de periódico vai consolidar os resultados completos. <b>~50 s</b></aside>
+</section>
+
+<section class="slide formal-title nochrome" data-section="Conclusão" data-time="20">
+  <div class="logos"><img class="ufsc" src="assets/ufsc.png" alt="UFSC"><img class="lisha" src="assets/lisha.png" alt="LISHA"></div>
+  <div class="ttl" style="top:250px">
+    <div class="q">Obrigado!</div>
+    <div style="font-size:34px;color:var(--teal);margin-top:6px">Perguntas?</div>
+    <div class="rule"></div>
+    <p style="font-size:24px;color:#3c4a4a;max-width:1100px;margin:28px auto 0">A priorização ciente de acidente melhora de forma mensurável o atraso e a integridade dos frames Voice <b>onde o congestionamento perto do acidente é concentrado e os bursts são densos</b>, como um <b>passo de escalonamento limitado</b> cujo custo para o tráfego comum precisa ser reconhecido.</p>
+  </div>
+  <div class="people" style="top:640px"><div class="author">Gabriel de Oliveira Aguiar</div><span style="font-size:24px">aguiar@lisha.ufsc.br</span><div class="lab">UFSC · PPGCC · LISHA</div></div>
+  <div class="place"><span class="mono" style="font-size:19px">github.com/GOAguiar99/veins-inet-qos</span></div>
+  <aside class="notes">Para fechar: a priorização ciente de acidente só funciona como um passo de escalonamento limitado, disparado pelo acidente, em congestionamento concentrado, e seu custo para o tráfego comum precisa ser reconhecido. Obrigado; fico à disposição para perguntas. Os slides de backup com as tabelas completas vêm a seguir.</aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- APÊNDICE -->
+<section class="slide" data-section="Apêndice" data-time="0">
+  <h2><span class="kicker">Backup A</span>Densidade pesada, carga uniforme alta: tabela completa</h2>
+  <table class="t compact">
+    <tr><th>Política</th><th class="num">Média VO</th><th class="num">P95 VO</th><th class="num">Jitter VO</th><th class="num">RX/alerta VO</th><th class="num">Média BE</th><th class="num">P95 BE</th><th class="num">Jitter BE</th><th class="num">RX/TX BE</th></tr>
+    <tr><td>Plain</td><td class="num">0,991</td><td class="num">2,249</td><td class="num">1,024</td><td class="num">9,954</td><td class="num">0,387</td><td class="num">0,511</td><td class="num">0,035</td><td class="num">8,057</td></tr>
+    <tr><td>EDCA</td><td class="num">0,994</td><td class="num">2,242</td><td class="num">1,018</td><td class="num">9,954</td><td class="num">0,389</td><td class="num">0,524</td><td class="num">0,038</td><td class="num">8,091</td></tr>
+    <tr><td>Stable</td><td class="num">0,988</td><td class="num">2,245</td><td class="num">1,026</td><td class="num">9,954</td><td class="num">3,696</td><td class="num">30,491</td><td class="num">3,490</td><td class="num">7,606</td></tr>
+    <tr><td>Guarded</td><td class="num">0,998</td><td class="num">2,241</td><td class="num">1,029</td><td class="num">9,954</td><td class="num">0,896</td><td class="num">3,889</td><td class="num">0,669</td><td class="num">7,655</td></tr>
+    <tr><td>Emergency</td><td class="num">0,952</td><td class="num">2,211</td><td class="num">0,979</td><td class="num">9,954</td><td class="num">0,432</td><td class="num">0,369</td><td class="num">0,120</td><td class="num">6,927</td></tr>
+  </table>
+  <p class="tiny">100 veículos, médias de três execuções, atrasos/jitter em ms. Faixas por seed na dissertação, tabela de atraso, jitter e multicast reach em densidade pesada e carga alta.</p>
+  <h3 class="mt2">P95 BE (ms) por regime de offered load</h3>
+  <table class="t compact">
+    <tr><th>Carga</th><th class="num">Plain</th><th class="num">EDCA</th><th class="num">Stable</th><th class="num">Guarded</th><th class="num">Emergency</th></tr>
+    <tr><td>frota · baixa</td><td class="num">0,217</td><td class="num">0,217</td><td class="num">0,323</td><td class="num">0,217</td><td class="num">0,217</td></tr>
+    <tr><td>frota · média</td><td class="num">0,297</td><td class="num">0,297</td><td class="num">2,081</td><td class="num">0,357</td><td class="num">0,297</td></tr>
+    <tr><td>frota · alta</td><td class="num">0,511</td><td class="num">0,524</td><td class="num">30,491</td><td class="num">3,889</td><td class="num">0,369</td></tr>
+    <tr><td>nó acidentado · baixa</td><td class="num">0,217</td><td class="num">0,217</td><td class="num">0,708</td><td class="num">1,357</td><td class="num">0,217</td></tr>
+    <tr><td>nó acidentado · média</td><td class="num">0,297</td><td class="num">0,335</td><td class="num">3,040</td><td class="num">2,323</td><td class="num">0,297</td></tr>
+    <tr><td>nó acidentado · alta</td><td class="num">0,631</td><td class="num">0,772</td><td class="num">13,763</td><td class="num">3,865</td><td class="num">0,435</td></tr>
+  </table>
+  <aside class="notes">Backup: as tabelas completas da densidade pesada.</aside>
+</section>
+
+<section class="slide" data-section="Apêndice" data-time="0">
+  <h2><span class="kicker">Backup B</span>Hotspot, carga alta: tabela completa</h2>
+  <table class="t">
+    <tr><th>Política</th><th class="num">Média VO (ms)</th><th class="num">P95 VO (ms) [faixa]</th><th class="num">RX/alerta VO</th><th class="num">Drops VO MAC (×10³)</th><th class="num">BE do nó acidentado (ms)</th><th class="num">BE descartado em blocking (×10³)</th></tr>
+    <tr><td>Plain</td><td class="num">4,540</td><td class="num">18,45 [16,1–19,9]</td><td class="num">9,670</td><td class="num">n.a.</td><td class="num">1,548</td><td class="num">0</td></tr>
+    <tr><td>EDCA</td><td class="num">4,448</td><td class="num">19,96 [18,7–20,7]</td><td class="num">9,624</td><td class="num">25,2</td><td class="num">1453 (1,45 s)</td><td class="num">0</td></tr>
+    <tr><td>Stable</td><td class="num">4,608</td><td class="num">21,04 [18,8–22,8]</td><td class="num">9,636</td><td class="num">25,4</td><td class="num">1386 (1,39 s)</td><td class="num">0</td></tr>
+    <tr><td>Guarded</td><td class="num">4,439</td><td class="num">20,04 [19,8–20,4]</td><td class="num">9,689</td><td class="num">25,1</td><td class="num">981 (0,98 s)</td><td class="num">0</td></tr>
+    <tr class="hl"><td>Emergency</td><td class="num">2,781</td><td class="num">14,56 [11,8–16,0]</td><td class="num">9,835</td><td class="num">17,8</td><td class="num">3,335</td><td class="num">16,1</td></tr>
+  </table>
+  <p class="tiny mt">100 veículos, nós 1–3 do hotspot transmitindo 1200 B, médias de três execuções. Drops VO MAC = contagens de recepção incorreta atribuídas a Voice, somadas sobre os nós. "n.a." no plain: sem atribuição por AC sem classificador.</p>
+  <aside class="notes">Backup: a tabela completa do hotspot.</aside>
+</section>
+
+<section class="slide" data-section="Apêndice" data-time="0">
+  <h2><span class="kicker">Backup C</span>Decisões experimentais</h2>
+  <table class="t compact">
+    <tr><th>Decisão</th><th>Escolha</th><th>Justificativa</th></tr>
+    <tr><td>Enquadramento</td><td>Comparação proteção-vs-custo; sem alegações de garantia determinística</td><td>Isola o que mecanismos MAC locais conseguem ou não entregar</td></tr>
+    <tr><td>Pacotes de densidade</td><td>Leve 10 (sensibilidade); pesada 100 (estresse, enfatizada)</td><td>Varrer a sensibilidade e depois estressar onde a contenção pesa</td></tr>
+    <tr><td>Políticas MAC</td><td>Escada de cinco políticas: plain → emergency</td><td>Cada degrau isola um passo de mecanismo</td></tr>
+    <tr><td>Carga BE oferecida</td><td>Poisson, médias 500 / 250 / 125 ms</td><td>Contenção em bursts sem overflow de fila</td></tr>
+    <tr><td>Tráfego de alerta</td><td>8 cópias, gap de 5 ms na alta (≈ 400 pacotes/s)</td><td>Estressar o caminho Voice quando a proteção mais importa</td></tr>
+    <tr><td>Fonte de contenção</td><td>Offered load + densidade da frota; sem saturação random-waypoint</td><td>A contenção causada pela carga é o fenômeno estudado</td></tr>
+    <tr><td>Sementes</td><td>Três repetições (#0–#2)</td><td>Evidência estocástica limitada e reprodutível</td></tr>
+    <tr><td>Matrizes</td><td>Uniforme 15 configurações; hotspot 15 × 3 seeds = 45 execuções</td><td>Caso de referência + tempo de ar BE concentrado perto do acidente</td></tr>
+  </table>
+  <aside class="notes">Backup: a tabela de decisões experimentais.</aside>
+</section>
+
+<section class="slide" data-section="Apêndice" data-time="0">
+  <h2><span class="kicker">Backup D</span>Proveniência do código</h2>
+  <table class="t compact">
+    <tr><th>Componente</th><th>Origem</th><th>Papel</th></tr>
+    <tr><td>CritPacketSender, CrashBurstApp</td><td><b>criado</b></td><td>Gerador BE / coletor de KPIs; bursts VO disparados pelo acidente</td></tr>
+    <tr><td>QosClassifier</td><td><b>criado</b></td><td>DSCP 46 → UP de Voice</td></tr>
+    <tr><td>V2xIeee80211Mac</td><td><b>criado</b></td><td>Contadores de drop por AC e por motivo</td></tr>
+    <tr><td>V2xHcf + V2xEdcaFsmController</td><td><b>criado</b></td><td>Blocking adaptativo de BE / emergency preemption</td></tr>
+    <tr><td>Pacotes de cenário, matriz de configurações</td><td><b>criado</b></td><td>Composições ini da rodovia, redes SUMO, scripts de execução</td></tr>
+    <tr><td>kpi_dashboard (Rust)</td><td><b>criado</b></td><td>Extração offline de KPIs e exportação de figuras</td></tr>
+    <tr><td>VeinsInetApplicationBase</td><td>vendorizado, <b>modificado</b></td><td>Portas configuráveis, controle de loopback multicast</td></tr>
+    <tr><td>VeinsInetCar / Manager / Mobility</td><td>reusado sem mudanças</td><td>Host, manager TraCI, mobilidade</td></tr>
+    <tr><td>INET 4.5.4, Veins 5.3.1</td><td>submódulos, sem mudanças</td><td>Rádio/PHY, meio, IPv4/UDP, Hcf original; acoplamento TraCI</td></tr>
+  </table>
+  <aside class="notes">Backup: o que foi criado, modificado e reusado.</aside>
+</section>
+
+<div class="brand"><img class="ufsc" src="assets/ufsc.png" alt="UFSC"><img class="lisha" src="assets/lisha.png" alt="LISHA"></div>
+<div class="footer"><span class="fl">G. O. Aguiar · Defesa de Mestrado · PPGCC/UFSC · 2026</span><span class="fr"></span></div>
+<div class="progress"><i></i></div>
+<div class="sectionlabel"></div>
+</div>
+
+<div class="notes-overlay"></div>
+<div class="index-overlay"></div>
+
+<div class="presenter-panel">
+  <div class="top"><div><div id="p-cur"></div><div id="p-step"></div><div id="p-next"></div></div><div style="text-align:right"><div id="p-clock">00:00</div><div id="p-target"></div><div id="p-plan"></div></div></div>
+  <div id="p-notes"></div>
+  <p style="color:#6f7f97;font-size:15px;margin-top:16px">Setas / Espaço controlam a janela principal · T zera o cronômetro (ele começa no primeiro avanço)</p>
+</div>
+
+<script>
+window.DeckAnims = {};
+document.querySelectorAll('.slide').forEach(s => { if (s.querySelector('#bits-wrap')) s.dataset.anim = 'bits'; });
+window.DeckAnims.bits = (s, step) => { s.querySelector('#bits-wrap').classList.toggle('msb3', step === 1); };
+window.DeckAnims.bio = (s, step) => { const b = s.querySelector('.tline .bar'); const steps = s.querySelectorAll('.tstep'); const k = Math.min(step, steps.length); if (!k) { b.style.height = '0px'; return; } const last = steps[k - 1]; b.style.height = (last.offsetTop + last.offsetHeight / 2 - 14) + 'px'; };
+</script>
+<script src="deck.js?v=9"></script>
+</body>
+</html>

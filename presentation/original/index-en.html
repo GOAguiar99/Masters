@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Crash-Aware Traffic Prioritization in Vehicular Wi-Fi Networks — Defense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css?v=4">
+<style>
+/* ---------- slide-specific rules ---------- */
+/* FSM walkthrough highlights */
+#s-fsm.step-1 #st-listen,
+#s-fsm.step-2 #st-block, #s-fsm.step-2 #e-demand,
+#s-fsm.step-3 #st-block,
+#s-fsm.step-4 #st-send, #s-fsm.step-4 #e-txstart,
+#s-fsm.step-5 #st-block, #s-fsm.step-5 #e-txend,
+#s-fsm.step-6 #st-listen, #s-fsm.step-6 #e-expire,
+#s-fsm.step-7 #e-skip, #s-fsm.step-7 #e-closed { }
+#s-fsm.step-1 #st-listen, #s-fsm.step-2 #st-block, #s-fsm.step-3 #st-block,
+#s-fsm.step-4 #st-send, #s-fsm.step-5 #st-block, #s-fsm.step-6 #st-listen { --lit: 1; }
+#s-fsm.step-1 #st-listen rect, #s-fsm.step-2 #st-block rect, #s-fsm.step-3 #st-block rect,
+#s-fsm.step-4 #st-send rect, #s-fsm.step-5 #st-block rect, #s-fsm.step-6 #st-listen rect { fill: #fff2ec; stroke: var(--accent); stroke-width: 5; }
+#s-fsm.step-2 #e-demand path, #s-fsm.step-4 #e-txstart path, #s-fsm.step-5 #e-txend path,
+#s-fsm.step-6 #e-expire path, #s-fsm.step-7 #e-skip path, #s-fsm.step-7 #e-closed path { stroke: var(--accent); stroke-width: 5; }
+#s-fsm.step-2 #e-demand text, #s-fsm.step-4 #e-txstart text, #s-fsm.step-5 #e-txend text,
+#s-fsm.step-6 #e-expire text, #s-fsm.step-7 #e-skip text, #s-fsm.step-7 #e-closed text { fill: var(--accent); font-weight: 700; }
+.fsm-caption { position: absolute; left: 96px; right: 96px; bottom: 60px; height: 120px; }
+.fsm-caption > div { position: absolute; inset: 0; opacity: 0; transition: opacity .4s; font-size: 26px; line-height: 1.4; }
+#s-fsm.step-0 .cap0, #s-fsm.step-1 .cap1, #s-fsm.step-2 .cap2, #s-fsm.step-3 .cap3, #s-fsm.step-4 .cap4,
+#s-fsm.step-5 .cap5, #s-fsm.step-6 .cap6, #s-fsm.step-7 .cap7, #s-fsm.step-8 .cap8 { opacity: 1; }
+
+/* packet path */
+.pkt { offset-path: path('M 150 40 L 150 470 L 610 470 L 610 40'); offset-rotate: 0deg; }
+.play.on .pkt { animation: travel 4.2s var(--ease) infinite; }
+@keyframes travel { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 92% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+.pkt.vo-pk { animation-delay: 2.1s !important; }
+
+/* flowing dashes */
+.flowline { stroke-dasharray: 10 10; animation: dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -20; } }
+
+/* gauge positions */
+.gauge .mk.f { left: 0; } .gauge .mk.f.on { left: var(--x); }
+
+/* diverging bars */
+.div-row { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 20px; align-items: center; margin: 14px 0; }
+.div-row .lbl { font-size: 22px; font-weight: 700; }
+.div-row .lbl small { display: block; font-size: 17px; color: var(--muted); font-weight: 500; }
+.div-track { position: relative; height: 44px; background: #f2f0ea; border-radius: 8px; }
+.div-track::before { content: ""; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: #8a93a1; }
+.div-track i { position: absolute; top: 6px; bottom: 6px; border-radius: 6px; transition: width 1s var(--ease); width: 0; }
+.div-track i.neg { right: 50%; background: var(--ok); }
+.div-track i.pos { left: 50%; background: var(--vo); }
+.on .div-track i { width: var(--w); }
+.div-track span { position: absolute; top: 9px; font-size: 19px; font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- =============================================================== -->
+<!-- 1. TITLE -->
+<section class="slide title-slide nochrome" data-time="30">
+  <div class="road"></div>
+  <div class="wave"><i></i><i></i><i></i></div>
+  <div class="tl-inner">
+    <div class="tag red" style="background:rgba(240,138,93,.18);color:#f6b08f">Master's Dissertation Defense</div>
+    <h1 style="margin-top:22px">Crash-Aware Traffic Prioritization in Vehicular Wi-Fi Networks</h1>
+    <div class="sub">Can crash alerts get better service than routine traffic using only local, standard IEEE&nbsp;802.11p MAC mechanisms, and what does that protection cost?</div>
+  </div>
+  <div class="who"><b>Gabriel de Oliveira Aguiar</b><br>Supervisor: Prof. Giovani Gracioli, Ph.D.</div>
+  <div class="inst">Universidade Federal de Santa Catarina (UFSC)<br>Graduate Program in Computer Science<br>Florianópolis, 2026</div>
+  <aside class="notes">Good morning. I'm Gabriel, and I'll present my dissertation on crash-aware traffic prioritization in vehicular Wi-Fi, supervised by Prof. Giovani Gracioli. The question is simple: can a crash alert get better wireless service than routine traffic using only local, standard 802.11p mechanisms, and what does that cost the routine traffic? <b>~30 s</b></aside>
+</section>
+
+<!-- 2. AGENDA -->
+<section class="slide" data-section="Intro" data-time="30">
+  <h2>Outline</h2>
+  <div class="agenda stagger auto">
+    <div>Motivation &amp; problem<small>Crash alerts on a contention-based channel</small></div>
+    <div>Background<small>DCF, EDCA, 802.11p/OCB, DSCP→Voice</small></div>
+    <div>Related work<small>Where this design sits</small></div>
+    <div>System model<small>Network, traffic, 5 MAC policies, controller</small></div>
+    <div>Implementation<small>OMNeT++ / INET / Veins / SUMO artifact</small></div>
+    <div>Evaluation<small>Uniform vs. concentrated load; protection vs. cost</small></div>
+    <div>Conclusion<small>Findings, implications, limits, future work</small></div>
+  </div>
+  <aside class="notes">Seven parts. I'll go quickly through the background, because the main content is the evaluation, especially the contrast between uniform and concentrated load. <b>~30 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- MOTIVATION -->
+<!-- 3. Crash scene -->
+<section class="slide" data-section="Motivation" data-time="50">
+  <h2><span class="kicker">Motivation</span>A crash on the highway</h2>
+  <div class="scene" style="height:360px">
+    <div class="lane" style="top:120px"></div>
+    <div class="lane" style="top:240px"></div>
+    <!-- lane 1 movers -->
+    <div class="car mover" style="top:45px;--dur:7s;--del:-1s"><span class="bpulse f" data-f="2" style="left:35px;top:17px"></span></div>
+    <div class="car truck mover" style="top:45px;--dur:7s;--del:-4.2s"></div>
+    <div class="car mover" style="top:285px;--dur:8s;--del:-2s"></div>
+    <div class="car mover" style="top:285px;--dur:8s;--del:-6s"></div>
+    <!-- middle lane queued cars behind crash -->
+    <div class="car" style="top:163px;left:300px"></div>
+    <div class="car truck" style="top:163px;left:470px"></div>
+    <div class="car" style="top:163px;left:690px"></div>
+    <!-- crash car -->
+    <div class="car crash f pop" data-f="1" style="top:163px;left:930px"></div>
+    <div class="f" data-f="1" style="position:absolute;left:965px;top:180px">
+      <span class="pulse go" style="--del:0s"></span><span class="pulse go" style="--del:.66s"></span><span class="pulse go" style="--del:1.33s"></span>
+    </div>
+    <!-- BE pulses -->
+    <div class="f" data-f="2">
+      <span class="bpulse go" style="left:335px;top:180px;--del:.2s"></span>
+      <span class="bpulse go" style="left:525px;top:180px;--del:.9s"></span>
+      <span class="bpulse go" style="left:725px;top:180px;--del:.5s"></span>
+      <span class="bpulse go" style="left:200px;top:300px;--del:1.1s"></span>
+      <span class="bpulse go" style="left:1180px;top:60px;--del:.4s"></span>
+      <span class="bpulse go" style="left:1300px;top:300px;--del:1.3s"></span>
+    </div>
+    <div class="f" data-f="1" style="position:absolute;left:1010px;top:150px;color:#ffd8cf;font-weight:800;font-size:22px">CRASH ALERT (Voice)</div>
+    <div class="f" data-f="2" style="position:absolute;left:30px;top:16px;color:#cfe2fa;font-weight:700;font-size:20px">routine traffic from every vehicle (Best Effort)</div>
+  </div>
+  <div class="grid2 mt">
+    <div class="f up" data-f="3"><p style="margin:0">Vehicles behind often <b>cannot see</b> the hazard, because traffic or road geometry hides it.<br>A V2X warning sent by the crashed vehicle can reach them <b>before</b> the hazard becomes visible.</p></div>
+    <div class="f up callout" data-f="4">The alert is <b>rare</b>, but it is only useful if it arrives <b>on time</b>, and it is sent when the channel is <b>busiest</b>.</div>
+  </div>
+  <div class="cite">ETSI EN 302 637-3 (DENM): road-hazard warnings are sent by the vehicle that detects the event.</div>
+  <aside class="notes">Picture a highway. One vehicle crashes (click) and broadcasts an alert. The vehicles behind it often cannot see the hazard, because traffic or the road hides it, so the radio warning can arrive before they see it. But (click) every other vehicle keeps sending routine messages on the same channel. In Europe this is the DENM mechanism. Key point: the alert is rare, its value depends almost entirely on timeliness, and it is sent exactly when the channel is most loaded. <b>~50 s</b></aside>
+</section>
+
+<!-- 4. Timing budgets -->
+<section class="slide" data-section="Motivation" data-time="45">
+  <h2><span class="kicker">How fast is "on time"?</span>3GPP TS 22.186: platooning requirements</h2>
+  <table class="t">
+    <tr><th>Degree of automation</th><th>Req.</th><th class="num">Payload (B)</th><th class="num">Rate (msg/s)</th><th class="num">Max latency</th><th class="num">Reliability</th><th class="num">Min range</th></tr>
+    <tr class="f left hl" data-f="1"><td>Lowest</td><td>[R.5.2-004]</td><td class="num">300–400</td><td class="num">30</td><td class="num"><b>25 ms</b></td><td class="num">90 %</td><td class="num">—</td></tr>
+    <tr class="f left" data-f="2"><td>Low</td><td>[R.5.2-005]</td><td class="num">6500</td><td class="num">50</td><td class="num">20 ms</td><td class="num">—</td><td class="num">350 m</td></tr>
+    <tr class="f left" data-f="2"><td>Highest</td><td>[R.5.2-006]</td><td class="num">50–1200</td><td class="num">30</td><td class="num"><b>10 ms</b></td><td class="num">99.99 %</td><td class="num">80 m</td></tr>
+    <tr class="f left" data-f="2"><td>High</td><td>[R.5.2-007]</td><td class="num">—</td><td class="num">—</td><td class="num">20 ms</td><td class="num">—</td><td class="num">180 m</td></tr>
+  </table>
+  <div class="grid2 mt2">
+    <div class="f up callout" data-f="3"><b>25 ms end-to-end</b> is a conservative, widely cited reference bound, not the strictest row.</div>
+    <div class="f up callout gray" data-f="4">These are <b>application-layer, end-to-end</b> targets. They give the <b>order of magnitude</b> for reading MAC-level tails; they are not a MAC pass/fail test.</div>
+  </div>
+  <div class="cite">3GPP TS 22.186, Table 5.2-1 (information exchange within the platoon; 130 km/h). TS 22.261 defers concrete V2X KPIs to TS 22.186.</div>
+  <aside class="notes">What does "on time" mean? 3GPP TS 22.186 gives numbers for platooning. The lowest automation degree asks for 25 ms end-to-end at 90% reliability; the highest goes down to 10 ms at 99.99%. I use 25 ms as the reference bound throughout. Important: these are application-level end-to-end budgets. I use them only to put the MAC-level tails I measure in perspective, not as a pass/fail test. <b>~45 s</b></aside>
+</section>
+
+<!-- 5. Why 802.11p -->
+<section class="slide" data-section="Motivation" data-time="45">
+  <h2><span class="kicker">Access technology</span>Why IEEE 802.11p?</h2>
+  <p class="muted" style="margin-top:-18px">Warnings must work wherever vehicles meet, including road sections <b>without roadside units or cellular coverage</b>.</p>
+  <div class="grid4 mt stagger auto">
+    <div class="card dim"><span class="tag red">✕</span><h3 class="mt">Wired / TSN</h3><p>Can bound delay, but <b>cannot connect moving vehicles</b>.</p></div>
+    <div class="card dim"><span class="tag red">✕</span><h3 class="mt">Cellular via base station</h3><p>Depends on coverage; every message goes <b>through the infrastructure</b>.</p></div>
+    <div class="card dim"><span class="tag">~</span><h3 class="mt">NR-V2X sidelink (Mode 2)</h3><p>Direct exchange, but uses sensing + semi-persistent scheduling: a <b>different radio technology</b>.</p></div>
+    <div class="card hot"><span class="tag green">✓</span><h3 class="mt">IEEE 802.11p / 11bd</h3><p>Direct exchange, <b>no infrastructure, no synchronization</b>. 5.9 GHz, 10 MHz; access layer of ITS-G5.</p></div>
+  </div>
+  <div class="f up callout mt2">But 802.11p (and its successor 802.11bd) keep <b>fully distributed, contention-based access</b>: there is <b>no central scheduler</b> that can reserve transmissions for urgent traffic.</div>
+  <aside class="notes">Why 802.11p? Wired TSN can bound delay, but not between moving cars. Cellular through a base station needs coverage. NR-V2X sidelink allows direct exchange, but it is a different radio technology with its own scheduling. 802.11p works without infrastructure or synchronization and is already standardized; 802.11bd improves it and stays backward compatible. The catch (click): channel access stays fully distributed and random. Nobody can reserve the channel for the alert. <b>~45 s</b></aside>
+</section>
+
+<!-- 6. The problem: alert waits -->
+<section class="slide" data-section="Motivation" data-time="55">
+  <h2><span class="kicker">The problem</span>The alert waits behind routine frames</h2>
+  <div class="f play" data-f="1" style="position:relative;margin:20px 0 0 170px;width:1180px">
+    <div class="tl" style="margin-bottom:30px">
+      <div class="tl-label">Neighbors (BE)</div>
+      <div class="blk be seq" style="left:0;width:140px;--d:0s">BE</div>
+      <div class="blk be seq" style="left:240px;width:140px;--d:.9s">BE</div>
+      <div class="blk be seq" style="left:480px;width:140px;--d:1.8s">BE</div>
+      <div class="blk be seq" style="left:900px;width:140px;--d:3.2s">BE</div>
+    </div>
+    <div class="tl">
+      <div class="tl-label">Crash alert (VO)</div>
+      <div class="seq" style="position:absolute;left:52px;bottom:58px;--d:.3s;font-size:18px;color:var(--vo);font-weight:800">▼ alert ready</div>
+      <div class="blk difs seq" style="left:140px;width:60px;--d:.6s">DIFS</div>
+      <div class="blk slot seq" style="left:200px;width:40px;--d:.75s">4</div>
+      <div class="blk freeze seq" style="left:240px;width:140px;--d:.9s">frozen</div>
+      <div class="blk difs seq" style="left:380px;width:60px;--d:1.4s">DIFS</div>
+      <div class="blk slot seq" style="left:440px;width:40px;--d:1.6s">3</div>
+      <div class="blk freeze seq" style="left:480px;width:140px;--d:1.8s">frozen</div>
+      <div class="blk difs seq" style="left:620px;width:60px;--d:2.3s">DIFS</div>
+      <div class="blk slot seq" style="left:680px;width:40px;--d:2.5s">2</div>
+      <div class="blk slot seq" style="left:720px;width:40px;--d:2.65s">1</div>
+      <div class="blk vo seq" style="left:760px;width:140px;--d:2.85s">ALERT TX</div>
+    </div>
+    <div class="seq" style="--d:3.4s;position:absolute;left:60px;width:700px;top:190px;border-top:3px solid var(--vo);text-align:center;color:var(--vo);font-weight:800;font-size:22px;padding-top:6px">access delay grows with the surrounding load</div>
+  </div>
+  <ul class="mt2" style="margin-top:80px">
+    <li class="f up" data-f="2">As load rises, <b>delay and jitter</b> become unstable; the alert's <b>backoff freezes</b> every time someone else transmits.</li>
+    <li class="f up" data-f="3">QoS markings are <b>not handled consistently</b> across deployments.</li>
+    <li class="f up" data-f="4">Every millisecond of waiting takes reaction time away from the following vehicles.</li>
+  </ul>
+  <div class="cite">RFC 8325; Wu et al. (continuous backoff freezing in 802.11p).</div>
+  <aside class="notes">Here is the problem in time. Neighbors keep sending Best Effort frames (click to play). The alert is ready, waits for the channel, waits a DIFS, counts down a slot, and then another frame occupies the medium, so its counter freezes. This repeats, and the alert only goes out after several frozen periods. Its access delay grows with the surrounding load, exactly when the alert matters most. Also, QoS markings are not handled consistently in practice; more on that later. <b>~55 s</b></aside>
+</section>
+
+<!-- 7. Standard tools and gap -->
+<section class="slide" data-section="Motivation" data-time="55">
+  <h2><span class="kicker">Existing tools and the gap</span>Standard mechanisms exist, but they are not enough</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1">
+      <h3>Network layer: DSCP 46 (EF)</h3>
+      <p>The Expedited Forwarding codepoint marks the most delay-sensitive traffic.</p>
+      <p class="f up" data-f="3" style="color:var(--vo)">✕ The DSCP→802.11 mapping is a <b>local policy</b>, and the defaults are <b>ambiguous</b>.</p>
+    </div>
+    <div class="card f right" data-f="2">
+      <h3>Link layer: EDCA</h3>
+      <p>Four access categories (BK, BE, VI, <b class="vo">VO</b>); Voice gets the most favorable contention parameters.</p>
+      <p class="f up" data-f="4" style="color:var(--vo)">✕ It gives <b>statistical preference</b>, not guarantees, and urgent traffic gains only at others' expense.</p>
+    </div>
+  </div>
+  <div class="row mt2">
+    <div class="col card f up" data-f="5"><h3>Stronger approaches in the literature</h3><p>TSN-inspired slot schedulers, preemptive / cooperative MACs, cellular sidelink allocation…</p><p>…but they need <b>synchronization, infrastructure or richer protocol machinery</b>, which is hard to provide in a decentralized VANET.</p></div>
+    <div class="col card hot f up" data-f="6"><h3>The gap</h3><p>A <b>local, event-driven</b> design that isolates <b>one crash-triggered flow</b> against background traffic, and measures <b>both</b> the protection and the penalty.</p><p>Standard 802.11p only, so it is <b>deployable per node</b>.</p></div>
+  </div>
+  <aside class="notes">There are standard tools. At the IP layer, DSCP 46, Expedited Forwarding, marks urgent traffic. At the link layer, EDCA has four access categories, and Voice contends most aggressively. But (click) the DSCP-to-802.11 mapping is a local policy, and the defaults are ambiguous; (click) EDCA is statistical preference, not a guarantee, and urgent traffic gains only at someone else's expense. The literature proposes stronger control, but with synchronization or infrastructure. The gap: a local, event-driven design for one crash flow that measures both what it gains and what it costs, with nothing beyond standard 802.11p. <b>~55 s</b></aside>
+</section>
+
+<!-- 8. Proposal overview -->
+<section class="slide" data-section="Motivation" data-time="50">
+  <h2><span class="kicker">This work</span>A focused crash-aware prioritization strategy</h2>
+  <div class="row" style="align-items:stretch">
+    <div class="col">
+      <div class="card f left" data-f="1" style="border-left:8px solid var(--be)"><h3 class="be-t">All vehicles</h3><p>Periodic <b>Best Effort multicast</b>, DSCP 0, throughout the scenario.</p></div>
+      <div class="card f left mt" data-f="2" style="border-left:8px solid var(--vo)"><h3 class="vo-t">One crash vehicle</h3><p>Temporary <b>alert bursts</b>, DSCP 46, explicitly mapped to <b>Voice</b>, superimposed on its own BE.</p></div>
+      <div class="card f left mt" data-f="4"><h3>Simulated</h3><p>OMNeT++ + INET network stack, coupled to SUMO road traffic through Veins.</p></div>
+    </div>
+    <div class="col f right" data-f="3">
+      <h3>Five MAC policies, built from standard mechanisms</h3>
+      <div class="stack mt">
+        <div class="layer"><span><span class="pol plain">plain</span>&nbsp; DCF baseline</span><span class="tiny">no differentiation</span></div>
+        <div class="layer"><span><span class="pol edca">edca_only</span>&nbsp; EDCA + DSCP 46→VO</span><span class="tiny">standard QoS</span></div>
+        <div class="layer study"><span><span class="pol stable">stable</span>&nbsp; long protection windows</span><span class="tiny">hold BE</span></div>
+        <div class="layer study"><span><span class="pol guarded">guarded</span>&nbsp; short, tight windows</span><span class="tiny">hold BE</span></div>
+        <div class="layer study"><span><span class="pol emergency">emergency</span>&nbsp; aggressive activation</span><span class="tiny">hold + <b>drop</b> BE</span></div>
+      </div>
+      <p class="small mt">Adaptive profiles = fixed design points on a <b>protection-versus-cost frontier</b>. The goal is better <b>statistical</b> latency under congestion, not deterministic guarantees.</p>
+    </div>
+  </div>
+  <aside class="notes">What I propose is a prioritization strategy built from standard pieces, not a new MAC protocol. Every vehicle sends periodic Best Effort multicast. One designated crash vehicle sends temporary alert bursts marked DSCP 46 and mapped explicitly to Voice. On top of that I compare five MAC policies: plain DCF, standard EDCA with the explicit mapping, and three adaptive extensions, stable, guarded and emergency, that hold back competing Best Effort while alerts are active; emergency may also drop it. These are fixed design points. The aim is statistical improvement under congestion, not hard guarantees. <b>~50 s</b></aside>
+</section>
+
+<!-- 9. Objectives -->
+<section class="slide" data-section="Motivation" data-time="45">
+  <h2><span class="kicker">Objectives</span>What the dissertation sets out to do</h2>
+  <div class="callout f up" data-f="1"><b>Main objective.</b> Evaluate, through simulation, whether crash-triggered Voice traffic can get <b>measurably better</b> wireless service than ordinary Best Effort in decentralized vehicular Wi-Fi, using only <b>local, standard-compliant</b> MAC mechanisms, and <b>quantify the cost</b> to ordinary traffic.</div>
+  <div class="grid2 stagger f" data-f="2" style="margin-top:18px;gap:20px">
+    <div class="card"><h3>1 · Traffic model</h3><p>Crash-triggered two-class model in Veins/INET: BE multicast everywhere + DSCP 46 alert bursts mapped to VO by an explicit classifier.</p></div>
+    <div class="card"><h3>2 · Adaptive controller</h3><p>Lightweight local three-mode extension of EDCA, exposed as a ladder of five policies, from DCF to emergency preemption.</p></div>
+    <div class="card"><h3>3 · Evaluation matrix</h3><p>10 / 100 vehicles × offered-load profiles × spatial concentration (uniform vs. hotspot); delay, jitter, reach, MAC loss.</p></div>
+    <div class="card"><h3>4 · Engineering guidance</h3><p>Characterize the protection-versus-cost frontier and say <b>when</b> suppression should be enabled.</p></div>
+  </div>
+  <p class="tiny f" data-f="3" style="margin-top:18px">Scope: one crash source, two classes, one-hop multicast on a highway, no APs/RSUs/central coordination, no full ITS stack, no deterministic bounds claimed.</p>
+  <aside class="notes">The main objective: evaluate by simulation whether crash-triggered Voice can get measurably better service than Best Effort with only local, standard mechanisms, and quantify the cost. Four specific objectives: build the two-class traffic model, design the adaptive controller as a five-policy ladder, evaluate it over density, load and spatial concentration, and turn the results into guidance on when to turn suppression on. Scope: a single crash source, two classes, one hop, no infrastructure, and statistical results only. <b>~45 s</b></aside>
+</section>
+
+<!-- 10. Contributions -->
+<section class="slide" data-section="Motivation" data-time="45">
+  <h2><span class="kicker">Contributions</span>Three contributions</h2>
+  <div class="grid3 stagger auto">
+    <div class="card"><div class="big" style="color:var(--accent)">1</div><h3 class="mt">Adaptive MAC controller</h3><p>Built solely from standard mechanisms: explicit DSCP 46→Voice mapping plus a local three-mode EDCA extension, applied to a crash-triggered two-class model.</p></div>
+    <div class="card"><div class="big" style="color:var(--accent)">2</div><h3 class="mt">Open-source artifact</h3><p>Veins/INET simulation comparing DCF, EDCA and three adaptive profiles across density and load matrices.</p><p class="tiny mono">github.com/GOAguiar99/veins-inet-qos</p></div>
+    <div class="card hot"><div class="big" style="color:var(--accent)">3</div><h3 class="mt">When to enable suppression</h3><p>A protection-versus-cost frontier that <b>depends on how the load is distributed</b>: no Voice gain under uniform load; real gain under concentrated near-crash contention.</p></div>
+  </div>
+  <aside class="notes">Three contributions: the controller, built only from standard mechanisms; the open-source simulation artifact; and, most importantly, engineering guidance. The benefit of protection depends on how the load is distributed around the crash. I'll come back to these numbers at the end. <b>~45 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- BACKGROUND -->
+<!-- 11. DCF -->
+<section class="slide" data-section="Background" data-time="55">
+  <h2><span class="kicker">Background · IEEE 802.11 DCF</span>CSMA/CA with binary exponential backoff</h2>
+  <div class="f play" data-f="1" style="position:relative;margin:10px 0 0 170px;width:1100px">
+    <div class="tl" style="margin-bottom:22px">
+      <div class="tl-label">Station A</div>
+      <div class="blk difs seq" style="left:160px;width:80px;--d:.4s">DIFS</div>
+      <div class="blk slot seq" style="left:240px;width:40px;--d:.6s">5</div>
+      <div class="blk slot seq" style="left:280px;width:40px;--d:.8s">4</div>
+      <div class="blk freeze seq" style="left:320px;width:200px;--d:1s">frozen at 3</div>
+      <div class="blk difs seq" style="left:520px;width:80px;--d:1.5s">DIFS</div>
+      <div class="blk slot seq" style="left:600px;width:40px;--d:1.7s">3</div>
+      <div class="blk slot seq" style="left:640px;width:40px;--d:1.9s">2</div>
+      <div class="blk slot seq" style="left:680px;width:40px;--d:2.1s">1</div>
+      <div class="blk be seq" style="left:720px;width:200px;--d:2.3s">A transmits</div>
+    </div>
+    <div class="tl" style="margin-bottom:22px">
+      <div class="tl-label">Station B</div>
+      <div class="blk difs seq" style="left:160px;width:80px;--d:.4s">DIFS</div>
+      <div class="blk slot seq" style="left:240px;width:40px;--d:.6s">2</div>
+      <div class="blk slot seq" style="left:280px;width:40px;--d:.8s">1</div>
+      <div class="blk vo seq" style="left:320px;width:200px;--d:1s;background:#7b8494">B transmits</div>
+    </div>
+    <div class="tl">
+      <div class="tl-label">Medium</div>
+      <div class="blk seq" style="left:0;width:160px;--d:0s;background:#3b4659">busy</div>
+      <div class="blk seq" style="left:320px;width:200px;--d:1s;background:#3b4659">busy</div>
+      <div class="blk seq" style="left:720px;width:200px;--d:2.3s;background:#3b4659">busy</div>
+    </div>
+  </div>
+  <div class="grid2 mt2">
+    <ul class="small">
+      <li class="f up" data-f="2">Medium idle for a <b>DIFS</b> → transmit; otherwise draw backoff uniformly from [0, W−1].</li>
+      <li class="f up" data-f="2">Countdown only while idle; <b>frozen</b> while the medium is busy.</li>
+      <li class="f up" data-f="3">Unicast: no ACK → CW doubles (CW<sub>min</sub> → CW<sub>max</sub>). Group-addressed frames have <b>no ACK</b>, so this never happens for them.</li>
+    </ul>
+    <div>
+      <div class="callout f up" data-f="4" style="font-size:24px"><b>Freezing is not an anomaly.</b> It is part of baseline DCF and dominates access delay when the channel is repeatedly busy.</div>
+      <div class="callout gray f up mt" data-f="5" style="font-size:24px">Every station with the same CW has the <b>same priority</b>: DCF gives <b>no QoS differentiation</b>. This is the <span class="pol plain">plain</span> baseline.</div>
+    </div>
+  </div>
+  <div class="cite">Bianchi (2000); IEEE 802.11; Wu et al.</div>
+  <aside class="notes">Quick DCF refresher (click to play). The medium is busy; both stations wait a DIFS and draw random backoffs: A draws 5, B draws 2. They count down together; B reaches zero and transmits, so A's counter freezes at 3. After B finishes, another DIFS, A resumes from 3 and finally transmits. Two things matter: freezing is normal and dominates delay under load; and DCF treats every frame the same, so it offers no differentiation. That is the plain baseline. For multicast there is no ACK, so the contention window never doubles. <b>~55 s</b></aside>
+</section>
+
+<!-- 12. Bianchi -->
+<section class="slide" data-section="Background" data-time="35">
+  <h2><span class="kicker">Background · Saturation analysis</span>What Bianchi's model tells us</h2>
+  <p class="muted" style="margin-top:-16px">2-D Markov chain over (backoff stage, counter) with a constant collision probability <i>p</i> → per-slot transmission probability τ → saturation throughput.</p>
+  <div class="grid3 mt stagger f" data-f="1">
+    <div class="card"><div class="big">①</div><h3 class="mt">A capacity ceiling</h3><p>Saturation throughput is the maximum stable load; past it, queues and delay grow without bound.</p></div>
+    <div class="card"><div class="big">②</div><h3 class="mt">More stations, worse</h3><p>Under <b>Basic Access</b>, which is the only mode for short and group-addressed frames (no RTS/CTS), collisions waste long intervals.</p></div>
+    <div class="card hot"><div class="big">③</div><h3 class="mt">Fixed parameters</h3><p>The best CW depends on network size, but CW<sub>min</sub> and <i>m</i> are fixed, so throughput can be well below the achievable maximum. That motivates <b>adaptive, local control</b>.</p></div>
+  </div>
+  <div class="callout gray mt2 f up" data-f="2">Under <span class="pol plain">plain</span>, any BE/VO delay difference comes from the <b>traffic processes</b> (senders, activity window, payload), <b>not</b> from prioritization.</div>
+  <aside class="notes">Bianchi's classic saturation model gives three useful results: a throughput ceiling beyond which delay explodes; degradation as stations increase, under Basic Access, which is what short and multicast frames use; and the fact that the best contention window depends on network size, while the standard fixes it. That last point is the earliest motivation for local adaptive control. Also, under plain DCF, any difference between alert and background delay comes from the traffic itself, not from priority. <b>~35 s</b></aside>
+</section>
+
+<!-- 13. EDCA -->
+<section class="slide" data-section="Background" data-time="55">
+  <h2><span class="kicker">Background · IEEE 802.11e EDCA</span>Four access categories, four backoff entities</h2>
+  <div class="row">
+    <div class="col" style="flex:1.25">
+      <div class="callout blue" style="font-size:26px;text-align:center">AIFS[AC] = SIFS + AIFSN[AC] · slot</div>
+      <div class="race f mt" data-f="1">
+        <div class="lab" style="color:#9aa2ae">AC_BK</div><div class="track" style="opacity:.45"><div class="aifs" style="width:245px"></div><span style="left:12px">AIFSN 7</span><span style="left:270px">CW 15–1023 · empty in study</span></div>
+        <div class="lab be-t">AC_BE</div><div class="track"><div class="aifs" style="width:105px"></div><div class="bo" style="left:105px;width:520px;--c:var(--be);--t:2.6s"></div><span style="left:12px">AIFSN 3</span><span style="left:640px">CW 15–1023</span></div>
+        <div class="lab" style="color:#9aa2ae">AC_VI</div><div class="track" style="opacity:.45"><div class="aifs" style="width:70px"></div><span style="left:12px">2</span><span style="left:270px">CW 7–15 · empty in study</span></div>
+        <div class="lab vo-t">AC_VO</div><div class="track"><div class="aifs" style="width:70px"></div><div class="bo" style="left:70px;width:105px;--c:var(--vo);--t:.6s"></div><span style="left:12px">2</span><span style="left:200px">CW 3–7</span><span class="win" style="--t:.8s">wins first ✓</span></div>
+      </div>
+      <p class="tiny mt">Configured values (INET BSS QoS defaults): AIFSN BK/BE/VI/VO = 7/3/2/2; CW<sub>min</sub>–CW<sub>max</sub>: BK, BE 15–1023; VI 7–15; VO 3–7. Queues 128/128/64/32.</p>
+    </div>
+    <div class="col">
+      <ul class="small">
+        <li class="f up" data-f="2">Each AC: own queue, AIFSN, CW<sub>min</sub>, CW<sub>max</sub>, optional TXOP.</li>
+        <li class="f up" data-f="3">Smaller AIFSN / CW → higher chance to win contention.</li>
+        <li class="f up" data-f="4"><b>Virtual collision</b>: two local ACs expire together → the higher priority one wins; the loser behaves as if collided.</li>
+        <li class="f up" data-f="5">UP→AC: UP 6,7 → <b class="vo">VO</b>; 4,5 → VI; 0,3 → <b class="be">BE</b>; 1,2 → BK.</li>
+      </ul>
+      <div class="callout mt f up" data-f="6" style="font-size:24px">The <span class="pol edca">edca_only</span> policy, and all adaptive policies inherit <b>exactly</b> these parameters.</div>
+    </div>
+  </div>
+  <div class="cite">IEEE 802.11e; Mangold et al. (2003); Kong et al. (2004); RFC 8325.</div>
+  <aside class="notes">EDCA introduces four access categories, each with its own queue and contention parameters. The waiting time before backoff is AIFS: SIFS plus AIFSN slots. Here (click) is a race with the values I configured: Voice waits two slots and draws from a window of 3 to 7; Best Effort waits three slots and draws from 15 up to 1023. On average Voice wins first, but this is random: Best Effort can still draw a small number. Inside a station, if two categories expire together, the higher one wins. The edca_only policy and all adaptive profiles use exactly these parameters; the adaptive ones never retune them. <b>~55 s</b></aside>
+</section>
+
+<!-- 14. Statistical priority -->
+<section class="slide" data-section="Background" data-time="50">
+  <h2><span class="kicker">Background · Limits of EDCA</span>Statistical priority, without guarantees</h2>
+  <div class="grid3 stagger auto">
+    <div class="card"><p class="quote">EDCA delays “increase unpredictably” with load.<span class="who">Mangold et al. (2003)</span></p></div>
+    <div class="card"><p class="quote">EDCA gives “only performance differentiation among the categories”.<span class="who">Kosek-Szott et al. (2012)</span></p></div>
+    <div class="card"><p class="quote">Strict priority can drive low-priority flows to “zero-valued throughput”.<span class="who">Malik et al.</span></p></div>
+  </div>
+  <div class="grid2 mt2">
+    <div class="card f left" data-f="1"><h3>Consequence 1</h3><p>Mapping alerts to AC_VO should help them, but the gain is <b>contingent on the contention regime</b>, never a bound.</p></div>
+    <div class="card f right" data-f="2"><h3>Consequence 2</h3><p>Starving lower-priority traffic is the <b>ordinary cost</b> of prioritization. The adaptive profiles make this cost <b>bounded, event-triggered and measured</b>.</p></div>
+  </div>
+  <div class="row mt f up" data-f="3">
+    <div class="col callout gray" style="font-size:22px"><b>Adaptive EDCA</b> (e.g. Adaptive EDCF) <b>retunes</b> CW/persistence <b>continuously</b> from measurements.</div>
+    <div class="col callout" style="font-size:22px"><b>This work</b> keeps EDCA parameters <b>unchanged</b> and only gates <b>who may contend</b> (BE), and only <b>while a crash alert is active</b>.</div>
+  </div>
+  <aside class="notes">The literature is clear: EDCA delays increase unpredictably with load, EDCA offers differentiation, not bounds, and strict priority can starve lower classes. Two consequences: putting alerts in Voice should help, but it depends on the regime; and starving Best Effort is the normal price of priority, so I make it bounded, triggered by the event, and measured. That also separates my work from adaptive EDCA, which retunes parameters continuously. I don't touch the parameters; I only gate who may contend, and only during the alert. <b>~50 s</b></aside>
+</section>
+
+<!-- 15. OCB + multicast -->
+<section class="slide" data-section="Background" data-time="55">
+  <h2><span class="kicker">Background · IEEE 802.11p</span>OCB operation and group-addressed frames</h2>
+  <div class="row">
+    <div class="col">
+      <svg viewBox="0 0 660 300" width="660" height="300">
+        <g class="f" data-f="1">
+          <text x="150" y="26" text-anchor="middle" font-size="22" font-weight="700" fill="#5d6675">Infrastructure BSS</text>
+          <rect x="125" y="60" width="50" height="40" rx="6" fill="#13233f"/><text x="150" y="86" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">AP</text>
+          <g stroke="#9aa6b8" stroke-width="3"><line x1="150" y1="100" x2="60" y2="220"/><line x1="150" y1="100" x2="150" y2="230"/><line x1="150" y1="100" x2="240" y2="220"/></g>
+          <g fill="#8fb3e3"><rect x="30" y="220" width="60" height="28" rx="7"/><rect x="120" y="230" width="60" height="28" rx="7"/><rect x="210" y="220" width="60" height="28" rx="7"/></g>
+          <text x="150" y="290" text-anchor="middle" font-size="16" fill="#5d6675">association, coordinator, GCR…</text>
+        </g>
+        <g class="f" data-f="2">
+          <text x="500" y="26" text-anchor="middle" font-size="22" font-weight="700" fill="#c2410c">OCB (802.11p)</text>
+          <g stroke="#c2410c" stroke-width="2.5" stroke-dasharray="6 6" class="flowline"><line x1="420" y1="120" x2="560" y2="110"/><line x1="420" y1="120" x2="480" y2="230"/><line x1="560" y1="110" x2="480" y2="230"/><line x1="560" y1="110" x2="620" y2="220"/></g>
+          <g fill="#8fb3e3"><rect x="390" y="106" width="60" height="28" rx="7"/><rect x="530" y="96" width="60" height="28" rx="7"/><rect x="450" y="216" width="60" height="28" rx="7"/><rect x="590" y="206" width="60" height="28" rx="7"/></g>
+          <text x="520" y="290" text-anchor="middle" font-size="16" fill="#5d6675">wildcard BSSID · no assoc/auth</text>
+        </g>
+      </svg>
+      <ul class="small">
+        <li class="f up" data-f="3">5.9 GHz, <b>10 MHz OFDM</b>: longer symbols, more robust to multipath/Doppler.</li>
+        <li class="f up" data-f="3">IEEE 1609.4 multichannel (CCH/SCH) is <b>not modeled</b>: one shared channel, PHY fixed across policies.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="callout f up" data-f="4" style="font-size:23px"><b>Group-addressed frames (RFC 9119):</b> no ACK → no retransmission, no loss-driven backoff; often sent at a low basic rate, so they take more airtime. Losses of ≥5 % are not uncommon.</div>
+      <table class="t compact mt f up" data-f="5">
+        <tr><th>Mechanism</th><th>BSS</th><th>OCB (here)</th></tr>
+        <tr><td>Link-layer ACK / retry for group frames</td><td>No</td><td>No</td></tr>
+        <tr><td>GCR Retry / Block Ack (802.11aa)</td><td>Yes*</td><td>No</td></tr>
+        <tr><td>Directed multicast (AP)</td><td>Yes</td><td>No</td></tr>
+        <tr><td>EDCA priority via UP→AC</td><td>Yes</td><td><b>Yes</b></td></tr>
+        <tr><td>DCC aggregate load control</td><td>N/A</td><td>Possible (off)</td></tr>
+        <tr class="hl"><td>Event-triggered BE suppression</td><td>N/A</td><td>Evaluated</td></tr>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">802.11p runs Outside the Context of a BSS: there is no access point and no association; vehicles just exchange frames on 10 MHz channels at 5.9 GHz. I don't model the 1609.4 multichannel schedule; I use one shared channel and keep the PHY identical across policies. The important part: alerts are multicast, and group-addressed frames have no ACK and no retransmission, so the sender never learns about losses. The fixes from 802.11aa, like GCR, need an access point and don't exist in OCB. Of this list, the only tool available in OCB is the EDCA priority, plus the suppression that I evaluate. <b>~55 s</b></aside>
+</section>
+
+<!-- 16. DCC -->
+<section class="slide" data-section="Background" data-time="35">
+  <h2><span class="kicker">Background · ITS-G5</span>Decentralized Congestion Control vs. event-triggered suppression</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1"><span class="tag blue">DCC (ETSI)</span><h3 class="mt">Always-on, aggregate</h3><ul class="small"><li>Measures the <b>Channel Busy Ratio</b>.</li><li>Transmit power / rate / access control.</li><li>Keeps each station's <b>total</b> load inside a target region, <b>across all classes</b>.</li></ul></div>
+    <div class="card hot f right" data-f="2"><span class="tag red">This work</span><h3 class="mt">Event-triggered, per class</h3><ul class="small"><li>Acts <b>only while a crash alert is active</b>.</li><li>Discriminates <b>BE vs. VO</b> instead of scaling everything.</li><li>Temporarily reshapes <b>who contends</b>.</li></ul></div>
+  </div>
+  <div class="callout green mt2 f up" data-f="3"><b>Complementary:</b> DCC keeps the long-term operating point away from collapse; suppression reshapes contention during a short alert window. DCC is <b>disabled</b> in the evaluation to isolate the five policies, so <b>no superiority claim</b> over DCC is made.</div>
+  <aside class="notes">European deployments also have DCC, which measures channel busy ratio and throttles each station's total load, always on and across classes. My mechanism is different: it acts only during the alert and only on Best Effort. They are complementary. I disable DCC on purpose to isolate the policies, so I make no claim that I beat DCC. <b>~35 s</b></aside>
+</section>
+
+<!-- 17. DSCP path -->
+<section class="slide" data-section="Background" data-time="60">
+  <h2><span class="kicker">Background · From DSCP to the air interface</span>The Voice mapping is not automatic</h2>
+  <div class="row" style="align-items:center">
+    <div style="width:380px">
+      <p class="small" style="margin:0">Crash alert marked <b>EF</b> (RFC 3246): DSCP <b>46</b></p>
+      <div class="mt f-msb" id="bits-wrap"><div class="bits"><span>1</span><span>0</span><span>1</span><span>1</span><span>1</span><span>0</span></div></div>
+      <p class="tiny">RFC 4594: inelastic, low-delay traffic → EF, pre-marked at the source. Crash alerts are not telephony, but they share its traffic profile.</p>
+    </div>
+    <div class="col">
+      <div class="f left" data-f="1">
+        <p class="small" style="margin:0 0 8px"><b>Common heuristic:</b> user priority = the 3 MSBs of the DSCP</p>
+        <div class="flow"><div class="node">DSCP 46<b>101110</b></div><div class="arrow">→</div><div class="node">3 MSB<b>101 = 5</b></div><div class="arrow">→</div><div class="node">UP <b>5</b></div><div class="arrow">→</div><div class="node bad">AC_VI<b>Video ✕</b></div></div>
+      </div>
+      <div class="f left mt2" data-f="2">
+        <p class="small" style="margin:0 0 8px"><b>RFC 8325 recommendation</b> (non-default): EF → UP 6</p>
+        <div class="flow"><div class="node">DSCP 46<b>EF</b></div><div class="arrow">→</div><div class="node">explicit map<b>QosClassifier</b></div><div class="arrow">→</div><div class="node">UP <b>6</b></div><div class="arrow">→</div><div class="node good">AC_VO<b>Voice ✓</b></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2 mt2">
+    <div class="callout f up" data-f="3" style="font-size:23px"><b>No standard defines the default DSCP→UP mapping.</b> The 802.11 tables are examples, not recommendations. BE stays DSCP 0 → UP 0 → AC_BE.</div>
+    <div class="callout gray f up" data-f="4" style="font-size:23px">RFC 8325: 802.11 <b>cannot provide an EF PHB</b>, because contention is random. The mapping is <b>necessary, not sufficient</b>, and any node marking high priority can monopolize airtime (a DoS vector).</div>
+  </div>
+  <aside class="notes">How does the "urgent" intent reach the radio? The alert is marked Expedited Forwarding, DSCP 46, binary 101110. Many stacks (click) take the three most significant bits as user priority: 101 is 5, which lands in Video, not Voice. RFC 8325 (click) recommends an explicit mapping of EF to user priority 6, which lands in Voice; that is what my QosClassifier does. And there is no standard default, which is why I say it's not automatic. The same RFC warns that even with the right mapping, 802.11 cannot deliver true EF service, because contention stays random. That residual gap is why the adaptive profiles exist. It also notes the denial-of-service risk, which I return to in the discussion. <b>~60 s</b></aside>
+</section>
+
+<!-- 18. Simulation tools -->
+<section class="slide" data-section="Background" data-time="40">
+  <h2><span class="kicker">Background · Methodology</span>Bidirectionally coupled simulation</h2>
+  <svg viewBox="0 0 1400 420" width="1400" height="420" class="f" data-f="1">
+    <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5d6675"/></marker></defs>
+    <rect x="20" y="120" width="300" height="170" rx="18" fill="#fff" stroke="#cfd5de" stroke-width="2"/>
+    <text x="170" y="175" text-anchor="middle" font-size="34" font-weight="800" fill="#13233f">SUMO</text>
+    <text x="170" y="212" text-anchor="middle" font-size="19" fill="#5d6675">road microsimulation</text>
+    <text x="170" y="240" text-anchor="middle" font-size="19" fill="#5d6675">lanes · car-following · crash stop</text>
+    <rect x="530" y="140" width="250" height="130" rx="18" fill="#fff6f1" stroke="#c2410c" stroke-width="2"/>
+    <text x="655" y="198" text-anchor="middle" font-size="30" font-weight="800" fill="#c2410c">Veins</text>
+    <text x="655" y="232" text-anchor="middle" font-size="18" fill="#5d6675">TraCI coupling</text>
+    <rect x="990" y="40" width="390" height="340" rx="18" fill="#fff" stroke="#cfd5de" stroke-width="2"/>
+    <text x="1185" y="88" text-anchor="middle" font-size="30" font-weight="800" fill="#13233f">OMNeT++</text>
+    <text x="1185" y="116" text-anchor="middle" font-size="17" fill="#5d6675">discrete-event engine</text>
+    <rect x="1020" y="140" width="330" height="210" rx="14" fill="#eef5fc" stroke="#2f6fb3" stroke-width="2"/>
+    <text x="1185" y="185" text-anchor="middle" font-size="28" font-weight="800" fill="#2f6fb3">INET</text>
+    <text x="1185" y="218" text-anchor="middle" font-size="17" fill="#5d6675">IPv4 / UDP · 802.11p MAC + PHY</text>
+    <text x="1185" y="244" text-anchor="middle" font-size="17" fill="#5d6675">radio propagation</text>
+    <text x="1185" y="290" text-anchor="middle" font-size="17" fill="#c2410c" font-weight="700">+ study modules: apps, classifier,</text>
+    <text x="1185" y="314" text-anchor="middle" font-size="17" fill="#c2410c" font-weight="700">instrumented MAC, adaptive HCF</text>
+    <path d="M320 180 L530 180" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <text x="425" y="168" text-anchor="middle" font-size="17" fill="#5d6675">positions, headings</text>
+    <path d="M530 240 L320 240" stroke="#c2410c" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <text x="425" y="270" text-anchor="middle" font-size="17" fill="#c2410c">stop crash vehicle</text>
+    <path d="M780 205 L990 205" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+    <path d="M990 225 L780 225" stroke="#5d6675" stroke-width="3" class="flowline" marker-end="url(#ar)"/>
+  </svg>
+  <div class="grid2 mt">
+    <p class="small f up" data-f="2">A crash changes <b>both</b> the traffic pattern and the radio neighborhood, so the network model must <b>control</b> vehicles (stop the crash node) while SUMO keeps feeding mobility back.</p>
+    <p class="small f up" data-f="3">PHY is held fixed across policies (free-space, binary obstacles, fixed SNIR threshold), so <b>differences isolate contention and queueing</b>.</p>
+  </div>
+  <div class="cite">Varga (OMNeT++); INET Framework; Sommer, German &amp; Dressler (Veins, 2011); Alvarez Lopez et al. (SUMO, 2018).</div>
+  <aside class="notes">Method: simulation. OMNeT++ is the engine and INET supplies the network stack and the 802.11p MAC and PHY. Veins couples it with SUMO, the road traffic simulator, over TraCI, in both directions: SUMO sends positions, and the network side can command a vehicle, which I use to stop the crash vehicle. The PHY is identical for every policy, so the differences I measure come from contention and queueing. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- RELATED WORK -->
+<!-- 19. Taxonomy -->
+<section class="slide" data-section="Related work" data-time="50">
+  <h2><span class="kicker">Related work</span>Design-space positioning</h2>
+  <div class="row">
+    <svg viewBox="0 0 900 620" width="810" height="558" class="tax">
+      <rect x="80" y="357" width="319" height="183" fill="#fde9df" class="f" data-f="5" rx="6"/>
+      <text x="90" y="530" font-size="17" fill="#c2410c" class="f" data-f="5" font-weight="700">dissertation operating region</text>
+      <line x1="80" y1="540" x2="860" y2="540" stroke="#17202e" stroke-width="2"/>
+      <line x1="80" y1="540" x2="80" y2="50" stroke="#17202e" stroke-width="2"/>
+      <line x1="460" y1="540" x2="460" y2="50" stroke="#cfd5de" stroke-dasharray="6 6"/>
+      <line x1="80" y1="300" x2="860" y2="300" stroke="#cfd5de" stroke-dasharray="6 6"/>
+      <text x="80" y="575" font-size="18" fill="#5d6675">local / infrastructure-free</text>
+      <text x="860" y="575" font-size="18" fill="#5d6675" text-anchor="end">sync / infra / cellular →</text>
+      <text x="40" y="540" font-size="18" fill="#5d6675" transform="rotate(-90 40 540)">event-triggered / short-lived</text>
+      <text x="40" y="200" font-size="18" fill="#5d6675" transform="rotate(-90 40 200)">always-on →</text>
+      <g class="f pop" data-f="1"><circle cx="247" cy="146" r="10" fill="#7b8494"/><text x="264" y="152">Adaptive EDCA</text></g>
+      <g class="f pop" data-f="1"><circle cx="293" cy="98" r="10" fill="#7b8494"/><text x="310" y="104">DCC</text></g>
+      <g class="f pop" data-f="2"><circle cx="612" cy="276" r="10" fill="#2f6fb3"/><text x="596" y="282" text-anchor="end">TSNCtl</text></g>
+      <g class="f pop" data-f="2"><circle cx="658" cy="242" r="10" fill="#2f6fb3"/><text x="676" y="248">CFC-MAC</text></g>
+      <g class="f pop" data-f="2"><circle cx="718" cy="310" r="10" fill="#2f6fb3"/><text x="736" y="316">PRP-MAC</text></g>
+      <g class="f pop" data-f="2"><circle cx="779" cy="166" r="10" fill="#2f6fb3"/><text x="762" y="172" text-anchor="end">NR-V2X Mode 2</text></g>
+      <g class="f pop" data-f="2"><circle cx="810" cy="118" r="10" fill="#2f6fb3"/><text x="794" y="124" text-anchor="end">Wireless TSN / OFDMA</text></g>
+      <g class="f pop" data-f="3"><circle cx="369" cy="386" r="10" fill="#1f9a95"/><text x="386" y="392">SkipCCH</text></g>
+      <g class="f pop" data-f="4"><circle cx="186" cy="473" r="15" fill="#c2410c"/><text x="210" y="480" font-weight="800" font-size="22" fill="#c2410c">This work</text></g>
+    </svg>
+    <div class="col">
+      <div class="card f right" data-f="1" style="border-left:6px solid #7b8494"><h3>Always-on regulation</h3><p>Adaptive EDCA, DCC: continuous, aggregate.</p></div>
+      <div class="card f right mt" data-f="2" style="border-left:6px solid #2f6fb3"><h3>Stronger coordination</h3><p>Slots, preemption + arbiter, TDMA, cellular, TSN/OFDMA: need sync or infrastructure.</p></div>
+      <div class="card f right mt" data-f="3" style="border-left:6px solid #1f9a95"><h3>Contention timing / cost</h3><p><i>When</i> traffic contends matters as much as <i>which</i> AC.</p></div>
+      <p class="tiny mt f" data-f="4">Marker positions are qualitative, from each work's stated assumptions.</p>
+    </div>
+  </div>
+  <aside class="notes">I organize related work in a design space: horizontally, local versus requiring synchronization, infrastructure or cellular machinery; vertically, event-triggered versus always-on. Adaptive EDCA and DCC are local but always on. The stronger-coordination family, TSNCtl, CFC-MAC, PRP-MAC, NR-V2X sidelink, wireless TSN and OFDMA, needs sync or infrastructure. SkipCCH is about when traffic is allowed to contend. My work sits in the local, event-triggered corner. The positions are qualitative. <b>~50 s</b></aside>
+</section>
+
+<!-- 20. Stronger control -->
+<section class="slide" data-section="Related work" data-time="50">
+  <h2><span class="kicker">Related work · Stronger contention control</span>They work, but they assume more</h2>
+  <table class="t compact stagger f" data-f="1">
+    <tr><th>Approach</th><th>Mechanism</th><th>Requires</th><th>Relation to this work</th></tr>
+    <tr><td><b>TSNCtl</b> (Feraudo et al.)</td><td>App-level TSN-like slot schedule + FSM for platoons (2 ms slots ↓ collisions)</td><td>Sync, platoon master</td><td>Leader + sync; arXiv preprint</td></tr>
+    <tr><td><b>PRP-MAC</b> (Li et al.)</td><td>Preemptive-resume priority + arbiter; UAV receives BSMs</td><td>UAV / RSU-assisted</td><td>Infrastructure + richer MAC</td></tr>
+    <tr><td><b>CFC-MAC</b> (Linn et al.)</td><td>Cooperative contention-free TDMA, trajectory estimation, slot repair</td><td>Slot sync, signaling</td><td>TDMA contract</td></tr>
+    <tr><td><b>NR-V2X Mode 2</b> (Thabet et al.)</td><td>Adaptive autonomous resource selection / SPS</td><td>Cellular sidelink</td><td>Different radio access technology</td></tr>
+    <tr class="hlb"><td><b>Prior SBESC 2025</b> (Aguiar &amp; Gracioli)</td><td>Wireless TSN: Time-Aware Shaper schedules for V2X QoS</td><td>Sync, gate-control lists</td><td>Precursor: TAS and sync <b>dropped</b> here</td></tr>
+  </table>
+  <div class="callout mt2 f up" data-f="2">None isolates the narrow question: can a <b>local, standard EDCA stack</b>, plus explicit DSCP→Voice mapping and <b>short-lived BE suppression</b>, protect a crash multicast burst, and <b>at what cost</b>?</div>
+  <aside class="notes">Stronger contention control does reduce collisions and delay: TSNCtl with synchronized slots for platoons, PRP-MAC with preemption under a UAV arbiter, CFC-MAC with cooperative TDMA, and NR-V2X sidelink. My own earlier SBESC 2025 paper explored wireless TSN with Time-Aware Shaper schedules, which needs synchronization; this dissertation drops that. None of them answers the narrow question of what local EDCA plus short suppression can do, and at what cost. <b>~50 s</b></aside>
+</section>
+
+<!-- 21. Dynamics, always-on, TSN -->
+<section class="slide" data-section="Related work" data-time="50">
+  <h2><span class="kicker">Related work · Other families</span>Contention dynamics, load regulation, TSN/OFDMA</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><span class="tag">contention dynamics</span><h3 class="mt">Backoff freezing (Wu et al.)</h3><p>Repeated freezes ⇒ higher access delay; delay and PDR worsen with density. <b>The trend transfers</b>; the absolute numbers do not.</p><h3 class="mt">SkipCCH (Garrido Abenza et al.)</h3><p>Avoids CCH→SCH bursts in 1609.4: <b>when</b> traffic contends matters.</p></div>
+    <div class="card f up" data-f="2"><span class="tag">cost of protection</span><h3 class="mt">QoS surveys</h3><p>Protection always has a cost, including low-AC starvation. Reporting only Voice gains is <b>incomplete</b>.</p><p class="small"><b>⇒ the protection-vs-cost frontier is a primary result here.</b></p><h3 class="mt">Adaptive EDCF, DCC</h3><p>Mature, <b>always-on</b>, aggregate regulators: complementary.</p></div>
+    <div class="card f up" data-f="3"><span class="tag">contrast only</span><h3 class="mt">Wired TSN</h3><p>802.1Qbv gates, schedule synthesis, hybrid shapers: switched Ethernet + sync.</p><h3 class="mt">Wireless TSN / OFDMA</h3><p>Preemption, TWT, RU allocation, trigger frames: industrial BSS, Wi-Fi 6/7 + AP.</p></div>
+  </div>
+  <div class="callout gray mt2 f up" data-f="4">Together they motivate a design that <b>(i)</b> acts when contention is crash-relevant, <b>(ii)</b> reshapes <i>who</i> contends, not just queue mapping, and <b>(iii)</b> reports BE penalties as seriously as Voice gains.</div>
+  <aside class="notes">Three other families. Contention dynamics: Wu et al. show freezing inflates delay with density, and SkipCCH shows that timing matters. Cost of protection: QoS surveys insist that prioritization has a cost, so I treat the Best Effort penalty as a primary result. Always-on regulators like adaptive EDCF and DCC are complementary. TSN and OFDMA I cite only as contrast: they need wired networks, synchronization or access points. Together these motivate the three design principles at the bottom. <b>~50 s</b></aside>
+</section>
+
+<!-- 22. Gap -->
+<section class="slide" data-section="Related work" data-time="40">
+  <h2><span class="kicker">Research gap</span>A local mechanism with four properties</h2>
+  <ul class="check stagger f" data-f="1" style="font-size:30px">
+    <li>Uses only <b>standard EDCA queues</b> and an <b>explicit DSCP→Voice</b> mapping.</li>
+    <li>Adds BE suppression <b>only while crash-related Voice activity is present</b>.</li>
+    <li>Needs <b>no clock synchronization, RSU, UAV or cellular sidelink</b>.</li>
+    <li>Is evaluated <b>jointly</b> on Voice protection <b>and</b> BE cost, across density and load.</li>
+  </ul>
+  <table class="t compact mt2 f up" data-f="2">
+    <tr><th>This work</th><th>Mechanism</th><th>Requires</th><th>Target</th><th>Advantage</th></tr>
+    <tr class="hl"><td>Crash-aware EDCA</td><td>DSCP→VO + event-triggered BE suppression</td><td>Local OCB EDCA only</td><td>Crash VO vs BE multicast</td><td>Protection–cost frontier; no sync / infra / sidelink</td></tr>
+  </table>
+  <aside class="notes">So the gap is a local mechanism with four properties: standard EDCA plus explicit mapping; suppression only while the crash alert is active; no synchronization or infrastructure; and an evaluation of protection and cost together. That's the last row of the comparison table in the dissertation. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- SYSTEM MODEL -->
+<!-- 23. Network model -->
+<section class="slide" data-section="System model" data-time="45">
+  <h2><span class="kicker">System model · Network</span>Decentralized one-hop multicast on a shared channel</h2>
+  <div class="row">
+    <svg viewBox="0 0 760 420" width="760" height="420">
+      <rect x="0" y="150" width="760" height="150" rx="16" fill="#2d3442"/>
+      <line x1="0" y1="225" x2="760" y2="225" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-dasharray="30 30"/>
+      <circle cx="420" cy="190" r="10" fill="none" stroke="#d1495b" stroke-width="3" class="f" data-f="2"><animate attributeName="r" from="10" to="250" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" from="1" to="0" dur="2.4s" repeatCount="indefinite"/></circle>
+      <g fill="#8fb3e3"><rect x="70" y="175" width="70" height="32" rx="8"/><rect x="230" y="175" width="70" height="32" rx="8"/><rect x="560" y="245" width="70" height="32" rx="8"/><rect x="150" y="245" width="70" height="32" rx="8"/><rect x="640" y="175" width="70" height="32" rx="8"/></g>
+      <rect x="385" y="175" width="70" height="32" rx="8" fill="#d1495b" class="f pop" data-f="2"/>
+      <text x="420" y="160" text-anchor="middle" font-size="18" font-weight="800" fill="#d1495b" class="f" data-f="2">crash source</text>
+      <g class="f" data-f="3">
+        <rect x="80" y="40" width="60" height="50" rx="8" fill="#c3cbd8"/><text x="110" y="72" text-anchor="middle" font-size="18" font-weight="700">AP</text>
+        <rect x="320" y="40" width="70" height="50" rx="8" fill="#c3cbd8"/><text x="355" y="72" text-anchor="middle" font-size="18" font-weight="700">RSU</text>
+        <rect x="560" y="40" width="140" height="50" rx="8" fill="#c3cbd8"/><text x="630" y="72" text-anchor="middle" font-size="18" font-weight="700">scheduler</text>
+        <g stroke="#d1495b" stroke-width="4" stroke-opacity=".75"><line x1="70" y1="30" x2="150" y2="100"/><line x1="150" y1="30" x2="70" y2="100"/><line x1="310" y1="30" x2="400" y2="100"/><line x1="400" y1="30" x2="310" y2="100"/><line x1="550" y1="30" x2="710" y2="100"/><line x1="710" y1="30" x2="550" y2="100"/></g>
+      </g>
+      <text x="380" y="340" text-anchor="middle" font-size="20" fill="#5d6675" class="f" data-f="1">one IEEE 802.11p channel, OCB, every station contends</text>
+    </svg>
+    <div class="col">
+      <ul class="small">
+        <li class="f up" data-f="1">Vehicles exchange frames <b>directly</b>; no AP, RSU or coordinator forwards or allocates.</li>
+        <li class="f up" data-f="2"><b>One-hop multicast</b>: every frame may be received by all vehicles in range. No ACK, no retry.</li>
+        <li class="f up" data-f="4">PHY: 5.9 GHz, 10 MHz; free-space path loss, <b>binary</b> obstruction; no fading/shadowing.</li>
+        <li class="f up" data-f="5"><b>Connectivity is held fixed</b> across the five policies ⇒ BE/VO differences reflect <b>queueing and contention</b>.</li>
+      </ul>
+      <p class="tiny mt f" data-f="6">Out of scope: DCC, TSN-style gating, multiple crash sources, &gt;2 classes, deterministic or worst-case latency claims.</p>
+    </div>
+  </div>
+  <aside class="notes">The system model, first the network. Vehicles share one 802.11p channel in OCB mode. No access point, RSU or scheduler. Communication is one-hop multicast: whatever the crash vehicle sends may be received by everyone in range, without ACKs. The PHY is simple, free-space with binary obstruction, and identical for all policies, so the differences come from contention and queueing. Out of scope: DCC, gating, multiple crashes, more than two classes, and worst-case bounds. <b>~45 s</b></aside>
+</section>
+
+<!-- 24. Traffic model -->
+<section class="slide" data-section="System model" data-time="55">
+  <h2><span class="kicker">System model · Traffic</span>Two classes: background + crash overlay</h2>
+  <div class="f play" data-f="1" style="position:relative;height:200px;margin-left:170px;width:1180px">
+    <div class="tl" style="height:60px;margin-bottom:28px">
+      <div class="tl-label">every vehicle</div>
+      <div class="blk be seq" style="left:20px;width:14px;height:36px;--d:.0s"></div><div class="blk be seq" style="left:95px;width:14px;height:36px;--d:.1s"></div>
+      <div class="blk be seq" style="left:130px;width:14px;height:36px;--d:.15s"></div><div class="blk be seq" style="left:260px;width:14px;height:36px;--d:.25s"></div>
+      <div class="blk be seq" style="left:310px;width:14px;height:36px;--d:.3s"></div><div class="blk be seq" style="left:455px;width:14px;height:36px;--d:.4s"></div>
+      <div class="blk be seq" style="left:520px;width:14px;height:36px;--d:.5s"></div><div class="blk be seq" style="left:610px;width:14px;height:36px;--d:.55s"></div>
+      <div class="blk be seq" style="left:700px;width:14px;height:36px;--d:.6s"></div><div class="blk be seq" style="left:790px;width:14px;height:36px;--d:.7s"></div>
+      <div class="blk be seq" style="left:880px;width:14px;height:36px;--d:.75s"></div><div class="blk be seq" style="left:930px;width:14px;height:36px;--d:.8s"></div>
+      <div class="blk be seq" style="left:1060px;width:14px;height:36px;--d:.9s"></div><div class="blk be seq" style="left:1140px;width:14px;height:36px;--d:.95s"></div>
+      <div class="seq" style="--d:1s;position:absolute;right:0;top:-26px;font-size:18px;color:var(--be);font-weight:700">Poisson: exponential gap redrawn before every packet · DSCP 0</div>
+    </div>
+    <div class="tl" style="height:80px">
+      <div class="tl-label">crash vehicle</div>
+      <div class="seq" style="--d:1.2s;position:absolute;left:300px;bottom:60px;font-size:17px;color:var(--vo);font-weight:800">▼ logical alert t₀</div>
+      <div class="blk vo seq" style="left:310px;width:16px;--d:1.4s"></div>
+      <div class="blk vo seq" style="left:356px;width:16px;--d:1.55s"></div>
+      <div class="blk vo seq" style="left:398px;width:16px;--d:1.7s"></div>
+      <div class="seq" style="--d:1.8s;position:absolute;left:300px;top:84px;font-size:17px;color:var(--muted)">copy i at max(0, i·gap + U(−J, J))</div>
+      <div class="seq" style="--d:2.0s;position:absolute;left:620px;bottom:60px;font-size:17px;color:var(--vo);font-weight:800">▼ next alert (period)</div>
+      <div class="blk vo seq" style="left:630px;width:16px;--d:2.2s"></div>
+      <div class="blk vo seq" style="left:676px;width:16px;--d:2.35s"></div>
+      <div class="blk vo seq" style="left:720px;width:16px;--d:2.5s"></div>
+      <div class="blk be seq" style="left:180px;width:14px;height:36px;--d:.2s"></div><div class="blk be seq" style="left:500px;width:14px;height:36px;--d:.45s"></div><div class="blk be seq" style="left:960px;width:14px;height:36px;--d:.85s"></div>
+    </div>
+  </div>
+  <table class="t compact mt2 f up" data-f="2" style="margin-top:56px">
+    <tr><th>Profile</th><th>BE (every vehicle)</th><th>VO alert (crash vehicle, during window)</th></tr>
+    <tr><td><code>low</code></td><td>exp. mean 500 ms, 200 B</td><td>every 120 ms, 150 B · 3 copies · gap 20 ms · jitter 5 ms</td></tr>
+    <tr><td><code>medium</code></td><td>exp. mean 250 ms, 320 B</td><td>every 75 ms, 180 B · 4 copies · gap 15 ms · jitter 5 ms</td></tr>
+    <tr class="hl"><td><code>high</code></td><td>exp. mean 125 ms, 420 B</td><td>every 20 ms, 260 B · <b>8 copies · gap 5 ms</b> · jitter 2 ms</td></tr>
+  </table>
+  <p class="small f up" data-f="3">Synthetic on purpose (not CAM/DENM schedules): isolate MAC trade-offs. The alert is <b>superimposed</b>: the crash vehicle keeps sending its own BE. Repetition follows robust-broadcast practice.</p>
+  <aside class="notes">Traffic. Every vehicle sends Best Effort multicast with Poisson inter-arrivals: the exponential gap is redrawn before every packet. During the crash window, the crash vehicle also sends alerts. Each logical alert is repeated a few times, with a gap and a random jitter, which is common practice in robust broadcast. Three load profiles: at high load each vehicle averages one BE packet every 125 ms, and the alert comes every 20 ms with eight copies 5 ms apart. That's intentionally a stress case. The traffic is synthetic so that MAC effects can be isolated. Note the alert is added on top: the crash node keeps sending its own BE. <b>~55 s</b></aside>
+</section>
+
+<!-- 25. Policy ladder -->
+<section class="slide" data-section="System model" data-time="50">
+  <h2><span class="kicker">System model · QoS</span>Five MAC policies, one comparison ladder</h2>
+  <div class="ladder">
+    <div class="stepbox f up" data-f="1" style="left:0;height:150px;background:var(--plain)"><h3>plain</h3><p>Non-QoS DCF. Single queue, no classifier: every frame treated alike.</p></div>
+    <div class="stepbox f up" data-f="2" style="left:286px;height:220px;background:var(--edca)"><h3>edca_only</h3><p>Standard EDCA. DSCP 46 → AC_VO; everything else UP 0 (BE).</p></div>
+    <div class="stepbox f up" data-f="3" style="left:572px;height:300px;background:var(--stable)"><h3>stable</h3><p>edca_only + adaptive controller with <b>long, sustained</b> protection windows. BE stays queued but cannot access the channel.</p></div>
+    <div class="stepbox f up" data-f="3" style="left:858px;height:380px;background:var(--guarded)"><h3>guarded</h3><p>Same controller with <b>tighter, shorter</b> windows (bounded suppression).</p></div>
+    <div class="stepbox f up" data-f="4" style="left:1144px;height:470px;background:var(--emergency)"><h3>emergency</h3><p><b>Aggressive</b> activation. Newly arriving BE <b>may be dropped</b>, stale BE grants released.</p></div>
+    <div class="f" data-f="5" style="position:absolute;left:0;top:10px;font-size:24px;color:var(--muted)">more aggressive towards Best Effort ⟶</div>
+  </div>
+  <p class="small f up" data-f="5" style="margin-top:14px">Adaptive profiles (<code>edca_v2x_vo_*</code>) <b>inherit edca_only unchanged</b> and only add the local controller; they shape contention, they do <b>not</b> reserve the medium.</p>
+  <aside class="notes">This is the comparison ladder. Plain DCF: no differentiation. edca_only: standard EDCA with the alert mapped to Voice. Then three adaptive profiles that add the same local controller with different settings: stable keeps long protection windows, guarded uses short, tight ones, and both only hold Best Effort back. Emergency activates aggressively and may also drop newly arriving Best Effort. Each step adds one mechanism, so I can attribute effects. <b>~50 s</b></aside>
+</section>
+
+<!-- 26. FSM -->
+<section class="slide" id="s-fsm" data-section="System model" data-time="75">
+  <h2><span class="kicker">System model · Adaptive controller</span>Three-mode local FSM</h2>
+  <span class="f" data-f="1"></span><span class="f" data-f="2"></span><span class="f" data-f="3"></span><span class="f" data-f="4"></span>
+  <span class="f" data-f="5"></span><span class="f" data-f="6"></span><span class="f" data-f="7"></span><span class="f" data-f="8"></span>
+  <svg viewBox="0 0 1400 560" width="1400" height="560" class="fsm" style="margin-top:-20px">
+    <defs><marker id="arf" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 z" fill="#5d6675"/></marker></defs>
+    <g class="edge" id="e-skip"><path d="M220 210 C 220 40, 1180 40, 1180 210" stroke-dasharray="10 8" marker-end="url(#arf)"/><text x="700" y="58" text-anchor="middle">own VO TX start without a prior block</text></g>
+    <g class="edge" id="e-closed"><path d="M1180 350 C 1180 545, 220 545, 220 350" stroke-dasharray="10 8" marker-end="url(#arf)"/><text x="700" y="536" text-anchor="middle">VO TX end / send-guard, window already closed</text></g>
+    <g class="edge" id="e-demand"><path d="M380 265 L 535 265" marker-end="url(#arf)"/><text x="458" y="168" text-anchor="middle">VO demand</text><text x="458" y="192" text-anchor="middle" font-size="15">(local queue ≥ thr. or overheard VO)</text></g>
+    <g class="edge" id="e-txstart"><path d="M860 250 L 1015 250" marker-end="url(#arf)"/><text x="938" y="236" text-anchor="middle">own VO TX start</text></g>
+    <g class="edge" id="e-txend"><path d="M1020 310 C 965 360, 915 360, 865 310" marker-end="url(#arf)"/><text x="940" y="378" text-anchor="middle" font-size="15">TX end / guard, window open</text></g>
+    <g class="edge" id="e-expire"><path d="M700 350 C 700 460, 260 460, 250 355" marker-end="url(#arf)"/><text x="475" y="468" text-anchor="middle">protection window expires</text></g>
+    <g class="state" id="st-listen"><rect x="60" y="210" width="320" height="140" rx="20"/><text x="220" y="262" text-anchor="middle">listening</text><text class="d" x="220" y="294" text-anchor="middle">default · ordinary EDCA</text><text class="d" x="220" y="318" text-anchor="middle">monitors VO queue + air</text></g>
+    <g class="state" id="st-block"><rect x="540" y="210" width="320" height="140" rx="20"/><text x="700" y="262" text-anchor="middle">blocking</text><text class="d" x="700" y="294" text-anchor="middle">BE deferred (emergency: may drop)</text><text class="d" x="700" y="318" text-anchor="middle">finite window, capped</text></g>
+    <g class="state" id="st-send"><rect x="1020" y="210" width="320" height="140" rx="20"/><text x="1180" y="262" text-anchor="middle">sending</text><text class="d" x="1180" y="294" text-anchor="middle">own VO frames on air</text><text class="d" x="1180" y="318" text-anchor="middle">BE remains blocked</text></g>
+  </svg>
+  <div class="fsm-caption">
+    <div class="cap0">A local finite-state machine gates <b>BE eligibility for channel access</b>. EDCA queue parameters are untouched.</div>
+    <div class="cap1"><b>listening</b>: the default. The node runs ordinary EDCA and watches its own Voice queue and the air.</div>
+    <div class="cap2">A <b>single overheard Voice frame</b> is enough to start or extend protection. The queue threshold applies only to <b>locally</b> generated Voice.</div>
+    <div class="cap3">While <b>blocking</b>: <span class="pol stable">stable</span>/<span class="pol guarded">guarded</span> keep BE queued but ineligible; <span class="pol emergency">emergency</span> may also <b>drop</b> new BE and release stale BE grants.</div>
+    <div class="cap4">The crash node enters <b>sending</b> when its own Voice frame obtains the channel. BE stays blocked.</div>
+    <div class="cap5">After the Voice TX ends, or the send-guard timer fires, it returns to <b>blocking</b> while the window is still open.</div>
+    <div class="cap6">Once the protection window (plus guard) expires → back to <b>listening</b>. Nodes that only <b>overhear</b> Voice never enter <i>sending</i>.</div>
+    <div class="cap7">Extra transitions: a local Voice frame can win the channel directly from <i>listening</i>, and return there if the window is already closed.</div>
+    <div class="cap8">The mechanism <b>shapes local contention</b> during the alert period. It does <b>not</b> reserve the medium or open scheduled gates.</div>
+  </div>
+  <aside class="notes">The heart of the adaptive policies: a three-mode state machine per node. Step by step. Listening is the default; the node runs normal EDCA. When there is Voice demand, either the local Voice queue crosses a threshold or the node overhears any Voice frame, it goes to blocking. One overheard frame is enough. In blocking, stable and guarded keep BE queued but not allowed to contend; emergency can drop new BE. When the crash node's own Voice frame gets the channel it is in sending; after the transmission, or a guard timer, it returns to blocking if the window is open, and to listening when the window expires. Nodes that only overhear never enter sending. The dashed edges are the shortcuts. Important: this shapes contention; it does not reserve the medium. <b>~75 s</b></aside>
+</section>
+
+<!-- 27. Event timeline -->
+<section class="slide" data-section="System model" data-time="40">
+  <h2><span class="kicker">System model · Events</span>Three phases on a 70 s run</h2>
+  <svg viewBox="0 0 1400 330" width="1400" height="330">
+    <g font-size="20" fill="#5d6675"><text x="100" y="315" text-anchor="middle">0 s</text><text x="640" y="315" text-anchor="middle">30 s</text><text x="1180" y="315" text-anchor="middle">60 s</text><text x="1360" y="315" text-anchor="middle">70 s</text></g>
+    <line x1="100" y1="290" x2="1360" y2="290" stroke="#17202e" stroke-width="2"/>
+    <text x="10" y="70" font-size="20" font-weight="700" fill="#2f6fb3">BE</text>
+    <rect x="100" y="45" width="1260" height="40" rx="8" fill="#2f6fb3" class="f draw-x" data-f="1"/>
+    <text x="10" y="150" font-size="20" font-weight="700" fill="#d1495b">VO</text>
+    <rect x="640" y="125" width="540" height="40" rx="8" fill="#d1495b" class="f left" data-f="2"/>
+    <text x="910" y="152" text-anchor="middle" fill="#fff" font-size="20" font-weight="700">alert bursts · crash vehicle stopped (TraCI)</text>
+    <text x="10" y="230" font-size="20" font-weight="700" fill="#c2410c">ctrl</text>
+    <rect x="100" y="205" width="540" height="40" rx="8" fill="#e8ebf0" class="f" data-f="3"/>
+    <text x="370" y="232" text-anchor="middle" font-size="19" class="f" data-f="3">listening</text>
+    <rect x="640" y="205" width="560" height="40" rx="8" fill="#fde2df" stroke="#c2410c" stroke-width="2" stroke-dasharray="8 5" class="f" data-f="3"/>
+    <text x="920" y="232" text-anchor="middle" font-size="19" class="f" data-f="3">blocking ⇄ sending (adaptive policies)</text>
+    <rect x="1200" y="205" width="160" height="40" rx="8" fill="#e8ebf0" class="f" data-f="4"/>
+    <text x="1280" y="232" text-anchor="middle" font-size="19" class="f" data-f="4">listening</text>
+  </svg>
+  <div class="grid3 mt">
+    <div class="card f up" data-f="1"><h3>1 · Normal (0–30 s)</h3><p>Only periodic BE multicast; controllers in <i>listening</i>.</p></div>
+    <div class="card f up" data-f="2"><h3>2 · Crash window (30–60 s)</h3><p>Node 0 stops and sends VO bursts; BE <b>continues everywhere</b>, crash node included.</p></div>
+    <div class="card f up" data-f="4"><h3>3 · Recovery (60–70 s)</h3><p>Alerts stop. Protection may briefly <b>outlast</b> the burst, until window + guard expire.</p></div>
+  </div>
+  <aside class="notes">Each run is 70 seconds. Best Effort runs throughout. At 30 s, node 0 crashes: SUMO stops it and it starts the Voice bursts for 30 s, while Best Effort continues everywhere, including at the crash node. Under the adaptive policies the controllers move between blocking and sending during the window, and protection can last slightly past the end, until the window and guard expire. Then everything returns to normal. <b>~40 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- IMPLEMENTATION -->
+<!-- 28. Architecture -->
+<section class="slide" data-section="Implementation" data-time="45">
+  <h2><span class="kicker">Implementation</span>Artifact architecture</h2>
+  <div class="row" style="align-items:stretch">
+    <div style="width:330px" class="f left" data-f="1">
+      <div class="card"><h3>SUMO</h3><p class="small">5 km corridor, 3+3 lanes, cars + trucks, 120 km/h; step 0.1 s.</p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">veins_launchd</h3><p class="small">TraCI on TCP 9999; manager update 1 s.</p></div>
+    </div>
+    <div class="col card f zoom" data-f="2" style="background:#f6f7f9;padding:18px 22px">
+      <h3>OMNeT++ 6.1 kernel</h3>
+      <div class="grid2" style="margin-top:12px;gap:16px">
+        <div class="card"><h3 style="font-size:22px">Veins 5.3.1 <span class="tag">submodule</span></h3><p class="small">VeinsInetManager: TraCI client, creates/updates vehicles</p></div>
+        <div class="card"><h3 style="font-size:22px">INET 4.5.4 <span class="tag">submodule</span></h3><p class="small">UDP/IPv4 · 802.11 MAC/PHY · dimensional radio medium · stock Hcf</p></div>
+        <div class="card"><h3 style="font-size:22px">veins_inet <span class="tag">vendored</span></h3><p class="small">VeinsInetCar host, mobility, ApplicationBase</p></div>
+        <div class="card hot"><h3 style="font-size:22px">veins_qos <span class="tag red">study code</span></h3><p class="small">CritPacketSender · CrashBurstApp · QosClassifier · V2xIeee80211Mac · V2xHcf + FSM · scenarios</p></div>
+      </div>
+    </div>
+    <div style="width:290px" class="f right" data-f="3">
+      <div class="card"><h3 class="mono" style="font-size:22px">omnetpp.ini</h3><p class="small">policy × load × hotspot overlays via <code>extends</code></p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">.sca / .vec</h3><p class="small">per-packet vectors + scalars</p></div>
+      <div class="card mt"><h3 class="mono" style="font-size:22px">kpi_dashboard</h3><p class="small">Rust, offline: KPIs → tables &amp; figures</p></div>
+    </div>
+  </div>
+  <p class="small f up" data-f="4" style="margin-top:14px">Frameworks = <b>read-only submodules</b> at release commits; only vendored file modified: <code>VeinsInetApplicationBase</code>. Public: <span class="mono">github.com/GOAguiar99/veins-inet-qos</span></p>
+  <aside class="notes">The implementation. OMNeT++ 6.1, INET 4.5.4 and Veins 5.3.1, all as read-only git submodules pinned to release commits. SUMO runs a 5 km straight highway with three lanes each way, launched through veins_launchd. All study code lives in veins_qos: two applications, the classifier, an instrumented MAC, and the adaptive HCF with its state machine. Configuration composes policy, load and hotspot overlays. Results go to scalar and vector files that a Rust dashboard processes offline. The only vendored file I modified is the application base. Everything is public. <b>~45 s</b></aside>
+</section>
+
+<!-- 29. Packet path -->
+<section class="slide" data-section="Implementation" data-time="50">
+  <h2><span class="kicker">Implementation</span>End-to-end packet path</h2>
+  <div class="row">
+    <svg viewBox="0 0 760 520" width="760" height="520" class="f play" data-f="1">
+      <g font-size="19" font-weight="700" text-anchor="middle">
+        <g><rect x="40" y="20" width="220" height="62" rx="12" fill="#fff6f1" stroke="#c2410c" stroke-width="2"/><text x="150" y="58">App (DSCP 0 / 46)</text></g>
+        <g><rect x="40" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="143">UDP → 224.0.0.1</text></g>
+        <g><rect x="40" y="190" width="220" height="62" rx="12" fill="#fff6f1" stroke="#c2410c" stroke-width="2"/><text x="150" y="216">IPv4 + QosClassifier</text><text x="150" y="240" font-size="15" font-weight="500">DSCP → UserPriorityReq</text></g>
+        <g><rect x="40" y="275" width="220" height="62" rx="12" fill="#fff6f1" stroke="#c2410c" stroke-width="2"/><text x="150" y="301">V2xIeee80211Mac</text><text x="150" y="325" font-size="15" font-weight="500">DCF queue / EDCA (+FSM)</text></g>
+        <g><rect x="40" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="150" y="398">802.11p radio</text></g>
+        <g><rect x="500" y="20" width="220" height="62" rx="12" fill="#fff6f1" stroke="#c2410c" stroke-width="2"/><text x="610" y="48">CritPacketSender</text><text x="610" y="72" font-size="15" font-weight="500">port 9001 · KPI sink</text></g>
+        <g><rect x="500" y="105" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="143">UDP</text></g>
+        <g><rect x="500" y="190" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="228">IPv4</text></g>
+        <g><rect x="500" y="275" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="313">MAC</text></g>
+        <g><rect x="500" y="360" width="220" height="62" rx="12" fill="#fff" stroke="#cfd5de" stroke-width="2"/><text x="610" y="398">radio</text></g>
+      </g>
+      <text x="150" y="455" text-anchor="middle" font-size="18" fill="#5d6675">sender</text>
+      <text x="610" y="455" text-anchor="middle" font-size="18" fill="#5d6675">every receiver</text>
+      <path d="M260 470 Q 380 500 500 470" stroke="#9aa6b8" stroke-width="3" fill="none" class="flowline"/>
+      <text x="380" y="510" text-anchor="middle" font-size="17" fill="#5d6675">shared medium</text>
+      <circle r="14" fill="#2f6fb3" class="pkt"/>
+      <circle r="14" fill="#d1495b" class="pkt vo-pk"/>
+    </svg>
+    <ol class="col small stagger f" data-f="2" style="padding-left:1.2em">
+      <li>App creates the UDP payload, a <code>CreationTimeTag</code> and a <code>DscpReq</code> of 0 or 46.</li>
+      <li>Sent to multicast <code>224.0.0.1</code> via <code>VeinsInetApplicationBase</code>.</li>
+      <li>Under EDCA policies, <code>QosClassifier</code> turns DSCP into a user priority.</li>
+      <li>MAC: one DCF queue (<span class="pol plain">plain</span>) or EDCA ACs; adaptive policies ask the FSM before granting <b>BE</b> access.</li>
+      <li>Dimensional 802.11p radio; receivers reverse the path.</li>
+      <li><code>CritPacketSender</code> classifies RX by DSCP into BE/VO KPIs, skips self, dedups VO repeats.</li>
+    </ol>
+  </div>
+  <aside class="notes">Here is the path of a packet. The application stamps creation time and marks DSCP 0 or 46. It goes to UDP multicast, then IPv4, where under EDCA policies the classifier converts DSCP to user priority. My instrumented MAC either uses one DCF queue or the EDCA categories, and the adaptive policies consult the state machine before letting Best Effort access the channel. On the receiver side, the same CritPacketSender module that sends BE is the KPI sink for both classes: it sorts by DSCP, ignores its own packets, and deduplicates Voice repeats. The path is identical for both classes except for the marking, the mapping and the gating. <b>~50 s</b></aside>
+</section>
+
+<!-- 30. Applications + alert age -->
+<section class="slide" data-section="Implementation" data-time="55">
+  <h2><span class="kicker">Implementation · Applications</span>Two traffic generators and the "alert age" metric</h2>
+  <div class="grid2">
+    <div class="card f left" data-f="1" style="border-top:6px solid var(--be)"><h3 class="mono">CritPacketSender</h3><ul class="small"><li>Periodic BE on every vehicle (<code>app[0]</code>, port 9001).</li><li>RX side: BE/VO delay vectors, counts; crash-node BE slice.</li><li>VO dedup keyed by (source, sequence), run-long.</li></ul></div>
+    <div class="card f right" data-f="2" style="border-top:6px solid var(--vo)"><h3 class="mono">CrashBurstApp</h3><ul class="small"><li>Only <code>targetNodeIndex</code> = 0 acts, at <code>crashAt</code> = 30 s.</li><li>TraCI <code>setSpeed(0)</code>, then DSCP 46 bursts; <code>resumeAfter</code> = 30 s.</li><li><code>repeatCount</code>, <code>repeatGap</code>, <code>repeatJitter</code>; logical and physical TX counters.</li></ul></div>
+  </div>
+  <div class="card f up" data-f="3" style="margin-top:16px;padding:10px 20px">
+    <svg viewBox="0 0 1380 190" width="1300" height="150">
+      <line x1="60" y1="120" x2="1340" y2="120" stroke="#17202e" stroke-width="2"/>
+      <line x1="200" y1="40" x2="200" y2="130" stroke="#d1495b" stroke-width="3"/><text x="200" y="30" text-anchor="middle" font-size="19" font-weight="800" fill="#d1495b">t₀ logical burst (delay origin)</text>
+      <rect x="260" y="88" width="30" height="32" fill="#d1495b" opacity=".35"/><text x="275" y="150" text-anchor="middle" font-size="16">copy 0</text><text x="230" y="80" font-size="15" fill="#5d6675">jitter</text>
+      <line x1="290" y1="104" x2="330" y2="104" stroke="#c2410c" stroke-width="3"/><text x="310" y="98" font-size="20" fill="#c2410c" text-anchor="middle">✕</text>
+      <rect x="560" y="88" width="30" height="32" fill="#d1495b"/><text x="575" y="150" text-anchor="middle" font-size="16">copy 1 (+gap)</text>
+      <rect x="860" y="88" width="30" height="32" fill="#d1495b" opacity=".35"/><text x="875" y="150" text-anchor="middle" font-size="16">copy 2</text>
+      <line x1="620" y1="40" x2="620" y2="130" stroke="#2a9d6f" stroke-width="3"/><text x="620" y="30" text-anchor="middle" font-size="19" font-weight="800" fill="#2a9d6f">first accepted copy at receiver</text>
+      <path d="M200 175 L620 175" stroke="#13233f" stroke-width="4" marker-end="url(#ar)"/><text x="410" y="168" text-anchor="middle" font-size="20" font-weight="800" fill="#13233f">alert age</text>
+    </svg>
+  </div>
+  <div class="grid2 mt">
+    <p class="small f up" data-f="4">Copy <i>i</i> leaves at <b>max(0, i·gap + U(−J, J))</b>: jitter also hits the <b>first</b> copy. Its 95th percentile is <b>0.9 J</b>, a floor that <b>no MAC policy can remove</b>.</p>
+    <p class="small f up" data-f="5">BE delay starts at each physical send; VO delay = <b>alert age</b>: from t₀ to the receiver's <b>first accepted copy</b>. "The alert is only as timely as the application makes it."</p>
+  </div>
+  <aside class="notes">Two applications. CritPacketSender generates Best Effort everywhere and is also the receiver for both classes. CrashBurstApp acts only on node 0: at 30 s it stops the car through TraCI and sends the bursts. The key definition is alert age. For Voice, delay is measured from the logical burst time to the first copy a receiver accepts. If copy 0 is lost and copy 1 arrives, the gap counts too. And because the jitter also applies to the first copy, there's a floor: its 95th percentile is 0.9 times the jitter. Keep that in mind; it explains a key result later. <b>~55 s</b></aside>
+</section>
+
+<!-- 31. Classifier, MAC, HCF -->
+<section class="slide" data-section="Implementation" data-time="55">
+  <h2><span class="kicker">Implementation · QoS and MAC modules</span>Classifier, instrumented MAC, adaptive HCF</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><h3 class="mono" style="font-size:22px">QosClassifier</h3><p class="small">Implements INET's <code>IIeee8021dQosClassifier</code>: <code>crashDscp</code> 46 → Voice UP; everything else <code>defaultUp</code> 0. EDCA policies only.</p></div>
+    <div class="card f up" data-f="2"><h3 class="mono" style="font-size:22px">V2xIeee80211Mac</h3><p class="small">Used by <b>all</b> policies. Subscribes to <code>packetDroppedSignal</code>: drops per AC (BK/BE/VI/VO/unclassified) and per reason (overflow, retry, congestion, incorrectly received…).</p></div>
+    <div class="card hot f up" data-f="3"><h3 class="mono" style="font-size:22px">V2xHcf + FSM</h3><p class="small">Replaces INET's <code>Hcf</code> (adaptive only). Same EDCA tree + <code>V2xEdcaFsmController</code>. Intercepts <b>BE channel-access eligibility</b>; no backoff arithmetic rewritten, no gates.</p></div>
+  </div>
+  <table class="t compact mt f up" data-f="4">
+    <tr><th>Profile</th><th class="num">blockDuration</th><th class="num">maxContinuousBlock</th><th class="num">sendingGuardTimeout</th><th class="num">voQueueThreshold</th><th class="num">emergencyPreemption</th></tr>
+    <tr><td><span class="pol stable">stable</span></td><td class="num">15 ms</td><td class="num">80 ms</td><td class="num">5 ms</td><td class="num">2</td><td class="num">false</td></tr>
+    <tr><td><span class="pol guarded">guarded</span></td><td class="num">4 ms</td><td class="num">20 ms</td><td class="num">4 ms</td><td class="num">3</td><td class="num">false</td></tr>
+    <tr class="hl"><td><span class="pol emergency">emergency</span></td><td class="num">10 ms</td><td class="num">60 ms</td><td class="num">5 ms</td><td class="num">1</td><td class="num">true</td></tr>
+  </table>
+  <p class="tiny mt f" data-f="5">Hooks: VO demand (local enqueue ≥ threshold or overheard VO) → <code>onVoDemandDetected</code> extends window by <code>blockDuration</code>, capped by <code>maxContinuousBlock</code>. Counters: <code>beDroppedWhileBlocked</code>, <code>beGrantSuppressedWhileBlocked</code>, <code>voProtectionActivation</code>; vector <code>v2xState</code> (0/1/2).</p>
+  <aside class="notes">Three modules. The classifier maps DSCP 46 to Voice priority and everything else to 0, only under EDCA policies. The instrumented MAC is used everywhere and records drops by access category and by reason. And V2xHcf replaces INET's HCF only for the adaptive policies; it keeps the same EDCA tree and adds the state machine, which only controls whether Best Effort may request the channel. The table shows the three design points: block duration per demand event, the cap on continuous blocking, the send guard, the Voice queue threshold, and whether emergency preemption is on. <b>~55 s</b></aside>
+</section>
+
+<!-- 32. Scenario & parameters -->
+<section class="slide" data-section="Implementation" data-time="50">
+  <h2><span class="kicker">Implementation · Scenario</span>Parameters and configuration matrix</h2>
+  <div class="row">
+    <table class="t compact col f left" data-f="1">
+      <tr><th>Parameter</th><th>Value</th></tr>
+      <tr><td>Sim. time · crash</td><td>70 s · node 0, 30–60 s</td></tr>
+      <tr><td>Density packages</td><td><b>10</b> (light) / <b>100</b> (heavy) vehicles</td></tr>
+      <tr><td>Radio</td><td>802.11p, ch. 3, 5.9 GHz, 10 MHz, 20 mW</td></tr>
+      <tr><td>Data rate</td><td>12 Mbit/s (fastest mandatory mode, INET default)</td></tr>
+      <tr><td>Propagation</td><td>Free space + IdealObstacleLoss; SNIR 4 dB; −85 dBm sens.; −110 dBm noise</td></tr>
+      <tr><td>EDCA (BK/BE/VI/VO)</td><td>AIFSN 7/3/2/2; CW 15–1023, 15–1023, 7–15, 3–7</td></tr>
+      <tr><td>Recording</td><td>all vectors + scalars</td></tr>
+    </table>
+    <div class="col">
+      <div class="card f right" data-f="2"><h3>Matrix</h3>
+        <p class="small"><b>5 policies × 3 loads</b> = 15 configs per density package <code>&lt;policy&gt;_netload_&lt;low|medium|high&gt;</code></p>
+        <p class="small">× 2 densities = <b>30</b> named experiments</p>
+        <p class="small"><b>+ 15 hotspot</b> configs (heavy) <code>&lt;policy&gt;_hotspot_&lt;profile&gt;</code>: nodes 1–3 bulk-upload 1200 B at 4 ms Poisson ≈ <b>2.4 Mbit/s each</b></p>
+      </div>
+      <div class="callout gray mt f up" data-f="3" style="font-size:21px"><b>Fidelity caveats:</b> <code>AdhocHost</code> approximates OCB; EDCA set = BSS QoS defaults, while the OCB default gives BE AIFSN 6, so BE here competes <b>harder</b> (conservative). Group frames at 12 Mbit/s instead of a basic rate.</div>
+    </div>
+  </div>
+  <aside class="notes">Main parameters: 70-second runs, crash from 30 to 60 s, light and heavy packages with 10 and 100 vehicles, 802.11p at 5.9 GHz, 12 Mbit/s data rate, free-space propagation with ideal obstacles, and the EDCA set I showed earlier. The matrix: five policies times three loads, times two densities, gives 30 experiments, plus 15 hotspot configurations, where three nodes right behind the crash stream about 2.4 Mbit/s each. Two fidelity caveats: AdhocHost approximates OCB, and I used the BSS EDCA defaults, where BE is more aggressive than the OCB defaults, which is conservative for this problem. <b>~50 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- EVALUATION -->
+<!-- 33. How the evaluation evolved -->
+<section class="slide" data-section="Evaluation" data-time="55">
+  <h2><span class="kicker">Evaluation</span>How the evaluation reached its final form</h2>
+  <div class="row" style="gap:18px;align-items:stretch">
+    <div class="col card f up" data-f="1"><span class="tag">step 1</span><h3 class="mt">First uniform campaign</h3><p class="small">Reported in the SBESC 2026 paper.</p></div>
+    <div class="col card f up" data-f="2" style="border-color:var(--vo)"><span class="tag red">step 2 · audit</span><h3 class="mt">Two measurement bugs</h3><ul class="small"><li>BE interval drawn <b>once per vehicle</b> → some near-greedy senders.</li><li>VO delay clocked from each <b>physical repeat</b>, not alert start.</li></ul></div>
+    <div class="col card f up" data-f="3"><span class="tag blue">step 3</span><h3 class="mt">Fix, discard, re-run</h3><p class="small">Poisson redraw per packet; alert-age clock. Earlier traces discarded.</p></div>
+    <div class="col card f up" data-f="4"><span class="tag">step 4</span><h3 class="mt">Null result</h3><p class="small">Under uniform load the five policies <b>no longer differ</b> in Voice service.</p></div>
+    <div class="col card hot f up" data-f="5"><span class="tag green">step 5</span><h3 class="mt">Why? → hotspot</h3><p class="small">Hypothesis about diffuse load → a <b>concentrated-load</b> experiment.</p></div>
+  </div>
+  <div class="callout mt2 f up" data-f="6">The negative result shaped the work: understanding <b>why</b> protection had no effect led to the condition in which it <b>does</b> help. The dissertation <b>supersedes</b> the paper's numbers.</div>
+  <aside class="notes">Before the results, an honest note on how they came about. The first campaign, the one in the SBESC 2026 paper, had two measurement problems I found in an audit: each vehicle drew its Best Effort interval only once, so a few became near-greedy senders, and Voice delay was measured from each physical repeat instead of from the alert start. I fixed both, discarded the traces and re-ran everything. With correct measurements, the policies no longer differed for Voice under uniform load. Asking why led to the hotspot experiment. So the dissertation supersedes the paper's numbers. <b>~55 s</b></aside>
+</section>
+
+<!-- 34. Setup & metrics -->
+<section class="slide" data-section="Evaluation" data-time="50">
+  <h2><span class="kicker">Evaluation · Setup</span>Matrices, metrics, aggregation</h2>
+  <div class="grid2">
+    <div>
+      <div class="card f left" data-f="1"><h3>Runs</h3><p class="small">Uniform: 15 configs × 2 densities × <b>3 seeds</b> (#0–#2)<br>Hotspot (heavy): 15 configs × 3 seeds = <b>45 runs</b></p></div>
+      <div class="card f left mt" data-f="2"><h3>Offered load (heavy, high)</h3><p class="small">≈ 800 BE pkt/s fleet-wide when all 100 cars are in → ≈ <b>22 k BE TX per run</b> (progressive injection). VO: 8 copies, 5 ms gap ≈ <b>400 pkt/s</b> during the window.<br>Genuine Poisson ⇒ <b>no queue overflow</b>; BE P95 sub-ms under DCF/EDCA.</p></div>
+    </div>
+    <div>
+      <div class="card f right" data-f="3"><h3>Metrics</h3><ul class="small"><li>Delay (VO = alert age), <b>P95</b>, mean abs. jitter</li><li>Reach: VO <b>RX/alert</b>, BE <b>RX/TX</b> (multicast fan-out)</li><li>MAC drops per AC (VO-attributed; n.a. under plain; ÷2 parser guard)</li><li>Controller: activations, BE drops / holds while blocked</li><li>Crash-node BE slice: same-sender comparison</li></ul></div>
+      <div class="callout gray mt f up" data-f="4" style="font-size:21px">Means over seeds; tails = <b>mean of per-run P95</b> on pooled receiver samples; min–max range shown. <b>No significance tests</b> → qualitative mechanism checks. Δ vs <span class="pol plain">plain</span> unless noted.</div>
+    </div>
+  </div>
+  <aside class="notes">Setup. The uniform matrix runs 15 configurations at both densities with three seeds each; the hotspot matrix adds 45 runs at heavy density. At heavy, high load the fleet offers about 800 BE packets per second, about 22 thousand per run, and the crash node adds about 400 Voice packets per second during the window. With real Poisson traffic, queues never overflow. Metrics: alert age, 95th percentile, jitter, multicast reach, MAC drops attributed to Voice, and the controller counters. Aggregation is a mean over three seeds, without significance tests, so I read these as mechanism checks, not effect sizes. <b>~50 s</b></aside>
+</section>
+
+<!-- 35. Results at a glance -->
+<section class="slide" data-section="Evaluation" data-time="60">
+  <h2><span class="kicker">Evaluation · Overview</span>The answer depends on how the load is distributed</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center">Voice P95 at high load, 100 vehicles (ms)</h3>
+      <div style="display:flex;gap:30px">
+        <div class="col">
+          <div class="chart f" data-f="1" style="height:290px">
+            <div class="refline" style="bottom:100%"><span>25 ms ref.</span></div>
+            <div class="b c-plain" style="--h:9%"><span class="v">2.25</span><i></i></div>
+            <div class="b c-edca" style="--h:9%"><span class="v">2.24</span><i></i></div>
+            <div class="b c-stable" style="--h:9%"><span class="v">2.25</span><i></i></div>
+            <div class="b c-guarded" style="--h:9%"><span class="v">2.24</span><i></i></div>
+            <div class="b c-emergency" style="--h:8.8%"><span class="v">2.21</span><i></i></div>
+          </div>
+          <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stab.</span><span>guard.</span><span>emer.</span></div>
+          <p class="center small" style="margin:6px 0 0"><b>Uniform</b> Poisson</p>
+        </div>
+        <div class="col">
+          <div class="chart f" data-f="2" style="height:290px">
+            <div class="refline" style="bottom:100%"><span></span></div>
+            <div class="b c-plain" style="--h:73.8%"><span class="v">18.5</span><i></i></div>
+            <div class="b c-edca" style="--h:79.8%"><span class="v">20.0</span><i></i></div>
+            <div class="b c-stable" style="--h:84.2%"><span class="v">21.0</span><i></i></div>
+            <div class="b c-guarded" style="--h:80.2%"><span class="v">20.0</span><i></i></div>
+            <div class="b c-emergency" style="--h:58.2%"><span class="v">14.6</span><i></i></div>
+          </div>
+          <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stab.</span><span>guard.</span><span>emer.</span></div>
+          <p class="center small" style="margin:6px 0 0"><b>Hotspot</b> near the crash</p>
+        </div>
+      </div>
+    </div>
+    <div style="width:470px">
+      <div class="card f right" data-f="1"><h3>Uniform</h3><p class="small">≈ 2.2 ms for <b>every</b> policy. Mostly the generator's jitter floor. Policies differ only in BE cost.</p></div>
+      <div class="card hot f right" data-f="2" style="margin-top:16px"><h3>Hotspot, high</h3><p class="small">DCF/EDCA 18.5–20 ms; <b>emergency 14.6 ms</b>: −39 % mean, −21 % P95 vs DCF; −29 % VO collision losses vs EDCA.</p></div>
+      <div class="card f right" data-f="3" style="margin-top:16px"><h3>Hotspot, medium/low</h3><p class="small">No Voice gain: bursts too sparse to keep protection on.</p></div>
+    </div>
+  </div>
+  <aside class="notes">The answer in one picture, Voice P95 on the same scale, with the 25 ms reference at the top. Under uniform load (click), every policy sits at about 2.2 ms: no difference. Under the hotspot (click), DCF and EDCA climb to 18.5 to 20 ms, near the budget, and only emergency brings it down, to 14.6 ms: 39% lower mean and 21% lower P95 than DCF, and 29% fewer Voice collision losses than EDCA. With sparser bursts (click) the gain disappears. The next slides unpack each part. <b>~60 s</b></aside>
+</section>
+
+<!-- 36. Uniform heavy -->
+<section class="slide" data-section="Evaluation" data-time="60">
+  <h2><span class="kicker">Evaluation · Uniform load, 100 vehicles, high</span>Voice is flat; Best Effort pays</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center vo-t">Voice P95 (ms) · linear 0–3</h3>
+      <div class="chart f" data-f="1" style="height:330px">
+        <div class="b c-plain" style="--h:75%"><span class="v">2.249</span><i></i></div>
+        <div class="b c-edca" style="--h:74.7%"><span class="v">2.242</span><i></i></div>
+        <div class="b c-stable" style="--h:74.8%"><span class="v">2.245</span><i></i></div>
+        <div class="b c-guarded" style="--h:74.7%"><span class="v">2.241</span><i></i></div>
+        <div class="b c-emergency" style="--h:73.7%"><span class="v">2.211</span><i></i></div>
+      </div>
+      <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+    <div class="col">
+      <h3 class="center be-t">Best Effort P95 (ms) · log scale</h3>
+      <div class="chart f" data-f="2" style="height:330px">
+        <div class="b c-plain" style="--h:23.6%"><span class="v">0.51</span><i></i></div>
+        <div class="b c-edca" style="--h:24%"><span class="v">0.52</span><i></i></div>
+        <div class="b c-stable" style="--h:82.8%"><span class="v">30.5</span><i></i></div>
+        <div class="b c-guarded" style="--h:53%"><span class="v">3.9</span><i></i></div>
+        <div class="b c-emergency" style="--h:18.9%"><span class="v">0.37</span><i></i></div>
+      </div>
+      <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="grid3 mt">
+    <p class="small f up" data-f="1">VO mean, P95 and jitter within <b>tens of µs</b>. EDCA is <b>not</b> better than DCF. VO RX/alert = 9.95 everywhere.</p>
+    <p class="small f up" data-f="2"><span class="pol stable">stable</span> ×60 BE P95 (0.51 → 30 ms); <span class="pol guarded">guarded</span> → 3.9 ms. Blocking <b>without dropping</b> only adds delay.</p>
+    <p class="small f up" data-f="3">VO MAC drops ≈ 3.7 k under every QoS policy; emergency ≈ EDCA. BE overflow = 0. <b>Diffuse contention: nothing for suppression to act on.</b></p>
+  </div>
+  <aside class="notes">Uniform load, 100 vehicles, high load. Left: Voice P95 on a zoomed linear scale. All five are within tens of microseconds, and EDCA is not even better than DCF. Right, on a log scale: Best Effort. Stable multiplies the BE tail by sixty, from 0.51 to 30 ms; guarded goes to 3.9. Emergency looks better than plain at 0.37 ms, but there's a catch, on the next slide. Voice MAC drops are the same, about 3,700, for every QoS policy. Under diffuse contention, suppression changes neither how many alerts arrive nor how many collide. <b>~60 s</b></aside>
+</section>
+
+<!-- 37. BE cost + light -->
+<section class="slide" data-section="Evaluation" data-time="50">
+  <h2><span class="kicker">Evaluation · Uniform load</span>Lower BE delay is not better BE service</h2>
+  <div class="row">
+    <div class="col">
+      <div class="callout f up" data-f="1">Delay is measured on <b>delivered</b> packets. Emergency drops BE while blocked, which removes the slow tail from the sample. The cost shows up as <b>lost reach</b>.</div>
+      <div class="mt f up" data-f="2" style="display:flex;align-items:center;gap:30px">
+        <div class="center"><div class="big be-t">8.06</div><div class="small">BE RX/TX · DCF</div></div>
+        <div style="font-size:50px;color:#9aa2ae">→</div>
+        <div class="center"><div class="big vo-t">6.93</div><div class="small">BE RX/TX · emergency</div></div>
+      </div>
+      <p class="small mt f up" data-f="3">Crash-node BE P95 at high load: DCF 0.63 · EDCA 0.77 · <b>stable 13.8</b> · guarded 3.9 · emergency 0.44 ms.</p>
+    </div>
+    <div class="col f right" data-f="4">
+      <h3>Light density (10 vehicles), high load</h3>
+      <table class="t compact">
+        <tr><th>Policy</th><th class="num">Δ VO mean</th><th class="num">Δ VO P95</th><th class="num">BE P95 (ms)</th></tr>
+        <tr><td><span class="pol plain">plain</span></td><td class="num">—</td><td class="num">—</td><td class="num">0.44</td></tr>
+        <tr><td><span class="pol edca">EDCA</span></td><td class="num">+1.3 %</td><td class="num">−0.0 %</td><td class="num">0.42</td></tr>
+        <tr class="hl"><td><span class="pol stable">stable</span></td><td class="num">+0.9 %</td><td class="num">+0.5 %</td><td class="num">49</td></tr>
+        <tr><td><span class="pol guarded">guarded</span></td><td class="num">−1.3 %</td><td class="num">−1.3 %</td><td class="num">9.0</td></tr>
+        <tr><td><span class="pol emergency">emergency</span></td><td class="num">+2.4 %</td><td class="num">+0.2 %</td><td class="num">0.37</td></tr>
+      </table>
+      <p class="tiny">Plain: VO mean 0.786 ms, VO P95 2.078 ms.</p>
+      <div class="callout gray f up" data-f="5" style="font-size:22px">Same pattern with few vehicles: protection windows open even with little stress, and <b>blocking without dropping already harms BE</b>.</div>
+    </div>
+  </div>
+  <aside class="notes">Why isn't emergency's lower BE delay good news? Because delay is measured only on packets that arrive. Emergency drops Best Effort while blocked, which removes the slow ones from the sample. The real cost is reach: received copies per BE transmission fall from 8.06 to 6.93. At light density, 10 vehicles, the pattern is the same: Voice within about 2% of plain, while stable pushes the BE tail from 0.44 to 49 ms. <b>~50 s</b></aside>
+</section>
+
+<!-- 38. Jitter floor -->
+<section class="slide" data-section="Evaluation" data-time="55">
+  <h2><span class="kicker">Evaluation · Why ≈ 2.2 ms?</span>The floor comes from the alert generator</h2>
+  <div class="row">
+    <svg viewBox="0 0 700 380" width="700" height="380">
+      <line x1="60" y1="300" x2="660" y2="300" stroke="#17202e" stroke-width="2"/>
+      <line x1="60" y1="300" x2="60" y2="30" stroke="#17202e" stroke-width="2"/>
+      <text x="60" y="330" text-anchor="middle" font-size="19">0</text><text x="600" y="330" text-anchor="middle" font-size="19">J</text>
+      <text x="360" y="365" text-anchor="middle" font-size="19" fill="#5d6675">dispatch offset of a copy, max(0, U(−J, J))</text>
+      <g class="f" data-f="1"><rect x="52" y="60" width="16" height="240" fill="#d1495b"/><text x="80" y="70" font-size="18" font-weight="700" fill="#d1495b">50 % point mass at 0</text></g>
+      <rect x="60" y="230" width="540" height="70" fill="#f4a8a1" class="f left" data-f="2"/>
+      <text x="330" y="222" text-anchor="middle" font-size="18" class="f" data-f="2">uniform on (0, J]: the other 50 %</text>
+      <g class="f" data-f="3"><line x1="546" y1="40" x2="546" y2="300" stroke="#13233f" stroke-width="4" stroke-dasharray="8 6"/><text x="546" y="32" text-anchor="middle" font-size="20" font-weight="800" fill="#13233f">P95 = 0.9 J</text></g>
+    </svg>
+    <div class="col">
+      <div class="f up" data-f="4">
+        <h3>High load, J = 2 ms</h3>
+        <div style="display:flex;height:56px;border-radius:10px;overflow:hidden;font-weight:800;color:#fff;font-size:20px">
+          <div style="width:82%;background:var(--vo);display:flex;align-items:center;justify-content:center">jitter P95 ≈ 1.8 ms</div>
+          <div style="width:18%;background:var(--be);display:flex;align-items:center;justify-content:center">~0.4</div>
+        </div>
+        <p class="small">= observed VO P95 ≈ <b>2.2 ms</b> (sub-ms transfer on top)</p>
+      </div>
+      <div class="f up mt" data-f="5">
+        <h3>Low/medium, J = 5 ms</h3>
+        <p class="small" style="margin-top:0">0.9 · 5 = 4.5 ms → observed floors ≈ <b>4.6–4.9 ms</b></p>
+      </div>
+      <div class="f up" data-f="6"><p class="small">Mean: E[max(0, U(−2, 2))] = <b>0.5 ms</b> = half of the 0.99 ms VO mean. A missed first copy adds one gap per miss, which is rare at P95 under diffuse load.</p></div>
+      <div class="callout f up" data-f="7" style="font-size:23px">2.2 ms is <b>not</b> a pure medium-access measurement, and <b>no MAC policy could have changed it</b>.</div>
+    </div>
+  </div>
+  <aside class="notes">Why exactly 2.2 ms for everyone? Because of the generator. Each copy, including the first, leaves at max of zero and a uniform between minus J and J. Half the time that's zero; the other half it's uniform up to J. So the 95th percentile is 0.9 J. At high load J is 2 ms, so 1.8 ms of the 2.2 come from the generator, and the channel adds a few hundred microseconds. At low and medium loads, J is 5 ms, giving 4.5, and we observe 4.6 to 4.9. Even the mean: half of the 0.99 ms is jitter. So this number is not a channel measurement, and no MAC policy could move it. <b>~55 s</b></aside>
+</section>
+
+<!-- 39. Hypothesis -->
+<section class="slide" data-section="Evaluation" data-time="45">
+  <h2><span class="kicker">Evaluation · From null result to hypothesis</span>Why does suppression not help under uniform load?</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card f up" data-f="1"><h3>Structure of the contention</h3><p class="small">Frames that can collide with an alert come from <b>≈ 100 senders</b>, each with a tiny share of the load. Suppressing BE at one node removes a <b>negligible</b> part of it.</p></div>
+      <div class="card f up mt" data-f="2"><h3>Reactive by design</h3><p class="small">Neighbors start suppressing only <b>after decoding</b> a first Voice copy, too late for that copy.</p></div>
+    </div>
+    <div class="col">
+      <h3 class="f" data-f="3">Two predictions</h3>
+      <div class="card f right" data-f="3" style="border-left:8px solid var(--ok)"><p class="small"><b>P1.</b> No policy changes Voice service under uniform load, at any density or load.</p><span class="tag green">confirmed (previous slides)</span></div>
+      <div class="card hot f right mt" data-f="4"><p class="small"><b>P2.</b> Protection <b>should</b> help when <b>a few vehicles next to the crash</b> dominate the channel: suppressing them removes most of the competing load.</p><span class="tag red">tested next: hotspot</span></div>
+    </div>
+  </div>
+  <aside class="notes">So why no effect? Under uniform load, the frames that can collide with an alert come from about a hundred senders, each with a tiny share. Suppressing at one node removes almost nothing. And suppression is reactive: neighbors start only after hearing a first Voice copy. This gives two predictions. First, no policy should matter under uniform load, which we just confirmed. Second, protection should help when a few vehicles next to the crash dominate the channel, because then suppressing them removes most of the load. That's the hotspot experiment. <b>~45 s</b></aside>
+</section>
+
+<!-- 40. Hotspot scenario -->
+<section class="slide" data-section="Evaluation" data-time="45">
+  <h2><span class="kicker">Evaluation · Concentrated load</span>The hotspot overlay</h2>
+  <div class="scene" style="height:300px">
+    <div class="lane" style="top:100px"></div><div class="lane" style="top:200px"></div>
+    <div class="car mover" style="top:35px;--dur:9s;--del:-2s"></div>
+    <div class="car mover" style="top:235px;--dur:8s;--del:-5s"></div>
+    <div class="car mover" style="top:235px;--dur:8s;--del:-1s"></div>
+    <div class="car crash" style="top:133px;left:900px"></div>
+    <div style="position:absolute;left:935px;top:150px"><span class="pulse go"></span><span class="pulse go" style="--del:.6s"></span><span class="pulse go" style="--del:1.2s"></span></div>
+    <div class="f" data-f="1">
+      <div class="car hot" style="top:133px;left:760px"></div><div class="car hot" style="top:35px;left:700px"></div><div class="car hot" style="top:235px;left:620px"></div>
+      <div style="position:absolute;left:795px;top:150px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.4s"></span></div>
+      <div style="position:absolute;left:735px;top:52px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.2s"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.8s"></span></div>
+      <div style="position:absolute;left:655px;top:252px"><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:.5s"></span><span class="bpulse go" style="border-color:#f2a541;border-width:4px;--del:1.1s"></span></div>
+      <div style="position:absolute;left:440px;top:10px;color:#ffd79a;font-weight:800;font-size:20px">nodes 1–3: 1200 B every 4 ms (Poisson) ≈ 2.4 Mbit/s each, whole run</div>
+    </div>
+  </div>
+  <div class="grid3 mt">
+    <div class="card center f up" data-f="2"><div class="small muted">BE transmissions / run</div><div class="big" style="font-size:50px">22 k → 72 k</div><div class="small">≈ ×3</div></div>
+    <div class="card center f up" data-f="3"><div class="small muted">VO-attributed MAC losses (EDCA)</div><div class="big vo-t" style="font-size:50px">3.7 k → 25 k</div><div class="small">before any adaptive policy</div></div>
+    <div class="card center f up" data-f="4"><div class="small muted">Unchanged</div><div class="small" style="margin-top:10px">crash source, alert window, metric definitions. Configs <code>&lt;policy&gt;_hotspot_&lt;profile&gt;</code>.</div></div>
+  </div>
+  <aside class="notes">The hotspot overlay: the three vehicles that enter right after the crash vehicle bulk-upload 1200-byte packets every 4 ms on average, about 2.4 Mbit/s each, for the whole run. Total BE transmissions per run triple, from 22 to 72 thousand, and Voice MAC losses under EDCA jump from 3.7 to 25 thousand. Everything else stays the same: same crash, same window, same metrics. <b>~45 s</b></aside>
+</section>
+
+<!-- 41. Hotspot results -->
+<section class="slide" data-section="Evaluation" data-time="60">
+  <h2><span class="kicker">Evaluation · Hotspot, high load, 100 vehicles</span>Only emergency recovers Voice service</h2>
+  <div class="row">
+    <div class="col">
+      <h3 class="center">VO mean (ms)</h3>
+      <div class="chart f" data-f="1" style="height:290px">
+        <div class="b c-plain" style="--h:75.7%"><span class="v">4.54</span><i></i></div>
+        <div class="b c-edca" style="--h:74.1%"><span class="v">4.45</span><i></i></div>
+        <div class="b c-stable" style="--h:76.8%"><span class="v">4.61</span><i></i></div>
+        <div class="b c-guarded" style="--h:74%"><span class="v">4.44</span><i></i></div>
+        <div class="b c-emergency" style="--h:46.4%"><span class="v">2.78</span><i></i></div>
+      </div>
+      <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+    <div class="col">
+      <h3 class="center">VO P95 (ms) · seed range</h3>
+      <div class="chart f" data-f="2" style="height:290px">
+        <div class="refline" style="bottom:100%"><span>25 ms</span></div>
+        <div class="b c-plain" style="--h:73.8%"><span class="v">18.5 <small>[16.1–19.9]</small></span><i></i></div>
+        <div class="b c-edca" style="--h:79.8%"><span class="v">20.0</span><i></i></div>
+        <div class="b c-stable" style="--h:84.2%"><span class="v">21.0</span><i></i></div>
+        <div class="b c-guarded" style="--h:80.2%"><span class="v">20.0</span><i></i></div>
+        <div class="b c-emergency" style="--h:58.2%"><span class="v">14.6 <small>[11.8–16.0]</small></span><i></i></div>
+      </div>
+      <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="grid4 mt">
+    <div class="card center f up" data-f="3"><div class="big ok-t">−39 %</div><div class="small">VO mean vs DCF<br>(−38 % vs EDCA)</div></div>
+    <div class="card center f up" data-f="3"><div class="big ok-t">−21 %</div><div class="small">VO P95 vs DCF<br>(−27 % vs EDCA)</div></div>
+    <div class="card center f up" data-f="4"><div class="big ok-t">−29 %</div><div class="small">VO MAC drops vs EDCA<br>25.2 k → 17.8 k</div></div>
+    <div class="card center f up" data-f="5"><div class="big">≈ 10</div><div class="small">receivers per alert, all policies: geometry-limited</div></div>
+  </div>
+  <p class="tiny f" data-f="5">P95 seed ranges of emergency do not overlap the baselines'. P95 ≫ mean: occasional late first-copy success in collision-heavy windows.</p>
+  <aside class="notes">Hotspot, high load. Mean alert age: DCF, EDCA, stable and guarded all around 4.5 ms; emergency 2.78. P95: the baselines at 18.5 to 21 ms, emergency at 14.6, and its seed range doesn't overlap the others. In numbers: 39% lower mean and 21% lower P95 than DCF, and 29% fewer Voice MAC losses than EDCA. Reach stays at about ten receivers per alert for all policies; that's limited by geometry. Protection reduces delay and losses, but doesn't reach more vehicles. <b>~60 s</b></aside>
+</section>
+
+<!-- 42. Drop vs defer + starvation -->
+<section class="slide" data-section="Evaluation" data-time="55">
+  <h2><span class="kicker">Evaluation · Hotspot, high load</span>Dropping matters, deferring is not enough</h2>
+  <div class="row">
+    <div class="col">
+      <div class="callout f up" data-f="1"><span class="pol stable">stable</span> and <span class="pol guarded">guarded</span> leave VO P95 at EDCA level (20–21 ms): blocking without dropping <b>never empties</b> the heavy senders' queues.</div>
+      <div class="callout green mt f up" data-f="2">With 8 copies every 20 ms, nodes stay blocked <b>almost continuously</b>; emergency drops ≈ <b>16.1 k</b> BE frames while blocked, so the heavy senders cannot refill the channel during the window.</div>
+    </div>
+    <div class="col f right" data-f="3">
+      <h3 class="center">BE delay <u>from the crash node</u> (mean, log ms)</h3>
+      <div class="chart" style="height:300px">
+        <div class="b c-plain" style="--h:23.8%"><span class="v">1.5 ms</span><i></i></div>
+        <div class="b c-edca" style="--h:83.2%"><span class="v">1.45 s</span><i></i></div>
+        <div class="b c-stable" style="--h:82.8%"><span class="v">1.39 s</span><i></i></div>
+        <div class="b c-guarded" style="--h:79.8%"><span class="v">0.98 s</span><i></i></div>
+        <div class="b c-emergency" style="--h:30.5%"><span class="v">3.3 ms</span><i></i></div>
+      </div>
+      <div class="chart-x"><span>DCF</span><span>EDCA</span><span>stable</span><span>guarded</span><span>emerg.</span></div>
+    </div>
+  </div>
+  <div class="callout gray mt f up" data-f="4"><b>Second benefit:</b> EDCA-based policies <b>starve the crash node's own BE</b> (≈ 1–1.5 s waits). Preemption keeps it flowing (3.3 ms) when continuous hotspot demand would otherwise hold the channel.</div>
+  <aside class="notes">What makes emergency different? Stable and guarded only defer Best Effort, and the hotspot senders' queues never empty, so Voice stays at the EDCA level. With alerts every 20 ms, nodes stay blocked almost continuously, and emergency drops about 16 thousand BE frames, so the heavy senders can't refill the channel. There's a second, unexpected benefit. Under EDCA, stable and guarded, the crash node's own Best Effort packets starve: they wait one to one and a half seconds. Emergency keeps them at 3.3 ms. <b>~55 s</b></aside>
+</section>
+
+<!-- 43. Dose response -->
+<section class="slide" data-section="Evaluation" data-time="50">
+  <h2><span class="kicker">Evaluation · Hotspot</span>The gain needs dense alert bursts</h2>
+  <div class="row">
+    <div class="col f up" data-f="1">
+      <div class="div-row"><div></div><div class="center small muted">Δ VO mean (emergency vs DCF)</div><div class="center small muted">Δ VO P95</div></div>
+      <div class="div-row"><div class="lbl">high<small>20 ms × 8 copies</small></div>
+        <div class="div-track"><i class="neg" style="--w:39%"></i><span style="left:4%;color:var(--ok)">−39 %</span></div>
+        <div class="div-track"><i class="neg" style="--w:21%"></i><span style="left:22%;color:var(--ok)">−21 %</span></div></div>
+      <div class="div-row"><div class="lbl">medium<small>75 ms × 4 copies</small></div>
+        <div class="div-track"><i class="pos" style="--w:10%"></i><span style="left:63%;color:var(--vo)">+10 %</span></div>
+        <div class="div-track"><i class="pos" style="--w:5%"></i><span style="left:58%;color:var(--vo)">+5 %</span></div></div>
+      <div class="div-row"><div class="lbl">low<small>120 ms × 3 copies</small></div>
+        <div class="div-track"><i class="pos" style="--w:16%"></i><span style="left:69%;color:var(--vo)">+16 %</span></div>
+        <div class="div-track"><i class="pos" style="--w:0.5%"></i><span style="left:54%;color:var(--muted)">+0 %</span></div></div>
+    </div>
+    <div style="width:470px"><img src="assets/en/fig_09_hotspot_vo_p95_by_load_highway_heavy.svg" class="f zoom" data-f="2" style="width:100%;border-radius:12px;border:1px solid var(--faint)"></div>
+  </div>
+  <div class="callout mt2 f up" data-f="3">Medium/low: the blocked duty cycle falls to <b>≈ ⅓ or less</b>; heavy senders refill the gaps between blocks. Voice improves only when <b>both</b> hold: <b>concentrated</b> near-crash load <b>and</b> alerts <b>frequent enough</b> to keep protection active.</div>
+  <aside class="notes">The gain depends on how often alerts come. With the high profile, 20 ms and eight copies, emergency gives minus 39 and minus 21%. With medium and low, the blocked duty cycle falls to a third or less, the heavy senders refill the gaps, and emergency actually raises the mean by 10 and 16%. So Voice improves only when two things hold together: concentrated load near the crash, and alerts frequent enough to keep protection on. <b>~50 s</b></aside>
+</section>
+
+<!-- 44. Gain vs cost -->
+<section class="slide" data-section="Evaluation" data-time="45">
+  <h2><span class="kicker">Evaluation · Cost</span>Protection vs. cost in Δ-space (vs DCF, high load)</h2>
+  <div class="row" style="align-items:center">
+    <img src="assets/en/fig_04_vo_gain_vs_be_cost_highway_heavy.svg" class="f zoom" data-f="1" style="height:640px;border-radius:12px;border:1px solid var(--faint)">
+    <div class="col">
+      <p class="small f up" data-f="2"><b>Left, uniform:</b> nobody moves left (Δ VO ≤ 0.04 ms). <span class="pol stable">stable</span> (+30 ms) and <span class="pol guarded">guarded</span> (+3.4 ms) move <b>up</b>; <span class="pol emergency">emergency</span> moves slightly down (−0.14 ms) only because it drops BE.</p>
+      <p class="small f up" data-f="3"><b>Right, hotspot:</b> only <span class="pol emergency">emergency</span> moves <b>left</b> (−3.9 ms), but <b>every</b> EDCA policy sits high: fleet BE P95 ≈ 737–779 ms vs 6.1 ms under DCF (BE queue overflow ≈ 11 k; 6.7 k for emergency).</p>
+      <div class="callout f up mt" data-f="4" style="font-size:23px">In the hotspot, the Voice gain <b>cannot be separated</b> from its BE cost: ≈ 16.1 k BE frames dropped per run, the same preemption that prevents crash-node starvation.</div>
+      <p class="tiny">Negative Δ VO P95 = improvement; positive Δ BE P95 = penalty. Panels use independent axes.</p>
+    </div>
+  </div>
+  <aside class="notes">This is the frontier in delta space relative to DCF. On the left, uniform load: the adaptive policies don't move left, so no Voice gain, but they move up, which is a Best Effort penalty, most of all stable. On the right, hotspot: only emergency moves left. And in the hotspot the Voice gain and the Best Effort cost come together: about 16 thousand dropped frames per run. <b>~45 s</b></aside>
+</section>
+
+<!-- 45. Controller actions -->
+<section class="slide" data-section="Evaluation" data-time="40">
+  <h2><span class="kicker">Evaluation · Controller instrumentation</span>Protection fires, with or without benefit</h2>
+  <div class="row" style="align-items:center">
+    <img src="assets/en/fig_07_v2x_control_actions_by_load_highway_heavy.svg" class="f zoom" data-f="1" style="height:560px;border-radius:12px;border:1px solid var(--faint)">
+    <div class="col">
+      <table class="t compact f up" data-f="2">
+        <tr><th>Uniform, high</th><th class="num">VO protection</th><th class="num">BE dropped blocked</th><th class="num">BE hold</th></tr>
+        <tr><td><span class="pol stable">stable</span></td><td class="num">115 k</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td><span class="pol guarded">guarded</span></td><td class="num">115 k</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr class="hl"><td><span class="pol emergency">emergency</span></td><td class="num">127 k</td><td class="num">2.53 k</td><td class="num">12</td></tr>
+      </table>
+      <p class="small mt f up" data-f="3">≈ 1.1×10⁵ activations per run under uniform load <b>without any Voice benefit</b>.</p>
+      <div class="callout f up" data-f="4" style="font-size:23px">Emergency drops: <b>≈ 2.5 k</b> (uniform) vs <b>≈ 16.1 k</b> (hotspot). <b>Deferring adds delay; dropping removes traffic</b>, and dropping helps Voice only under concentrated load.</div>
+    </div>
+  </div>
+  <aside class="notes">The controller counters confirm it. Under uniform load, stable and guarded activate protection about 115 thousand times per run, and Voice gains nothing. Emergency drops about 2,500 BE frames under uniform load, versus 16 thousand in the hotspot. In short: deferring adds delay, dropping removes traffic, and dropping helps Voice only when the load is concentrated. <b>~40 s</b></aside>
+</section>
+
+<!-- 46. Discussion: when to enable -->
+<section class="slide" data-section="Evaluation" data-time="55">
+  <h2><span class="kicker">Discussion</span>Enabling adaptive protection in practice</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><span class="tag blue">deployment</span><h3 class="mt">Escalation, not always-on</h3><p>Explicit DSCP→Voice mapping is a <b>reasonable default</b>. Blocking/emergency should be an <b>escalation step</b> for genuinely stressed, concentrated channels, not a permanent mode.</p></div>
+    <div class="card f up" data-f="2"><span class="tag green">idea</span><h3 class="mt">An online trigger</h3><p>Enable emergency only while <b>recent alert rate × bounded block window</b> fills the blocking budget, i.e. a <b>blocked duty-cycle</b> criterion. The controller already tracks activations and <code>maxContinuousBlock</code>.</p></div>
+    <div class="card hot f up" data-f="3"><span class="tag red">security</span><h3 class="mt">Denial-of-service risk</h3><p><b>Overheard, unauthenticated</b> Voice frames trigger blocking. A faulty/malicious node could hold neighbors blocked. Bounded by finite windows (20–80 ms + guard), only own BE affected, but needs <b>authentication, rate limiting, plausibility checks</b>.</p></div>
+  </div>
+  <aside class="notes">What does this mean in practice? First, explicit Voice mapping is a good default, but blocking, and especially emergency, should be an escalation step for concentrated congestion, not always on. Second, the dose-response result suggests a trigger a node could measure online: turn emergency on only when the alert rate times the block window fills the blocking budget, a duty-cycle criterion; the controller already tracks what's needed. Third, security: any node sending Voice frames makes its neighbors block. Windows are finite, but deployment would need authentication, rate limiting and plausibility checks. <b>~55 s</b></aside>
+</section>
+
+<!-- 47. Discussion: cost & interpretation -->
+<section class="slide" data-section="Evaluation" data-time="50">
+  <h2><span class="kicker">Discussion</span>Cost, fairness, and reading the numbers</h2>
+  <div class="grid2">
+    <div>
+      <h3 class="f" data-f="1">Cost and fairness</h3>
+      <ul class="small">
+        <li class="f up" data-f="1">All BE is treated as suppressible ⇒ penalties are a <b>worst-case bound</b>; real BE may be safety-relevant → finer classes needed.</li>
+        <li class="f up" data-f="2">Cost is <b>spatially concentrated</b> near the crash (arguably desirable); pooled averages <b>understate</b> it for the most affected vehicles.</li>
+        <li class="f up" data-f="3">Under concentrated load, dropping both helps Voice <b>and</b> prevents crash-node BE starvation.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="f" data-f="4">Interpretation</h3>
+      <ul class="small">
+        <li class="f up" data-f="4">Under <span class="pol plain">plain</span>, the VO–BE gap reflects <b>different traffic processes</b>, not DCF differentiation.</li>
+        <li class="f up" data-f="5">VO RX/alert &gt; BE RX/TX: different denominators, denser neighborhood around the stopped crash node.</li>
+        <li class="f up" data-f="6">Controlled comparisons: <b>within one class, across policies</b> (plus the crash-node BE slice).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt f up" data-f="7">Against TS 22.186's 25 ms: under uniform load there is <b>no tail to recover</b>; in the hotspot the tails <b>approach the budget</b> and emergency reduces them. <b>The boundary itself is the main result.</b></div>
+  <aside class="notes">A few caveats on cost and interpretation. All Best Effort is treated as suppressible, so the penalties are a worst case; in real stacks some of it may be safety relevant. The cost is concentrated near the crash, which pooled averages hide. On interpretation: under plain DCF, the Voice/BE gap comes from different traffic processes, not from any differentiation. The fair comparisons are within one class across policies. And relative to the 25 ms budget, the main result is the boundary: no tail to recover under uniform load, and a real reduction when tails approach the budget. <b>~50 s</b></aside>
+</section>
+
+<!-- 48. Limitations -->
+<section class="slide" data-section="Evaluation" data-time="45">
+  <h2><span class="kicker">Threats to validity</span>Limitations</h2>
+  <div class="grid2 stagger f" data-f="1">
+    <div class="card"><h3>Statistics &amp; scope</h3><p class="small">3 seeds, min–max only, no CIs/tests → mechanism checks. Simulation-only. Single crash source, one hop; overlapping windows from concurrent alerts not evaluated.</p></div>
+    <div class="card"><h3>Radio &amp; MAC fidelity</h3><p class="small">Free-space, binary obstacles, fixed SNIR; no fading/shadowing. BSS EDCA defaults (not OCB set); group frames at 12 Mbit/s. Uniform across policies, but may shift absolute values.</p></div>
+    <div class="card"><h3>Traffic &amp; baselines</h3><p class="small">Synthetic two-class model; <code>high</code> burst profile is a stress case. No adaptive-EDCA / DCC baseline ⇒ no superiority claim. No application-level safety deadline evaluated.</p></div>
+    <div class="card"><h3>Design points &amp; geometry</h3><p class="small">Three fixed profiles, triggers not ablated (block 4–15 ms, threshold 1–3 = coarse ladder). Hotspot nodes placed by injection order → claim is the <b>direction</b> of the effect, not exact values.</p></div>
+  </div>
+  <div class="callout green mt f up" data-f="2">Within this scope the comparison is <b>internally fair</b>: same PHY stack, mobility trace and load matrix for every policy ⇒ differences isolate MAC-policy effects.</div>
+  <aside class="notes">Limitations. Three seeds without confidence intervals, so these are mechanism checks. Simulation only, a single crash source, one hop. Simplified radio, BSS EDCA defaults and a fixed 12 Mbit/s rate, which may shift absolute values. Synthetic traffic, no DCC or adaptive EDCA baseline, so no superiority claim. Fixed design points without ablation, and hotspot placement by injection order, so I claim the direction of the effect, not the exact numbers. Within this scope the comparison is fair: everything except the MAC policy is identical. <b>~45 s</b></aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- CONCLUSION -->
+<!-- 49. Main findings -->
+<section class="slide" data-section="Conclusion" data-time="55">
+  <h2><span class="kicker">Conclusion</span>Main findings</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><div class="big" style="color:var(--plain)">1</div><h3 class="mt">Uniform load: no Voice win</h3><p class="small">VO P95 ≈ 2.2 ms for every policy at 100 vehicles. EDCA is not better than DCF; emergency's 2.21 vs ≈ 2.24 ms is too small to matter.</p></div>
+    <div class="card f up" data-f="2"><div class="big" style="color:var(--stable)">2</div><h3 class="mt">…only a BE cost</h3><p class="small"><span class="pol stable">stable</span> 0.51 → 30 ms BE P95; <span class="pol guarded">guarded</span> 3.9 ms; emergency 0.37 ms by dropping ≈ 2.5 k frames. Same pattern at 10 vehicles.</p></div>
+    <div class="card hot f up" data-f="3"><div class="big" style="color:var(--emergency)">3</div><h3 class="mt">Concentrated load: emergency helps</h3><p class="small">−39 % mean / −21 % P95 alert age vs DCF; −29 % VO collision losses vs EDCA; ≈ 16 k BE drops. Needs <b>concentration + dense bursts</b>.</p></div>
+  </div>
+  <div class="callout mt2 f up" data-f="4" style="font-size:30px">The negative result shaped the work: whether protection helps <b>depends on how the load is distributed around the crash</b>.</div>
+  <aside class="notes">Three findings. One: under uniform load, no policy improves Voice; everything sits at 2.2 ms. Two: in that case the policies differ only in what they cost Best Effort. Three: when load is concentrated near the crash and alerts are dense, emergency preemption does help: 39% lower mean, 21% lower P95, 29% fewer collision losses, at the price of about 16 thousand dropped frames. The overall answer is conditional: it depends on how the load is distributed around the crash. <b>~55 s</b></aside>
+</section>
+
+<!-- 50. Practical implications + gauge -->
+<section class="slide" data-section="Conclusion" data-time="55">
+  <h2><span class="kicker">Practical implications</span>What should a V2X designer do?</h2>
+  <div class="grid3">
+    <div class="card f up" data-f="1"><h3>✓ Mark &amp; map</h3><p class="small">DSCP 46 + explicit Voice mapping: the right queue, almost no cost to ordinary traffic.</p></div>
+    <div class="card f up" data-f="2"><h3>⚡ Escalate on demand</h3><p class="small">Blocking/dropping only when the <b>crash happens in a congested area</b> and alerts are really flowing; switch it off afterwards.</p></div>
+    <div class="card f up" data-f="3"><h3>🔒 Protect the trigger</h3><p class="small">Authentication, rate limiting and plausibility checks before Voice frames may suppress neighbors.</p></div>
+  </div>
+  <h3 class="mt2 f" data-f="4">Voice P95 against the TS 22.186 reference (ms)</h3>
+  <div class="gauge">
+    <div class="axis"></div>
+    <div class="tick" style="left:0">0</div><div class="tick" style="left:20%">5</div><div class="tick" style="left:40%">10</div><div class="tick" style="left:60%">15</div><div class="tick" style="left:80%">20</div><div class="tick" style="left:100%">25 ms</div>
+    <div class="mk f" data-f="4" style="--x:8.8%;color:var(--ok)"><span>uniform 2.2</span><i></i></div>
+    <div class="mk f" data-f="5" style="--x:77%;color:var(--vo)"><span>DCF/EDCA hotspot 18.5–20</span><i></i></div>
+    <div class="mk f" data-f="6" style="--x:58.4%;color:var(--accent)"><span>emergency 14.6</span><i></i></div>
+    <div class="mk f" data-f="4" style="--x:100%;color:var(--navy)"><span>budget</span><i></i></div>
+  </div>
+  <aside class="notes">For a system designer: mark alerts DSCP 46 and map them explicitly to Voice; that's cheap. Escalate to blocking or dropping only when the crash happens in a congested area, and switch it off afterwards. And protect the trigger first. Against the 25 ms reference: under uniform load we're at 2.2 ms and the real risk is the cost to Best Effort; in the hotspot, DCF and EDCA get close to the budget, at 18.5 to 20, and emergency pulls it back to 14.6. This is a MAC-level measurement, not a claim about crash outcomes. <b>~55 s</b></aside>
+</section>
+
+<!-- 51. Publications + future work -->
+<section class="slide" data-section="Conclusion" data-time="50">
+  <h2><span class="kicker">Publications &amp; future work</span>What exists and what comes next</h2>
+  <div class="row">
+    <div style="width:520px">
+      <div class="card f left" data-f="1"><span class="tag red">SBESC 2026</span><h3 class="mt" style="font-size:22px">Crash-aware prioritization study</h3><p class="small">Direct precursor; earlier uniform-only campaign, numbers <b>superseded</b> here.</p></div>
+      <div class="card f left mt" data-f="1"><span class="tag">SBESC 2025</span><h3 class="mt" style="font-size:22px">Wireless TSN / QoS for V2X</h3><p class="small">TAS + sync precursor this work diverges from.</p></div>
+      <div class="card f left mt" data-f="1"><span class="tag blue">artifact</span><p class="small mono" style="margin:8px 0 0">github.com/GOAguiar99/veins-inet-qos</p></div>
+    </div>
+    <div class="col">
+      <div class="grid2">
+        <div class="card f up" data-f="2"><h3>Stronger evidence</h3><p class="small">More seeds + CIs/tests; fading, shadowing, capture; continuous density/load sweeps; CAM/DENM schedules; multi-hop; link to a safety deadline.</p></div>
+        <div class="card f up" data-f="3"><h3>Baselines &amp; parameters</h3><p class="small">Trigger ablations, parameter sweeps; adaptive-EDCA, DCC, sidelink baselines; concurrent alerts.</p></div>
+        <div class="card hot f up" data-f="4"><h3>Closed-loop trigger</h3><p class="small">Duty-cycle criterion (alert cadence × block window) to engage emergency only where it pays. Predictive pre-blocking showed no benefit at sparse bursts.</p></div>
+        <div class="card f up" data-f="5"><h3>Deployment</h3><p class="small">Security of the trigger, finer classes, per-vehicle fairness, HIL/testbed. Journal paper consolidating the full results.</p></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Publications: the SBESC 2026 paper is the direct precursor, with the earlier campaign that this dissertation supersedes; SBESC 2025 was the wireless TSN precursor; and the artifact is public. Future work: stronger statistics and richer radio and traffic models; ablations and the missing baselines like DCC; a closed-loop duty-cycle trigger, the most direct next step; and deployment issues such as security, finer classes, fairness and testbed validation. A journal paper will consolidate the full results. <b>~50 s</b></aside>
+</section>
+
+<!-- 52. Thank you -->
+<section class="slide title-slide nochrome" data-section="Conclusion" data-time="20">
+  <div class="road"></div>
+  <div class="wave" style="top:380px"><i></i><i></i><i></i></div>
+  <div class="tl-inner" style="top:170px">
+    <h1>Thank you</h1>
+    <div class="sub" style="max-width:1000px">Crash-aware prioritization can measurably improve Voice delay and frame integrity <b style="color:#fff">where near-crash congestion is concentrated and bursts are dense</b>, as a <b style="color:#fff">bounded escalation step</b> whose cost to ordinary traffic must be acknowledged.</div>
+  </div>
+  <div class="who"><b>Gabriel de Oliveira Aguiar</b><br>goaguiar99@gmail.com</div>
+  <div class="inst">Questions?<br><span class="mono" style="font-size:18px">github.com/GOAguiar99/veins-inet-qos</span></div>
+  <aside class="notes">To close: crash-aware prioritization works only as a bounded escalation step, triggered by the crash, in concentrated congestion, and its cost to ordinary traffic must be acknowledged. Thank you; I'm happy to take questions. Backup slides follow with the full tables.</aside>
+</section>
+
+<!-- =============================================================== -->
+<!-- APPENDIX -->
+<section class="slide" data-section="Appendix" data-time="0">
+  <h2><span class="kicker">Backup A</span>Heavy density, uniform high load: full table</h2>
+  <table class="t compact">
+    <tr><th>Policy</th><th class="num">VO mean</th><th class="num">VO P95</th><th class="num">VO jitter</th><th class="num">VO RX/alert</th><th class="num">BE mean</th><th class="num">BE P95</th><th class="num">BE jitter</th><th class="num">BE RX/TX</th></tr>
+    <tr><td>Plain</td><td class="num">0.991</td><td class="num">2.249</td><td class="num">1.024</td><td class="num">9.954</td><td class="num">0.387</td><td class="num">0.511</td><td class="num">0.035</td><td class="num">8.057</td></tr>
+    <tr><td>EDCA</td><td class="num">0.994</td><td class="num">2.242</td><td class="num">1.018</td><td class="num">9.954</td><td class="num">0.389</td><td class="num">0.524</td><td class="num">0.038</td><td class="num">8.091</td></tr>
+    <tr><td>Stable</td><td class="num">0.988</td><td class="num">2.245</td><td class="num">1.026</td><td class="num">9.954</td><td class="num">3.696</td><td class="num">30.491</td><td class="num">3.490</td><td class="num">7.606</td></tr>
+    <tr><td>Guarded</td><td class="num">0.998</td><td class="num">2.241</td><td class="num">1.029</td><td class="num">9.954</td><td class="num">0.896</td><td class="num">3.889</td><td class="num">0.669</td><td class="num">7.655</td></tr>
+    <tr><td>Emergency</td><td class="num">0.952</td><td class="num">2.211</td><td class="num">0.979</td><td class="num">9.954</td><td class="num">0.432</td><td class="num">0.369</td><td class="num">0.120</td><td class="num">6.927</td></tr>
+  </table>
+  <p class="tiny">100 vehicles, three-run means, delays/jitter in ms. Seed ranges in the dissertation, Table "Heavy-density high-load delay, jitter, and multicast reach".</p>
+  <h3 class="mt2">BE P95 (ms) across offered-load regimes</h3>
+  <table class="t compact">
+    <tr><th>Load</th><th class="num">Plain</th><th class="num">EDCA</th><th class="num">Stable</th><th class="num">Guarded</th><th class="num">Emergency</th></tr>
+    <tr><td>fleet · low</td><td class="num">0.217</td><td class="num">0.217</td><td class="num">0.323</td><td class="num">0.217</td><td class="num">0.217</td></tr>
+    <tr><td>fleet · medium</td><td class="num">0.297</td><td class="num">0.297</td><td class="num">2.081</td><td class="num">0.357</td><td class="num">0.297</td></tr>
+    <tr><td>fleet · high</td><td class="num">0.511</td><td class="num">0.524</td><td class="num">30.491</td><td class="num">3.889</td><td class="num">0.369</td></tr>
+    <tr><td>crash node · low</td><td class="num">0.217</td><td class="num">0.217</td><td class="num">0.708</td><td class="num">1.357</td><td class="num">0.217</td></tr>
+    <tr><td>crash node · medium</td><td class="num">0.297</td><td class="num">0.335</td><td class="num">3.040</td><td class="num">2.323</td><td class="num">0.297</td></tr>
+    <tr><td>crash node · high</td><td class="num">0.631</td><td class="num">0.772</td><td class="num">13.763</td><td class="num">3.865</td><td class="num">0.435</td></tr>
+  </table>
+  <aside class="notes">Backup: the full heavy-density tables.</aside>
+</section>
+
+<section class="slide" data-section="Appendix" data-time="0">
+  <h2><span class="kicker">Backup B</span>Hotspot, high load: full table</h2>
+  <table class="t">
+    <tr><th>Policy</th><th class="num">VO mean (ms)</th><th class="num">VO P95 (ms) [range]</th><th class="num">VO RX/alert</th><th class="num">VO MAC drops (×10³)</th><th class="num">BE from crash (ms)</th><th class="num">BE dropped blocked (×10³)</th></tr>
+    <tr><td>Plain</td><td class="num">4.540</td><td class="num">18.45 [16.1–19.9]</td><td class="num">9.670</td><td class="num">n.a.</td><td class="num">1.548</td><td class="num">0</td></tr>
+    <tr><td>EDCA</td><td class="num">4.448</td><td class="num">19.96 [18.7–20.7]</td><td class="num">9.624</td><td class="num">25.2</td><td class="num">1453 (1.45 s)</td><td class="num">0</td></tr>
+    <tr><td>Stable</td><td class="num">4.608</td><td class="num">21.04 [18.8–22.8]</td><td class="num">9.636</td><td class="num">25.4</td><td class="num">1386 (1.39 s)</td><td class="num">0</td></tr>
+    <tr><td>Guarded</td><td class="num">4.439</td><td class="num">20.04 [19.8–20.4]</td><td class="num">9.689</td><td class="num">25.1</td><td class="num">981 (0.98 s)</td><td class="num">0</td></tr>
+    <tr class="hl"><td>Emergency</td><td class="num">2.781</td><td class="num">14.56 [11.8–16.0]</td><td class="num">9.835</td><td class="num">17.8</td><td class="num">3.335</td><td class="num">16.1</td></tr>
+  </table>
+  <p class="tiny mt">100 vehicles, hotspot nodes 1–3 streaming 1200 B, three-run means. VO MAC drops = Voice-attributed incorrectly-received counts summed over nodes. "n.a." under plain: no AC attribution without a classifier.</p>
+  <aside class="notes">Backup: the full hotspot table.</aside>
+</section>
+
+<section class="slide" data-section="Appendix" data-time="0">
+  <h2><span class="kicker">Backup C</span>Experimental decisions</h2>
+  <table class="t compact">
+    <tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr>
+    <tr><td>Study framing</td><td>Protection-vs-cost comparison; no deterministic-guarantee claims</td><td>Isolates what local MAC mechanisms can and cannot deliver</td></tr>
+    <tr><td>Density packages</td><td>Light 10 (sensitivity); heavy 100 (stress, emphasized)</td><td>Sweep sensitivity, then stress where contention binds</td></tr>
+    <tr><td>MAC policies</td><td>Five-policy ladder: plain → emergency</td><td>Each rung isolates one mechanism step</td></tr>
+    <tr><td>BE offered load</td><td>Poisson, means 500 / 250 / 125 ms</td><td>Bursty contention without queue overflow</td></tr>
+    <tr><td>Crash-alert traffic</td><td>8 copies, 5 ms gap at high (≈ 400 pkt/s)</td><td>Stress the Voice path when protection matters most</td></tr>
+    <tr><td>Contention source</td><td>Offered load + fleet density; no random-waypoint saturation</td><td>Load-driven contention is the phenomenon under study</td></tr>
+    <tr><td>Seeds</td><td>Three repetitions (#0–#2)</td><td>Bounded stochastic evidence, reproducible</td></tr>
+    <tr><td>Matrices</td><td>Uniform 15 configs; hotspot 15 × 3 seeds = 45 runs</td><td>Reference case + concentrated BE airtime near the crash</td></tr>
+  </table>
+  <aside class="notes">Backup: the experimental decisions table.</aside>
+</section>
+
+<section class="slide" data-section="Appendix" data-time="0">
+  <h2><span class="kicker">Backup D</span>Code provenance</h2>
+  <table class="t compact">
+    <tr><th>Component</th><th>Origin</th><th>Role</th></tr>
+    <tr><td>CritPacketSender, CrashBurstApp</td><td><b>created</b></td><td>BE generator / KPI sink; crash-triggered VO bursts</td></tr>
+    <tr><td>QosClassifier</td><td><b>created</b></td><td>DSCP 46 → Voice UP</td></tr>
+    <tr><td>V2xIeee80211Mac</td><td><b>created</b></td><td>Per-AC and per-reason drop counters</td></tr>
+    <tr><td>V2xHcf + V2xEdcaFsmController</td><td><b>created</b></td><td>Adaptive BE blocking / emergency preemption</td></tr>
+    <tr><td>Scenario packages, configuration matrix</td><td><b>created</b></td><td>Highway ini compositions, SUMO networks, run scripts</td></tr>
+    <tr><td>kpi_dashboard (Rust)</td><td><b>created</b></td><td>Offline KPI extraction and figure export</td></tr>
+    <tr><td>VeinsInetApplicationBase</td><td>vendored, <b>modified</b></td><td>Configurable ports, multicast-loopback control</td></tr>
+    <tr><td>VeinsInetCar / Manager / Mobility</td><td>reused unchanged</td><td>Host, TraCI manager, mobility</td></tr>
+    <tr><td>INET 4.5.4, Veins 5.3.1</td><td>submodules, unchanged</td><td>Radio/PHY, medium, IPv4/UDP, stock Hcf; TraCI coupling</td></tr>
+  </table>
+  <aside class="notes">Backup: what was created, modified and reused.</aside>
+</section>
+
+<div class="progress"><i></i></div>
+<div class="sectionlabel"></div>
+</div>
+
+<div class="notes-overlay"></div>
+<div class="index-overlay"></div>
+
+<div class="presenter-panel">
+  <div class="top"><div><div id="p-cur"></div><div id="p-step"></div><div id="p-next"></div></div><div style="text-align:right"><div id="p-clock">00:00</div><div id="p-target"></div><div id="p-plan"></div></div></div>
+  <div id="p-notes"></div>
+  <p style="color:#6f7f97;font-size:15px;margin-top:16px">Arrows / Space control the main window · T resets the timer (timer starts on the first advance)</p>
+</div>
+
+<script>
+// Per-slide hooks
+window.DeckAnims = {};
+// DSCP bits: highlight 3 MSBs on the first step of the DSCP slide
+document.querySelectorAll('.slide').forEach(s => {
+  const w = s.querySelector('#bits-wrap');
+  if (!w) return;
+  s.dataset.anim = 'bits';
+});
+window.DeckAnims.bits = (s, step) => { s.querySelector('#bits-wrap').classList.toggle('msb3', step === 1); };
+</script>
+<script src="deck.js?v=4"></script>
+</body>
+</html>
